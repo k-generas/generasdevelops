@@ -74,7 +74,7 @@ function BusinessPage() {
   if (!biz.data) return <p>Not found.</p>;
   const b = biz.data;
   const report = inv.data?.report as Report | null | undefined;
-  const f = (inv.data?.findings ?? {}) as Record<string, unknown>;
+  const f = (inv.data?.findings ?? {}) as { [k: string]: unknown } & Partial<Record<"reachable"|"status"|"https"|"load_ms"|"has_viewport_meta"|"has_contact_form"|"has_whatsapp_link"|"has_online_booking_or_shop"|"copyright_year"|"error", unknown>>;
 
   return (
     <div className="space-y-6">
@@ -168,6 +168,6 @@ function fmt(v: unknown) {
   if (typeof v === "boolean") return v ? "yes" : "no";
   return String(v);
 }
-function Row({ k, v }: { k: string; v?: string | null }) {
+function Row({ k, v }: { k: string; v?: string | null | undefined }) {
   return <div className="flex justify-between gap-2"><span className="text-muted-foreground">{k}</span><span className="font-mono">{v ?? "—"}</span></div>;
 }
