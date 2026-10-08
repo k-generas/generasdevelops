@@ -14,7 +14,167 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      businesses: {
+        Row: {
+          address: string | null
+          business_status: string | null
+          category: string | null
+          created_at: string
+          discovery_run_id: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          maps_url: string | null
+          name: string
+          owner_id: string
+          phone: string | null
+          place_id: string
+          rating: number | null
+          review_count: number | null
+          score: number | null
+          source: string
+          status: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_status?: string | null
+          category?: string | null
+          created_at?: string
+          discovery_run_id?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          maps_url?: string | null
+          name: string
+          owner_id?: string
+          phone?: string | null
+          place_id: string
+          rating?: number | null
+          review_count?: number | null
+          score?: number | null
+          source?: string
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_status?: string | null
+          category?: string | null
+          created_at?: string
+          discovery_run_id?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          maps_url?: string | null
+          name?: string
+          owner_id?: string
+          phone?: string | null
+          place_id?: string
+          rating?: number | null
+          review_count?: number | null
+          score?: number | null
+          source?: string
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      discovery_runs: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          location: string | null
+          new_count: number
+          owner_id: string
+          query: string
+          results_count: number
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          location?: string | null
+          new_count?: number
+          owner_id?: string
+          query: string
+          results_count?: number
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          location?: string | null
+          new_count?: number
+          owner_id?: string
+          query?: string
+          results_count?: number
+          status?: string
+        }
+        Relationships: []
+      }
+      investigations: {
+        Row: {
+          business_id: string
+          created_at: string
+          findings: Json
+          id: string
+          owner_id: string
+          recommended_offer: string | null
+          report: Json | null
+          score: number | null
+          website_https: boolean | null
+          website_load_ms: number | null
+          website_reachable: boolean | null
+          website_status: number | null
+          website_title: string | null
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          findings?: Json
+          id?: string
+          owner_id?: string
+          recommended_offer?: string | null
+          report?: Json | null
+          score?: number | null
+          website_https?: boolean | null
+          website_load_ms?: number | null
+          website_reachable?: boolean | null
+          website_status?: number | null
+          website_title?: string | null
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          findings?: Json
+          id?: string
+          owner_id?: string
+          recommended_offer?: string | null
+          report?: Json | null
+          score?: number | null
+          website_https?: boolean | null
+          website_load_ms?: number | null
+          website_reachable?: boolean | null
+          website_status?: number | null
+          website_title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "investigations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
