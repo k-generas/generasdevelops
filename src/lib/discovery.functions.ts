@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { searchPlaces } from "./places.server";
-import { probeWebsite, analyzeWithAI } from "./investigate.server";
+import { probeWebsite, analyzeWithAI, computeVisibility } from "./investigate.server";
 
 export const runDiscovery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -62,7 +62,8 @@ export const investigateBusiness = createServerFn({ method: "POST" })
 
     const site = await probeWebsite(biz.website);
     const { owner_id, id, discovery_run_id, created_at, updated_at, status, score, ...facts } = biz;
-    const report = await analyzeWithAI(facts, site);
+    const visibility = computeVisibility(biz, site);
+    const report = await analyzeWithAI(facts, site, visibility);
 
     const { error: insErr } = await supabase.from("investigations").insert({
       owner_id: userId,
@@ -72,7 +73,7 @@ export const investigateBusiness = createServerFn({ method: "POST" })
       website_https: site.https,
       website_load_ms: site.load_ms,
       website_title: site.title,
-      findings: site as any,
+      findings: { ...site, visibility } as any,
       report: report as any,
       score: report.score,
       recommended_offer: report.recommended_offer,

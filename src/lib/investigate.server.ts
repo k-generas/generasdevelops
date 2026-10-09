@@ -18,14 +18,43 @@ export type WebsiteFindings = {
   html_kb: number | null;
   text_excerpt: string | null;
   error: string | null;
+  socials: Record<string, string>;
 };
+
+const SOCIAL_PATTERNS: Record<string, RegExp> = {
+  instagram: /https?:\/\/(?:www\.)?instagram\.com\/[A-Za-z0-9_.]+/i,
+  facebook: /https?:\/\/(?:www\.|m\.)?facebook\.com\/[A-Za-z0-9_.\-\/?=]+/i,
+  tiktok: /https?:\/\/(?:www\.)?tiktok\.com\/@[A-Za-z0-9_.]+/i,
+  whatsapp: /https?:\/\/(?:wa\.me|api\.whatsapp\.com)\/[^\s"'<>]+/i,
+  x: /https?:\/\/(?:www\.)?(?:twitter|x)\.com\/[A-Za-z0-9_]+/i,
+  linkedin: /https?:\/\/(?:[a-z]+\.)?linkedin\.com\/(?:company|in)\/[A-Za-z0-9_\-]+/i,
+  youtube: /https?:\/\/(?:www\.)?youtube\.com\/(?:@|channel\/|c\/)[A-Za-z0-9_\-]+/i,
+};
+
+export type Visibility = { score: number; breakdown: { label: string; points: number; max: number }[] };
+
+export function computeVisibility(b: { rating: number | null; review_count: number | null; website: string | null }, s: WebsiteFindings): Visibility {
+  const reviews = b.review_count ?? 0;
+  const socialCount = Object.keys(s.socials).length;
+  const breakdown = [
+    { label: "Google profile has rating", points: b.rating != null ? 10 : 0, max: 10 },
+    { label: "Google reviews", points: reviews >= 100 ? 20 : reviews >= 30 ? 14 : reviews >= 5 ? 8 : reviews > 0 ? 3 : 0, max: 20 },
+    { label: "Website listed & reachable", points: b.website ? (s.reachable ? 20 : 5) : 0, max: 20 },
+    { label: "Secure (HTTPS)", points: s.https ? 5 : 0, max: 5 },
+    { label: "Mobile-ready", points: s.has_viewport_meta ? 5 : 0, max: 5 },
+    { label: "Contact path on site", points: s.has_contact_form || s.has_email_link || s.has_whatsapp_link ? 10 : 0, max: 10 },
+    { label: "Social profiles linked", points: Math.min(socialCount * 7, 20), max: 20 },
+    { label: "Online booking / shop", points: s.has_online_booking_or_shop ? 10 : 0, max: 10 },
+  ];
+  return { score: breakdown.reduce((a, x) => a + x.points, 0), breakdown };
+}
 
 export async function probeWebsite(url: string | null): Promise<WebsiteFindings> {
   const empty: WebsiteFindings = {
     url, reachable: null, status: null, https: null, load_ms: null, title: null,
     meta_description: null, has_viewport_meta: null, has_contact_form: null,
     has_email_link: null, has_whatsapp_link: null, has_online_booking_or_shop: null,
-    copyright_year: null, html_kb: null, text_excerpt: null, error: null,
+    copyright_year: null, html_kb: null, text_excerpt: null, error: null, socials: {},
   };
   if (!url) return empty;
   const started = Date.now();
@@ -63,6 +92,11 @@ export async function probeWebsite(url: string | null): Promise<WebsiteFindings>
       copyright_year: years.length ? Math.max(...years) : null,
       html_kb: Math.round(html.length / 1024),
       text_excerpt: text || null,
+      socials: Object.fromEntries(
+        Object.entries(SOCIAL_PATTERNS)
+          .map(([k, re]) => [k, html.match(re)?.[0]] as const)
+          .filter((e): e is readonly [string, string] => !!e[1] && !/\/(sharer|share|intent|plugins|tr)\b/i.test(e[1])),
+      ),
     };
   } catch (e) {
     return { ...empty, reachable: false, load_ms: Date.now() - started, error: e instanceof Error ? e.message : String(e) };
@@ -128,7 +162,7 @@ export type InvestigationReport = {
   next_action: string;
 };
 
-export async function analyzeWithAI(business: Record<string, unknown>, site: WebsiteFindings): Promise<InvestigationReport> {
+export async function analyzeWithAI(business: Record<string, unknown>, site: WebsiteFindings, visibility?: Visibility): Promise<InvestigationReport> {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("AI is not configured (missing key).");
 
@@ -138,7 +172,7 @@ Analyse ONLY the evidence provided. Never invent facts, contacts, reviews or num
 score: 0-100 opportunity score (fit x likely need x ability to pay x reachability). Use "No offer — not a fit" when nothing fits.
 estimated_deal_value_usd: rough realistic figure for this market, or null if impossible to judge. Keep overview under 80 words.`;
 
-  const input = `BUSINESS (from Google Places):\n${JSON.stringify(business, null, 2)}\n\nWEBSITE PROBE:\n${JSON.stringify(site, null, 2)}`;
+  const input = `BUSINESS (from Google Places):\n${JSON.stringify(business, null, 2)}\n\nWEBSITE PROBE (socials = profile links found on their own website):\n${JSON.stringify(site, null, 2)}${visibility ? `\n\nVISIBILITY SCORE (0-100, computed from evidence): ${JSON.stringify(visibility)}` : ""}`;
 
   const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
     method: "POST",
