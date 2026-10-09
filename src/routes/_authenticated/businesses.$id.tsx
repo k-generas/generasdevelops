@@ -74,6 +74,9 @@ function BusinessPage() {
   if (!biz.data) return <p>Not found.</p>;
   const b = biz.data;
   const report = inv.data?.report as Report | null | undefined;
+  const raw = (inv.data?.findings ?? {}) as { socials?: Record<string, string>; visibility?: { score: number; breakdown: { label: string; points: number; max: number }[] } };
+  const socials = Object.entries(raw.socials ?? {});
+  const vis = raw.visibility;
   const f = (inv.data?.findings ?? {}) as { [k: string]: unknown } & Partial<Record<"reachable"|"status"|"https"|"load_ms"|"has_viewport_meta"|"has_contact_form"|"has_whatsapp_link"|"has_online_booking_or_shop"|"copyright_year"|"error", unknown>>;
 
   return (
@@ -135,6 +138,26 @@ function BusinessPage() {
             )}
           </section>
           <aside className="space-y-4">
+            {vis && (
+              <div className="rounded-lg border bg-card p-5 space-y-2 text-sm">
+                <div className="flex items-baseline justify-between">
+                  <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">Visibility</p>
+                  <span className="font-mono text-2xl font-semibold text-accent">{vis.score}<span className="text-xs text-muted-foreground">/100</span></span>
+                </div>
+                {vis.breakdown.map((x) => (
+                  <div key={x.label} className="flex justify-between gap-2"><span className="text-muted-foreground">{x.label}</span><span className="font-mono">{x.points}/{x.max}</span></div>
+                ))}
+                <p className="pt-2 text-[11px] text-muted-foreground">Low visibility + good reviews = strongest opportunity.</p>
+              </div>
+            )}
+            <div className="rounded-lg border bg-card p-5 space-y-2 text-sm">
+              <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">Social presence</p>
+              {socials.length === 0 ? (
+                <p className="text-muted-foreground">{b.website ? "No social profiles linked on their website." : "No website to check for social links."}</p>
+              ) : socials.map(([k, url]) => (
+                <div key={k} className="flex justify-between gap-2"><span className="capitalize text-muted-foreground">{k}</span><a href={url} target="_blank" rel="noreferrer" className="truncate font-mono text-primary underline">{url.replace(/^https?:\/\/(www\.)?/, "")}</a></div>
+              ))}
+            </div>
             <div className="rounded-lg border bg-card p-5 space-y-2 text-sm">
               <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">Estimates</p>
               <Row k="Confidence" v={report?.confidence} />
