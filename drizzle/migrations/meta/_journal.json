@@ -8,6 +8,13 @@
       "when": 1791438814206,
       "tag": "0000_discovery_engine",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791650403380,
+      "tag": "0001_memory_proposals_tasks",
+      "breakpoints": true
     }
   ]
 }

@@ -14,6 +14,82 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_activity_events: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          details: Json
+          event_type: string
+          id: string
+          owner_id: string
+          ref_id: string | null
+          ref_table: string | null
+          summary: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          details?: Json
+          event_type: string
+          id?: string
+          owner_id?: string
+          ref_id?: string | null
+          ref_table?: string | null
+          summary: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          details?: Json
+          event_type?: string
+          id?: string
+          owner_id?: string
+          ref_id?: string | null
+          ref_table?: string | null
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_activity_events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_notes: {
+        Row: {
+          body: string
+          business_id: string
+          created_at: string
+          id: string
+          owner_id: string
+        }
+        Insert: {
+          body: string
+          business_id: string
+          created_at?: string
+          id?: string
+          owner_id?: string
+        }
+        Update: {
+          body?: string
+          business_id?: string
+          created_at?: string
+          id?: string
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_notes_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
           address: string | null
@@ -21,7 +97,10 @@ export type Database = {
           category: string | null
           created_at: string
           discovery_run_id: string | null
+          emails: string[]
           id: string
+          last_investigated_at: string | null
+          last_opened_at: string | null
           latitude: number | null
           longitude: number | null
           maps_url: string | null
@@ -32,9 +111,11 @@ export type Database = {
           rating: number | null
           review_count: number | null
           score: number | null
+          socials: Json
           source: string
           status: string
           updated_at: string
+          visibility_score: number | null
           website: string | null
         }
         Insert: {
@@ -43,7 +124,10 @@ export type Database = {
           category?: string | null
           created_at?: string
           discovery_run_id?: string | null
+          emails?: string[]
           id?: string
+          last_investigated_at?: string | null
+          last_opened_at?: string | null
           latitude?: number | null
           longitude?: number | null
           maps_url?: string | null
@@ -54,9 +138,11 @@ export type Database = {
           rating?: number | null
           review_count?: number | null
           score?: number | null
+          socials?: Json
           source?: string
           status?: string
           updated_at?: string
+          visibility_score?: number | null
           website?: string | null
         }
         Update: {
@@ -65,7 +151,10 @@ export type Database = {
           category?: string | null
           created_at?: string
           discovery_run_id?: string | null
+          emails?: string[]
           id?: string
+          last_investigated_at?: string | null
+          last_opened_at?: string | null
           latitude?: number | null
           longitude?: number | null
           maps_url?: string | null
@@ -76,15 +165,19 @@ export type Database = {
           rating?: number | null
           review_count?: number | null
           score?: number | null
+          socials?: Json
           source?: string
           status?: string
           updated_at?: string
+          visibility_score?: number | null
           website?: string | null
         }
         Relationships: []
       }
       discovery_runs: {
         Row: {
+          archived: boolean
+          completed_at: string | null
           created_at: string
           error: string | null
           id: string
@@ -92,10 +185,14 @@ export type Database = {
           new_count: number
           owner_id: string
           query: string
+          rerun_of: string | null
           results_count: number
           status: string
+          title: string | null
         }
         Insert: {
+          archived?: boolean
+          completed_at?: string | null
           created_at?: string
           error?: string | null
           id?: string
@@ -103,10 +200,14 @@ export type Database = {
           new_count?: number
           owner_id?: string
           query: string
+          rerun_of?: string | null
           results_count?: number
           status?: string
+          title?: string | null
         }
         Update: {
+          archived?: boolean
+          completed_at?: string | null
           created_at?: string
           error?: string | null
           id?: string
@@ -114,8 +215,10 @@ export type Database = {
           new_count?: number
           owner_id?: string
           query?: string
+          rerun_of?: string | null
           results_count?: number
           status?: string
+          title?: string | null
         }
         Relationships: []
       }
@@ -174,6 +277,260 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      proposal_versions: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          note: string | null
+          owner_id: string
+          proposal_id: string
+          version: number
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          owner_id?: string
+          proposal_id: string
+          version: number
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          owner_id?: string
+          proposal_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_versions_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposals: {
+        Row: {
+          body: string
+          business_id: string
+          channel: string | null
+          created_at: string
+          currency: string
+          current_version: number
+          id: string
+          investigation_id: string | null
+          language: string
+          mode: string
+          offer: string | null
+          outcome: string | null
+          owner_id: string
+          price: number | null
+          sent_at: string | null
+          sent_channel: string | null
+          status: string
+          title: string | null
+          tone: string | null
+          updated_at: string
+          why: Json
+        }
+        Insert: {
+          body?: string
+          business_id: string
+          channel?: string | null
+          created_at?: string
+          currency?: string
+          current_version?: number
+          id?: string
+          investigation_id?: string | null
+          language?: string
+          mode: string
+          offer?: string | null
+          outcome?: string | null
+          owner_id?: string
+          price?: number | null
+          sent_at?: string | null
+          sent_channel?: string | null
+          status?: string
+          title?: string | null
+          tone?: string | null
+          updated_at?: string
+          why?: Json
+        }
+        Update: {
+          body?: string
+          business_id?: string
+          channel?: string | null
+          created_at?: string
+          currency?: string
+          current_version?: number
+          id?: string
+          investigation_id?: string | null
+          language?: string
+          mode?: string
+          offer?: string | null
+          outcome?: string | null
+          owner_id?: string
+          price?: number | null
+          sent_at?: string | null
+          sent_channel?: string | null
+          status?: string
+          title?: string | null
+          tone?: string | null
+          updated_at?: string
+          why?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposals_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_investigation_id_fkey"
+            columns: ["investigation_id"]
+            isOneToOne: false
+            referencedRelation: "investigations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      search_run_results: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          owner_id: string
+          run_id: string
+          was_new: boolean
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          owner_id?: string
+          run_id: string
+          was_new?: boolean
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          owner_id?: string
+          run_id?: string
+          was_new?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "search_run_results_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "search_run_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "discovery_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          business_id: string | null
+          completed_at: string | null
+          created_at: string
+          dedupe_key: string | null
+          description: string | null
+          due_at: string | null
+          id: string
+          owner_id: string
+          priority: string
+          proposal_id: string | null
+          source: string
+          status: string
+          title: string
+        }
+        Insert: {
+          business_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          owner_id?: string
+          priority?: string
+          proposal_id?: string | null
+          source?: string
+          status?: string
+          title: string
+        }
+        Update: {
+          business_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          owner_id?: string
+          priority?: string
+          proposal_id?: string | null
+          source?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_preferences: {
+        Row: {
+          last_visit_at: string | null
+          min_prices: Json
+          owner_id: string
+          previous_visit_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          last_visit_at?: string | null
+          min_prices?: Json
+          owner_id?: string
+          previous_visit_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          last_visit_at?: string | null
+          min_prices?: Json
+          owner_id?: string
+          previous_visit_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

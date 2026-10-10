@@ -1,3 +1,4 @@
+import { callResponsesJSON } from "./ai.server";
 // Real website probe + AI analysis. Nothing here invents data: AI only interprets
 // the evidence collected below, and is told to say "unknown" when evidence is missing.
 
@@ -19,6 +20,7 @@ export type WebsiteFindings = {
   text_excerpt: string | null;
   error: string | null;
   socials: Record<string, string>;
+  emails: string[];
 };
 
 const SOCIAL_PATTERNS: Record<string, RegExp> = {
@@ -30,6 +32,33 @@ const SOCIAL_PATTERNS: Record<string, RegExp> = {
   linkedin: /https?:\/\/(?:[a-z]+\.)?linkedin\.com\/(?:company|in)\/[A-Za-z0-9_\-]+/i,
   youtube: /https?:\/\/(?:www\.)?youtube\.com\/(?:@|channel\/|c\/)[A-Za-z0-9_\-]+/i,
 };
+
+const EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+const BAD_EMAIL = /\.(png|jpe?g|gif|webp|svg|css|js)$|@(example|sentry|wixpress|domain)\.|^(u00|your|name@)/i;
+
+function emailsIn(html: string): string[] {
+  const decoded = html.replace(/&#64;|&#x40;|\[at\]|\(at\)/gi, "@");
+  const found = new Set<string>();
+  for (const m of decoded.matchAll(/mailto:([^"'?\s>]+)/gi)) found.add(decodeURIComponent(m[1]!).toLowerCase());
+  for (const m of decoded.match(EMAIL_RE) ?? []) found.add(m.toLowerCase());
+  return [...found].filter((e) => !BAD_EMAIL.test(e) && e.length < 80);
+}
+
+// Public business emails only: the homepage, plus one contact page if linked.
+async function collectEmails(html: string, baseUrl: string): Promise<string[]> {
+  const set = new Set(emailsIn(html));
+  if (set.size === 0) {
+    const href = html.match(/href=["']([^"']*(?:contact|kontakt|about|nous-contacter)[^"']*)["']/i)?.[1];
+    if (href) {
+      try {
+        const url = new URL(href, baseUrl).toString();
+        const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 (compatible; GARE-Investigator/1.0)" }, signal: AbortSignal.timeout(10000) });
+        if (r.ok) for (const e of emailsIn((await r.text()).slice(0, 300_000))) set.add(e);
+      } catch { /* ignore */ }
+    }
+  }
+  return [...set].slice(0, 10);
+}
 
 export type Visibility = { score: number; breakdown: { label: string; points: number; max: number }[] };
 
@@ -54,7 +83,7 @@ export async function probeWebsite(url: string | null): Promise<WebsiteFindings>
     url, reachable: null, status: null, https: null, load_ms: null, title: null,
     meta_description: null, has_viewport_meta: null, has_contact_form: null,
     has_email_link: null, has_whatsapp_link: null, has_online_booking_or_shop: null,
-    copyright_year: null, html_kb: null, text_excerpt: null, error: null, socials: {},
+    copyright_year: null, html_kb: null, text_excerpt: null, error: null, socials: {}, emails: [],
   };
   if (!url) return empty;
   const started = Date.now();
@@ -92,6 +121,7 @@ export async function probeWebsite(url: string | null): Promise<WebsiteFindings>
       copyright_year: years.length ? Math.max(...years) : null,
       html_kb: Math.round(html.length / 1024),
       text_excerpt: text || null,
+      emails: await collectEmails(html, res.url),
       socials: Object.fromEntries(
         Object.entries(SOCIAL_PATTERNS)
           .map(([k, re]) => [k, html.match(re)?.[0]] as const)
@@ -163,9 +193,6 @@ export type InvestigationReport = {
 };
 
 export async function analyzeWithAI(business: Record<string, unknown>, site: WebsiteFindings, visibility?: Visibility): Promise<InvestigationReport> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) throw new Error("AI is not configured (missing key).");
-
   const instructions = `You are the investigation analyst for a private revenue engine run by one freelance developer.
 Their sellable capabilities: website development, website redesign, performance improvement, business automation, custom software, DukaLinka (a shop/order/payment management product for small businesses), digital products and services.
 Analyse ONLY the evidence provided. Never invent facts, contacts, reviews or numbers. Every problem must cite concrete evidence from the data. If evidence is weak, say so and lower confidence.
@@ -174,61 +201,7 @@ estimated_deal_value_usd: rough realistic figure for this market, or null if imp
 
   const input = `BUSINESS (from Google Places):\n${JSON.stringify(business, null, 2)}\n\nWEBSITE PROBE (socials = profile links found on their own website):\n${JSON.stringify(site, null, 2)}${visibility ? `\n\nVISIBILITY SCORE (0-100, computed from evidence): ${JSON.stringify(visibility)}` : ""}`;
 
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Lovable-API-Key": apiKey,
-      Authorization: `Bearer ${apiKey}`,
-      "X-Lovable-AIG-SDK": "fetch",
-    },
-    body: JSON.stringify({
-      model: "openai/gpt-6-astra",
-      instructions,
-      input,
-      stream: true,
-      store: false,
-      reasoning: { effort: "low" },
-      text: { format: { type: "json_schema", name: "investigation_report", strict: true, schema: reportSchema } },
-    }),
-  });
-
-  if (!res.ok || !res.body) {
-    const body = await res.text().catch(() => "");
-    if (res.status === 402) throw new Error("AI credits are exhausted. Add credits in workspace billing.");
-    if (res.status === 429) throw new Error("AI is rate limited right now. Try again in a minute.");
-    throw new Error(`AI request failed [${res.status}]: ${body.slice(0, 300)}`);
-  }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buf = "";
-  let text = "";
-  let failure: string | null = null;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    let idx;
-    while ((idx = buf.indexOf("\n")) >= 0) {
-      const line = buf.slice(0, idx).trim();
-      buf = buf.slice(idx + 1);
-      if (!line.startsWith("data:")) continue;
-      const payload = line.slice(5).trim();
-      if (!payload || payload === "[DONE]") continue;
-      try {
-        const evt = JSON.parse(payload);
-        if (evt.type === "response.output_text.delta") text += evt.delta ?? "";
-        else if (evt.type === "response.failed" || evt.type === "error") {
-          failure = evt.response?.error?.message ?? evt.message ?? "AI response failed";
-        } else if (evt.type === "response.refusal.delta") failure = "The AI declined to analyse this business.";
-      } catch {
-        /* ignore partial */
-      }
-    }
-  }
-  if (failure) throw new Error(failure);
-  if (!text) throw new Error("AI returned an empty answer.");
+  const text = await callResponsesJSON(instructions, input, "investigation_report", reportSchema);
   const parsed = JSON.parse(text) as InvestigationReport;
   parsed.score = Math.max(0, Math.min(100, Math.round(parsed.score)));
   return parsed;
