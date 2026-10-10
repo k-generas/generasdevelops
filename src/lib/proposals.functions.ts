@@ -110,9 +110,9 @@ Rules:
     if (error) throw new Error(error.message);
     await supabase.from("proposal_versions").insert({ owner_id: userId, proposal_id: prop.id, version: 1, body: out.body, note: "AI generated" });
     await supabase.from("business_activity_events").insert({ owner_id: userId, business_id: biz.id, event_type: "proposal_generated", summary: `Proposal drafted: ${data.mode} (${data.channel})`, ref_table: "proposals", ref_id: prop.id });
-    await supabase.from("tasks").upsert(
+    // Partial unique index blocks duplicate open tasks; a conflict error is expected and ignored.
+    await supabase.from("tasks").insert(
       { owner_id: userId, business_id: biz.id, proposal_id: prop.id, title: `Review & send: ${data.mode} to ${biz.name}`, source: "proposal", dedupe_key: `send-proposal-${prop.id}` },
-      { onConflict: "owner_id,dedupe_key", ignoreDuplicates: true },
     );
     return { proposalId: prop.id, staleDays: ageDays };
   });
