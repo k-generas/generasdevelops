@@ -3,6 +3,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { searchPlaces } from "./places.server";
 import { probeWebsite, analyzeWithAI, computeVisibility } from "./investigate.server";
+import { verifyWebsite } from "./website-finder.server";
+import { createProposal } from "./proposals.server";
 
 export const runDiscovery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -78,9 +80,16 @@ export const investigateBusiness = createServerFn({ method: "POST" })
     const { data: biz, error } = await supabase.from("businesses").select("*").eq("id", data.businessId).single();
     if (error || !biz) throw new Error("Business not found");
 
+    // Double-check the website before trusting "no website" from the listing.
+    const check = await verifyWebsite(biz);
+    if (check.website && check.website !== biz.website) {
+      biz.website = check.website;
+      await supabase.from("business_activity_events").insert({ owner_id: userId, business_id: biz.id, event_type: "website_found", summary: `Website found by double-check (${check.source}): ${check.website}` });
+    }
     const site = await probeWebsite(biz.website);
     const visibility = computeVisibility(biz, site);
-    const { owner_id, id, discovery_run_id, created_at, updated_at, status, score, last_opened_at, ...facts } = biz;
+    const { owner_id, id, discovery_run_id, created_at, updated_at, status, score, last_opened_at, website_check: _wc, ...facts } = biz;
+    (facts as any).website_check = { confidence: check.confidence, source: check.source, steps: check.steps };
     let report;
     try {
       report = await analyzeWithAI(facts, site, visibility);
@@ -116,6 +125,8 @@ export const investigateBusiness = createServerFn({ method: "POST" })
       .update({
         status: "investigated", score: report.score, visibility_score: visibility.score,
         emails: mergedEmails, socials: site.socials as any, last_investigated_at: now, updated_at: now,
+        website: check.website, website_source: check.source, website_checked_at: now,
+        website_check: { confidence: check.confidence, source: check.source, steps: check.steps } as any,
       })
       .eq("id", biz.id);
     await supabase.from("business_activity_events").insert({
@@ -123,5 +134,20 @@ export const investigateBusiness = createServerFn({ method: "POST" })
       summary: `Investigated · score ${report.score} · visibility ${visibility.score} · ${report.problems.length} problems · offer: ${report.recommended_offer}${site.emails.length ? ` · ${site.emails.length} email(s) found` : ""}`,
       ref_table: "investigations", ref_id: inv.id,
     });
-    return { score: report.score, investigationId: inv.id };
+    // Auto-draft a first-contact proposal for every investigated business that fits an offer.
+    let proposalId: string | null = null;
+    let proposalError: string | null = null;
+    if (!report.recommended_offer.startsWith("No offer")) {
+      try {
+        const r = await createProposal(supabase, userId, {
+          businessId: biz.id, mode: "First-contact message",
+          channel: mergedEmails.length ? "Email" : "WhatsApp", language: "English", tone: "Professional",
+          offer: report.recommended_offer, currency: "USD", auto: true,
+        });
+        proposalId = r.proposalId;
+      } catch (e) {
+        proposalError = e instanceof Error ? e.message : String(e);
+      }
+    }
+    return { score: report.score, investigationId: inv.id, proposalId, proposalError, websiteCheck: check.confidence };
   });
