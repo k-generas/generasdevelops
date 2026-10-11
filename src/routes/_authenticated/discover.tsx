@@ -62,17 +62,17 @@ function Discover() {
   }
 
   const list = (businesses.data ?? []).filter((b) =>
-    filter === "no_site" ? !b.website : filter === "investigated" ? b.status === "investigated" : true,
+    filter === "no_site" ? !b.website && !!b.website_checked_at : filter === "investigated" ? b.status === "investigated" : true,
   );
   const total = businesses.data?.length ?? 0;
-  const noSite = businesses.data?.filter((b) => !b.website).length ?? 0;
+  const noSite = businesses.data?.filter((b) => !b.website && b.website_checked_at).length ?? 0;
   const investigated = businesses.data?.filter((b) => b.status === "investigated").length ?? 0;
 
   return (
     <div className="space-y-8">
       <section className="grid gap-4 sm:grid-cols-4">
         <Stat label="Businesses" value={total} />
-        <Stat label="No website" value={noSite} />
+        <Stat label="No website (confirmed)" value={noSite} hint="Only counted after investigation double-checks" />
         <Stat label="Investigated" value={investigated} />
         <Stat label="Revenue (real payments)" value="$0" hint="No payment system connected yet" />
       </section>
@@ -120,7 +120,9 @@ function Discover() {
                   <p className="truncate font-medium">{b.name}</p>
                   <p className="truncate text-xs text-muted-foreground">{[b.category, b.address].filter(Boolean).join(" · ")}</p>
                 </div>
-                {!b.website && <Badge variant="outline" className="border-primary text-primary">no website</Badge>}
+                {!b.website && (b.website_checked_at
+                  ? <Badge variant="outline" className="border-primary text-primary">no website (double-checked)</Badge>
+                  : <Badge variant="outline" className="text-muted-foreground">not on Google · unchecked</Badge>)}
                 {b.rating != null && <span className="font-mono text-xs text-muted-foreground">★ {b.rating} ({b.review_count ?? 0})</span>}
                 <span className="w-12 text-right font-mono text-lg font-semibold text-accent">{b.score ?? "—"}</span>
               </Link>

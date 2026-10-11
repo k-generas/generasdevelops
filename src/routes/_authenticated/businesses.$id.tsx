@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { investigateBusiness } from "@/lib/discovery.functions";
+import { BusinessWorkspace } from "@/components/BusinessWorkspace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -60,7 +61,10 @@ function BusinessPage() {
     setBusy(true);
     setErr(null);
     try {
-      await investigate({ data: { businessId: id } });
+      const r = await investigate({ data: { businessId: id } });
+      if (r.proposalError) setErr(`Investigation saved, but the proposal draft failed: ${r.proposalError}`);
+      qc.invalidateQueries({ queryKey: ["biz-proposals", id] });
+      qc.invalidateQueries({ queryKey: ["biz-events", id] });
       qc.invalidateQueries({ queryKey: ["investigation", id] });
       qc.invalidateQueries({ queryKey: ["business", id] });
       qc.invalidateQueries({ queryKey: ["businesses"] });
@@ -88,7 +92,18 @@ function BusinessPage() {
           <p className="mt-1 text-sm text-muted-foreground">{[b.category, b.address].filter(Boolean).join(" · ")}</p>
           <div className="mt-3 flex flex-wrap gap-3 text-sm">
             {b.phone && <span className="font-mono">{b.phone}</span>}
-            {b.website ? <a href={b.website} target="_blank" rel="noreferrer" className="text-primary underline">{b.website}</a> : <Badge variant="outline" className="border-primary text-primary">no website listed</Badge>}
+            {b.website ? (
+              <span className="flex items-center gap-2">
+                <a href={b.website} target="_blank" rel="noreferrer" className="text-primary underline">{b.website}</a>
+                {b.website_source === "domain_match" && <Badge variant="outline">found by double-check · please confirm</Badge>}
+                {b.website_source === "place_details" && <Badge variant="outline">found by double-check</Badge>}
+              </span>
+            ) : b.website_checked_at ? (
+              <Badge variant="outline" className="border-primary text-primary">no website found (double-checked {new Date(b.website_checked_at).toLocaleDateString()})</Badge>
+            ) : (
+              <Badge variant="outline" className="text-muted-foreground">not listed on Google · run investigation to double-check</Badge>
+            )}
+            {(b.emails ?? []).map((e) => <a key={e} href={`mailto:${e}`} className="font-mono text-primary underline">{e}</a>)}
             {b.maps_url && <a href={b.maps_url} target="_blank" rel="noreferrer" className="text-muted-foreground underline">Google Maps</a>}
             {b.rating != null && <span className="font-mono text-muted-foreground">★ {b.rating} · {b.review_count} reviews</span>}
           </div>
@@ -182,6 +197,7 @@ function BusinessPage() {
           </aside>
         </div>
       )}
+      <BusinessWorkspace businessId={id} />
     </div>
   );
 }
