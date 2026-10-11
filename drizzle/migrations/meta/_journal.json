@@ -15,6 +15,13 @@
       "when": 1791650403380,
       "tag": "0001_memory_proposals_tasks",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791678019134,
+      "tag": "0002_website_verification",
+      "breakpoints": true
     }
   ]
 }

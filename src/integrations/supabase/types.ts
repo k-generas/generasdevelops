@@ -117,6 +117,9 @@ export type Database = {
           updated_at: string
           visibility_score: number | null
           website: string | null
+          website_check: Json
+          website_checked_at: string | null
+          website_source: string | null
         }
         Insert: {
           address?: string | null
@@ -144,6 +147,9 @@ export type Database = {
           updated_at?: string
           visibility_score?: number | null
           website?: string | null
+          website_check?: Json
+          website_checked_at?: string | null
+          website_source?: string | null
         }
         Update: {
           address?: string | null
@@ -171,6 +177,9 @@ export type Database = {
           updated_at?: string
           visibility_score?: number | null
           website?: string | null
+          website_check?: Json
+          website_checked_at?: string | null
+          website_source?: string | null
         }
         Relationships: []
       }
