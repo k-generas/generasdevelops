@@ -49,6 +49,12 @@ async function placeDetailsWebsite(placeId: string): Promise<string | null> {
 }
 
 async function pageMentions(url: string, tokens: string[]): Promise<boolean> {
+  if (await mentionsAt(url, tokens)) return true;
+  // Many small-business sites only answer on http://www.
+  return mentionsAt(url.replace("https://", "http://www."), tokens);
+}
+
+async function mentionsAt(url: string, tokens: string[]): Promise<boolean> {
   try {
     const r = await fetch(url, { redirect: "follow", headers: { "User-Agent": "Mozilla/5.0 (compatible; GARE-Investigator/1.0)" }, signal: AbortSignal.timeout(7000) });
     if (!r.ok) return false;
@@ -77,6 +83,7 @@ export async function verifyWebsite(b: { place_id: string; name: string; address
     const candidates = slugs.flatMap((s) => countryTlds(b.address).map((tld) => `https://${s}${tld}`)).slice(0, 20);
     const results = await Promise.all(candidates.map(async (u) => [u, await pageMentions(u, tokens)] as const));
     const hit = results.find(([, ok]) => ok)?.[0] ?? null;
+    // (hit is the https form; the probe follows whichever variant answers)
     steps.push({ step: `Checked ${candidates.length} likely domains`, result: hit ?? "none matched the business name" });
     if (hit) return { website: hit, source: "domain_match", confidence: "likely", steps };
   }
