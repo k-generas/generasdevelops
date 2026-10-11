@@ -73,8 +73,8 @@ export async function verifyWebsite(b: { place_id: string; name: string; address
 
   const tokens = nameTokens(b.name);
   if (tokens.length) {
-    const slugs = Array.from(new Set([tokens.join(""), tokens.join("-"), tokens.slice(0, 2).join("")])).filter((s) => s.length >= 4).slice(0, 3);
-    const candidates = slugs.flatMap((s) => countryTlds(b.address).map((tld) => `https://${s}${tld}`)).slice(0, 12);
+    const slugs = Array.from(new Set([tokens[0]!, tokens.join(""), tokens.slice(0, 2).join(""), tokens.join("-")])).filter((s) => s.length >= 4).slice(0, 4);
+    const candidates = slugs.flatMap((s) => countryTlds(b.address).map((tld) => `https://${s}${tld}`)).slice(0, 20);
     const results = await Promise.all(candidates.map(async (u) => [u, await pageMentions(u, tokens)] as const));
     const hit = results.find(([, ok]) => ok)?.[0] ?? null;
     steps.push({ step: `Checked ${candidates.length} likely domains`, result: hit ?? "none matched the business name" });
