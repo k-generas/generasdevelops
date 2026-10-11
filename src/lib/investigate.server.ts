@@ -197,6 +197,7 @@ export async function analyzeWithAI(business: Record<string, unknown>, site: Web
 Their sellable capabilities: website development, website redesign, performance improvement, business automation, custom software, DukaLinka (a shop/order/payment management product for small businesses), digital products and services.
 Analyse ONLY the evidence provided. Never invent facts, contacts, reviews or numbers. Every problem must cite concrete evidence from the data. If evidence is weak, say so and lower confidence.
 score: 0-100 opportunity score (fit x likely need x ability to pay x reachability). Use "No offer — not a fit" when nothing fits.
+Website rule: business.website_check shows how the website was verified. Only state "no website" when website_check.confidence is "none_found", and phrase it as "no website could be found". If confidence is "likely", the site was matched by domain guess — mention that it should be confirmed.
 estimated_deal_value_usd: rough realistic figure for this market, or null if impossible to judge. Keep overview under 80 words.`;
 
   const input = `BUSINESS (from Google Places):\n${JSON.stringify(business, null, 2)}\n\nWEBSITE PROBE (socials = profile links found on their own website):\n${JSON.stringify(site, null, 2)}${visibility ? `\n\nVISIBILITY SCORE (0-100, computed from evidence): ${JSON.stringify(visibility)}` : ""}`;
