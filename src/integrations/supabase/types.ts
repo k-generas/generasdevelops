@@ -371,6 +371,82 @@ export type Database = {
           },
         ]
       }
+      orders: {
+        Row: {
+          amount: number
+          business_id: string | null
+          checklist: Json
+          created_at: string
+          currency: string
+          due_at: string | null
+          fulfilled_at: string | null
+          id: string
+          invoice_id: string | null
+          notes: string | null
+          number: string
+          owner_id: string
+          proposal_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          business_id?: string | null
+          checklist?: Json
+          created_at?: string
+          currency?: string
+          due_at?: string | null
+          fulfilled_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          number: string
+          owner_id?: string
+          proposal_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          business_id?: string | null
+          checklist?: Json
+          created_at?: string
+          currency?: string
+          due_at?: string | null
+          fulfilled_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          number?: string
+          owner_id?: string
+          proposal_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offers: {
         Row: {
           active: boolean

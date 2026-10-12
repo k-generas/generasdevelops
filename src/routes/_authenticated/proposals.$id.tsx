@@ -232,6 +232,9 @@ function Editor() {
         <Button size="sm" variant="outline" onClick={createInvoice} disabled={invBusy}>
           {invBusy ? "Creating…" : "Create invoice"}
         </Button>
+        <Button size="sm" variant="outline" onClick={() => navigate({ to: "/orders" })}>
+          Create order
+        </Button>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">

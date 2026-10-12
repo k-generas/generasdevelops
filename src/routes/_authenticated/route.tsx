@@ -8,6 +8,7 @@ import {
   ListChecks,
   LogOut,
   Receipt,
+  ClipboardList,
   Settings as SettingsIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -69,6 +70,7 @@ const NAV: NavItem[] = [
   { to: "/discover", label: "Discover", icon: Compass },
   { to: "/proposals", label: "Proposals", icon: FileText },
   { to: "/invoices", label: "Invoices", icon: Receipt },
+  { to: "/orders", label: "Orders", icon: ClipboardList },
   { to: "/tasks", label: "Tasks", icon: ListChecks },
   { to: "/history", label: "History", icon: History },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
