@@ -5,7 +5,6 @@ import type { Json } from "@/integrations/supabase/types";
 import { searchPlaces } from "./places.server";
 import { probeWebsite, analyzeWithAI, computeVisibility } from "./investigate.server";
 import { verifyWebsite } from "./website-finder.server";
-import { createProposal } from "./proposals.server";
 
 // Columns added in migration 0003 — stripped on retry if the DB predates them.
 const ACTIVITY_COLUMNS = [
@@ -244,42 +243,21 @@ export const investigateBusiness = createServerFn({ method: "POST" })
       ref_table: "investigations",
       ref_id: inv.id,
     });
-    // Auto-draft a first-contact proposal for every investigated business that fits an offer.
-    // Never auto-draft for a permanently closed business.
-    const permanentlyClosed = biz.business_status === "CLOSED_PERMANENTLY";
-    if (permanentlyClosed) {
+    // Outreach drafting (the multi-channel pack) is generated on demand from the
+    // business page so the report returns fast; report the eligibility flags here.
+    if (biz.business_status === "CLOSED_PERMANENTLY") {
       await supabase.from("business_activity_events").insert({
         owner_id: userId,
         business_id: biz.id,
         event_type: "closed",
-        summary: "Flagged as permanently closed on Google — no outreach proposal drafted.",
+        summary: "Flagged as permanently closed on Google — outreach drafting skipped.",
       });
-    }
-    let proposalId: string | null = null;
-    let proposalError: string | null = null;
-    if (!permanentlyClosed && !report.recommended_offer.startsWith("No offer")) {
-      try {
-        const r = await createProposal(supabase, userId, {
-          businessId: biz.id,
-          mode: "First-contact message",
-          channel: mergedEmails.length ? "Email" : "WhatsApp",
-          language: "English",
-          tone: "Professional",
-          offer: report.recommended_offer,
-          currency: "USD",
-          auto: true,
-          provider: data.provider,
-        });
-        proposalId = r.proposalId;
-      } catch (e) {
-        proposalError = e instanceof Error ? e.message : String(e);
-      }
     }
     return {
       score: report.score,
       investigationId: inv.id,
-      proposalId,
-      proposalError,
+      recommendedOffer: report.recommended_offer,
+      permanentlyClosed: biz.business_status === "CLOSED_PERMANENTLY",
       websiteCheck: check.confidence,
     };
   });

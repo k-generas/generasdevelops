@@ -1,7 +1,9 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
+  Building2,
   Compass,
+  Factory,
   FileText,
   History,
   LayoutDashboard,
@@ -71,6 +73,8 @@ const NAV: NavItem[] = [
   { to: "/proposals", label: "Proposals", icon: FileText },
   { to: "/invoices", label: "Invoices", icon: Receipt },
   { to: "/orders", label: "Orders", icon: ClipboardList },
+  { to: "/businesses", label: "Businesses", icon: Building2 },
+  { to: "/rwanda", label: "Rwanda Intel", icon: Factory },
   { to: "/tasks", label: "Tasks", icon: ListChecks },
   { to: "/history", label: "History", icon: History },
   { to: "/settings", label: "Settings", icon: SettingsIcon },

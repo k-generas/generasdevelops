@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { createProposal } from "./proposals.server";
+import { createProposal, createOutreachPack } from "./proposals.server";
 
 export const PROPOSAL_MODES = [
   "First-contact message",
@@ -38,3 +38,21 @@ export const generateProposal = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => createProposal(context.supabase, context.userId, data));
+
+// Writes a ready-to-copy outreach pack (3 versions each for Email, WhatsApp, SMS)
+// and saves each version as a proposal in the normal review/send workflow.
+export const generateOutreachPack = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        businessId: z.string().uuid(),
+        offer: z.string().max(80).optional(),
+        language: z.string().max(40).default("English"),
+        tone: z.string().max(40).default("Professional"),
+        currency: z.string().max(8).default("USD"),
+        provider: z.enum(["auto", "openai", "gemini", "lovable"]).default("auto"),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => createOutreachPack(context.supabase, context.userId, data));

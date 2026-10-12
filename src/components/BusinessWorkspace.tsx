@@ -204,7 +204,7 @@ export function BusinessWorkspace({ businessId }: { businessId: string }) {
           ))}
           {proposals.data?.length === 0 && (
             <p className="p-3 text-sm text-muted-foreground">
-              No proposals yet. One is drafted automatically after each investigation.
+              No proposals yet. An outreach pack is written automatically after each investigation.
             </p>
           )}
         </div>

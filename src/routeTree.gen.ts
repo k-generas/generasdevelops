@@ -12,12 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedBusinessesRouteImport } from './routes/_authenticated/businesses'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDiscoverRouteImport } from './routes/_authenticated/discover'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticated/invoices'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedProposalsRouteImport } from './routes/_authenticated/proposals'
+import { Route as AuthenticatedRwandaRouteImport } from './routes/_authenticated/rwanda'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedBusinessesIdRouteImport } from './routes/_authenticated/businesses.$id'
@@ -37,6 +39,11 @@ const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedBusinessesRoute = AuthenticatedBusinessesRouteImport.update({
+  id: '/businesses',
+  path: '/businesses',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
@@ -68,6 +75,11 @@ const AuthenticatedProposalsRoute = AuthenticatedProposalsRouteImport.update({
   path: '/proposals',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRwandaRoute = AuthenticatedRwandaRouteImport.update({
+  id: '/rwanda',
+  path: '/rwanda',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -80,9 +92,9 @@ const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
 } as any)
 const AuthenticatedBusinessesIdRoute =
   AuthenticatedBusinessesIdRouteImport.update({
-    id: '/businesses/$id',
-    path: '/businesses/$id',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedBusinessesRoute,
   } as any)
 const AuthenticatedHistoryIdRoute = AuthenticatedHistoryIdRouteImport.update({
   id: '/$id',
@@ -99,12 +111,14 @@ const AuthenticatedProposalsIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/businesses': typeof AuthenticatedBusinessesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/discover': typeof AuthenticatedDiscoverRoute
   '/history': typeof AuthenticatedHistoryRouteWithChildren
   '/invoices': typeof AuthenticatedInvoicesRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/proposals': typeof AuthenticatedProposalsRouteWithChildren
+  '/rwanda': typeof AuthenticatedRwandaRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/businesses/$id': typeof AuthenticatedBusinessesIdRoute
@@ -114,12 +128,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/businesses': typeof AuthenticatedBusinessesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/discover': typeof AuthenticatedDiscoverRoute
   '/history': typeof AuthenticatedHistoryRouteWithChildren
   '/invoices': typeof AuthenticatedInvoicesRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/proposals': typeof AuthenticatedProposalsRouteWithChildren
+  '/rwanda': typeof AuthenticatedRwandaRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/businesses/$id': typeof AuthenticatedBusinessesIdRoute
@@ -131,12 +147,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/businesses': typeof AuthenticatedBusinessesRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/discover': typeof AuthenticatedDiscoverRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRouteWithChildren
   '/_authenticated/invoices': typeof AuthenticatedInvoicesRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
   '/_authenticated/proposals': typeof AuthenticatedProposalsRouteWithChildren
+  '/_authenticated/rwanda': typeof AuthenticatedRwandaRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/businesses/$id': typeof AuthenticatedBusinessesIdRoute
@@ -148,12 +166,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/businesses'
     | '/dashboard'
     | '/discover'
     | '/history'
     | '/invoices'
     | '/orders'
     | '/proposals'
+    | '/rwanda'
     | '/settings'
     | '/tasks'
     | '/businesses/$id'
@@ -163,12 +183,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/businesses'
     | '/dashboard'
     | '/discover'
     | '/history'
     | '/invoices'
     | '/orders'
     | '/proposals'
+    | '/rwanda'
     | '/settings'
     | '/tasks'
     | '/businesses/$id'
@@ -179,12 +201,14 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/businesses'
     | '/_authenticated/dashboard'
     | '/_authenticated/discover'
     | '/_authenticated/history'
     | '/_authenticated/invoices'
     | '/_authenticated/orders'
     | '/_authenticated/proposals'
+    | '/_authenticated/rwanda'
     | '/_authenticated/settings'
     | '/_authenticated/tasks'
     | '/_authenticated/businesses/$id'
@@ -220,6 +244,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/businesses': {
+      id: '/_authenticated/businesses'
+      path: '/businesses'
+      fullPath: '/businesses'
+      preLoaderRoute: typeof AuthenticatedBusinessesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
@@ -263,6 +294,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProposalsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/rwanda': {
+      id: '/_authenticated/rwanda'
+      path: '/rwanda'
+      fullPath: '/rwanda'
+      preLoaderRoute: typeof AuthenticatedRwandaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -279,10 +317,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/businesses/$id': {
       id: '/_authenticated/businesses/$id'
-      path: '/businesses/$id'
+      path: '/$id'
       fullPath: '/businesses/$id'
       preLoaderRoute: typeof AuthenticatedBusinessesIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedBusinessesRoute
     }
     '/_authenticated/history/$id': {
       id: '/_authenticated/history/$id'
@@ -300,6 +338,20 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthenticatedBusinessesRouteChildren {
+  AuthenticatedBusinessesIdRoute: typeof AuthenticatedBusinessesIdRoute
+}
+
+const AuthenticatedBusinessesRouteChildren: AuthenticatedBusinessesRouteChildren =
+  {
+    AuthenticatedBusinessesIdRoute: AuthenticatedBusinessesIdRoute,
+  }
+
+const AuthenticatedBusinessesRouteWithChildren =
+  AuthenticatedBusinessesRoute._addFileChildren(
+    AuthenticatedBusinessesRouteChildren,
+  )
 
 interface AuthenticatedHistoryRouteChildren {
   AuthenticatedHistoryIdRoute: typeof AuthenticatedHistoryIdRoute
@@ -327,27 +379,29 @@ const AuthenticatedProposalsRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBusinessesRoute: typeof AuthenticatedBusinessesRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDiscoverRoute: typeof AuthenticatedDiscoverRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRouteWithChildren
   AuthenticatedInvoicesRoute: typeof AuthenticatedInvoicesRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
   AuthenticatedProposalsRoute: typeof AuthenticatedProposalsRouteWithChildren
+  AuthenticatedRwandaRoute: typeof AuthenticatedRwandaRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
-  AuthenticatedBusinessesIdRoute: typeof AuthenticatedBusinessesIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBusinessesRoute: AuthenticatedBusinessesRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDiscoverRoute: AuthenticatedDiscoverRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRouteWithChildren,
   AuthenticatedInvoicesRoute: AuthenticatedInvoicesRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
   AuthenticatedProposalsRoute: AuthenticatedProposalsRouteWithChildren,
+  AuthenticatedRwandaRoute: AuthenticatedRwandaRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
-  AuthenticatedBusinessesIdRoute: AuthenticatedBusinessesIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

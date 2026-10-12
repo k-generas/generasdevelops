@@ -1,79 +1,173 @@
-// Rwanda administrative geography (4 provinces + City of Kigali, 30 districts).
-export const RWANDA: Record<string, string[]> = {
-  "City of Kigali": ["Gasabo", "Kicukiro", "Nyarugenge"],
-  "Northern Province": ["Burera", "Gakenke", "Gicumbi", "Musanze", "Rulindo"],
-  "Southern Province": [
-    "Gisagara", "Huye", "Kamonyi", "Muhanga", "Nyamagabe", "Nyanza", "Nyaruguru", "Ruhango",
-  ],
-  "Eastern Province": [
-    "Bugesera", "Gatsibo", "Kayonza", "Kirehe", "Ngoma", "Nyagatare", "Rwamagana",
-  ],
-  "Western Province": [
-    "Karongi", "Ngororero", "Nyabihu", "Nyamasheke", "Rubavu", "Rusizi", "Rutsiro",
-  ],
-};
-export const PROVINCES = Object.keys(RWANDA);
+// Rwanda administrative + industry taxonomy and location helpers.
+//
+// This is reference data only. It never invents a company fact: it just maps an
+// observed address/industry string onto the official Rwandan structure so the UI
+// and ranking can filter and group real records. Sources: Rwanda's 5 provinces
+// and 30 districts (NISR administrative structure).
+export const PROVINCES = ["Kigali City", "Northern", "Southern", "Eastern", "Western"] as const;
+export type Province = (typeof PROVINCES)[number];
 
-// Common alternative names that appear in addresses.
-const ALIASES: Record<string, string> = {
-  gisenyi: "Rubavu", ruhengeri: "Musanze", butare: "Huye", cyangugu: "Rusizi",
-  kibuye: "Karongi", gitarama: "Muhanga", byumba: "Gicumbi", kibungo: "Ngoma",
-  remera: "Gasabo", kimironko: "Gasabo", kacyiru: "Gasabo", kimihurura: "Gasabo",
-  kicukiro: "Kicukiro", kanombe: "Kicukiro", gikondo: "Kicukiro", nyamirambo: "Nyarugenge",
-  muhima: "Nyarugenge", nyabugogo: "Nyarugenge",
+export const PROVINCE_ALIASES: Record<string, Province> = {
+  kigali: "Kigali City",
+  "kigali city": "Kigali City",
+  "umujyi wa kigali": "Kigali City",
+  "city of kigali": "Kigali City",
+  northern: "Northern",
+  north: "Northern",
+  amajyaruguru: "Northern",
+  southern: "Southern",
+  south: "Southern",
+  amajyepfo: "Southern",
+  eastern: "Eastern",
+  east: "Eastern",
+  iburasirazuba: "Eastern",
+  western: "Western",
+  west: "Western",
+  iburengerazuba: "Western",
 };
 
-export function provinceOf(district: string): string | null {
-  for (const [p, ds] of Object.entries(RWANDA)) if (ds.includes(district)) return p;
+export const DISTRICTS: Record<Province, string[]> = {
+  "Kigali City": ["Gasabo", "Kicukiro", "Nyarugenge"],
+  Northern: ["Burera", "Gakenke", "Gicumbi", "Musanze", "Rulindo"],
+  Southern: [
+    "Gisagara",
+    "Huye",
+    "Kamonyi",
+    "Muhanga",
+    "Nyamagabe",
+    "Nyanza",
+    "Nyaruguru",
+    "Ruhango",
+  ],
+  Eastern: ["Bugesera", "Gatsibo", "Kayonza", "Kirehe", "Ngoma", "Nyagatare", "Rwamagana"],
+  Western: ["Karongi", "Ngororero", "Nyabihu", "Nyamasheke", "Rubavu", "Rusizi", "Rutsiro"],
+};
+
+export const ALL_DISTRICTS: string[] = PROVINCES.flatMap((p) => DISTRICTS[p]);
+
+// Business categories from the spec. `key` is the stable id; `label` is shown.
+export const INDUSTRIES = [
+  { key: "manufacturing", label: "Factories & manufacturing" },
+  { key: "wholesale_retail", label: "Wholesale, distribution & retail" },
+  { key: "agriculture", label: "Agriculture, food processing & agribusiness" },
+  { key: "construction", label: "Construction, engineering & property" },
+  { key: "transport", label: "Transport, logistics & mobility" },
+  { key: "hospitality", label: "Hotels, restaurants & tourism" },
+  { key: "health", label: "Clinics, hospitals & healthcare" },
+  { key: "education", label: "Schools, universities & training" },
+  { key: "finance", label: "Financial services & insurance" },
+  { key: "technology", label: "Technology & digital agencies" },
+  { key: "professional", label: "Professional services & consultancy" },
+  { key: "trade", label: "Importers, exporters & trading" },
+  { key: "energy_mining", label: "Energy, mining & industrial" },
+  { key: "other", label: "Other commercial sectors" },
+] as const;
+export type IndustryKey = (typeof INDUSTRIES)[number]["key"];
+
+// Keyword -> industry. First match wins; order matters (most specific first).
+const INDUSTRY_KEYWORDS: [IndustryKey, string[]][] = [
+  ["technology", ["software", "ict", "digital", "app", "web", "data", "tech", "computer", "it "]],
+  ["health", ["clinic", "hospital", "health", "medical", "pharmac", "dental", "diagnos"]],
+  ["education", ["school", "university", "college", "training", "education", "academy", "tvet"]],
+  ["finance", ["bank", "insurance", "microfinance", "finance", "sacco", "credit", "invest"]],
+  [
+    "hospitality",
+    ["hotel", "restaurant", "lodge", "bar", "café", "cafe", "tour", "resort", "guest"],
+  ],
+  [
+    "transport",
+    ["transport", "logistic", "freight", "courier", "taxi", "bus", "shipping", "mobility"],
+  ],
+  ["construction", ["construction", "build", "engineer", "real estate", "property", "architect"]],
+  ["agriculture", ["farm", "agri", "food", "coffee", "tea", "milk", "dairy", "process", "mill"]],
+  ["energy_mining", ["energy", "mining", "mine", "solar", "power", "petroleum", "gas", "quarry"]],
+  ["manufacturing", ["manufactur", "factory", "industrial", "production", "assembly", "plant"]],
+  [
+    "wholesale_retail",
+    ["wholesale", "retail", "shop", "store", "supermarket", "market", "distribut"],
+  ],
+  ["trade", ["import", "export", "trading", "traders"]],
+  [
+    "professional",
+    ["consult", "law", "legal", "account", "audit", "advertis", "marketing", "agency"],
+  ],
+];
+
+export function classifyIndustry(text: string | null | undefined): IndustryKey | null {
+  if (!text) return null;
+  const t = text.toLowerCase();
+  for (const [key, words] of INDUSTRY_KEYWORDS) {
+    if (words.some((w) => t.includes(w))) return key;
+  }
   return null;
 }
 
-/**
- * Infer district/province from a free-text address. This is an inference, not a verified
- * location: callers must store it with location_source = "address_text".
- */
-export function inferLocation(address: string | null | undefined): {
-  province: string | null;
-  district: string | null;
-} {
-  if (!address) return { province: null, district: null };
-  const a = address.toLowerCase();
-  const tokens = a.split(/[^a-z]+/).filter(Boolean);
-  for (const ds of Object.values(RWANDA))
-    for (const d of ds) if (tokens.includes(d.toLowerCase())) return { province: provinceOf(d), district: d };
-  for (const t of tokens) if (ALIASES[t]) return { province: provinceOf(ALIASES[t]), district: ALIASES[t] };
-  if (tokens.includes("kigali")) return { province: "City of Kigali", district: null };
-  return { province: null, district: null };
+export function industryLabel(key: string): string {
+  return INDUSTRIES.find((i) => i.key === key)?.label ?? "Other commercial sectors";
 }
 
-export const INDUSTRIES = [
-  "Manufacturing", "Wholesale & retail", "Agriculture & food", "Construction & property",
-  "Transport & logistics", "Hospitality & tourism", "Healthcare", "Education",
-  "Finance & insurance", "Technology", "Professional services", "Trade & import/export",
-  "Energy & mining", "Beauty & personal care", "Other",
-] as const;
-export type Industry = (typeof INDUSTRIES)[number];
+// Normalise a district string to its canonical spelling, or null.
+export function normalizeDistrict(input: string | null | undefined): string | null {
+  if (!input) return null;
+  const t = input.trim().toLowerCase();
+  return ALL_DISTRICTS.find((d) => d.toLowerCase() === t) ?? null;
+}
 
-const RULES: [RegExp, Industry][] = [
-  [/factory|manufactur|industr|mill|brewer|plant/, "Manufacturing"],
-  [/hospital|clinic|pharma|dental|medical|health|doctor|laborator/, "Healthcare"],
-  [/school|universit|college|academy|training|kindergarten/, "Education"],
-  [/hotel|lodg|restaurant|cafe|coffee|bar|resort|tour|travel|food_?court|bakery/, "Hospitality & tourism"],
-  [/bank|insur|microfinance|sacco|finance|forex|accounting/, "Finance & insurance"],
-  [/construct|hardware|real_?estate|architect|engineer|property|contractor/, "Construction & property"],
-  [/transport|logistic|courier|moving|car_?rental|taxi|bus|truck/, "Transport & logistics"],
-  [/software|computer|it_|internet|tech|electronics_?repair|digital/, "Technology"],
-  [/lawyer|consult|agency|marketing|notary|accountant/, "Professional services"],
-  [/import|export|trading/, "Trade & import/export"],
-  [/energy|solar|mining|gas_?station|fuel|petrol/, "Energy & mining"],
-  [/farm|agri|coop|dairy|veterin/, "Agriculture & food"],
-  [/salon|beauty|spa|barber|cosmetic/, "Beauty & personal care"],
-  [/store|shop|supermarket|market|wholesal|retail|boutique|mall/, "Wholesale & retail"],
-];
+export function normalizeProvince(input: string | null | undefined): Province | null {
+  if (!input) return null;
+  const t = input.trim().toLowerCase();
+  const exact = PROVINCES.find((p) => p.toLowerCase() === t);
+  if (exact) return exact;
+  return PROVINCE_ALIASES[t] ?? null;
+}
 
-/** Map a Google category / free text to a broad industry. Returns "Other" when unclear. */
-export function classifyIndustry(category: string | null | undefined, name = ""): Industry {
-  const s = `${category ?? ""} ${name}`.toLowerCase().replace(/\s+/g, "_");
-  for (const [re, ind] of RULES) if (re.test(s)) return ind;
-  return "Other";
+// Province a district belongs to (by canonical district name).
+export function provinceOfDistrict(district: string | null | undefined): Province | null {
+  const d = normalizeDistrict(district);
+  if (!d) return null;
+  return PROVINCES.find((p) => DISTRICTS[p].includes(d)) ?? null;
+}
+
+export type LocationHint = { province: Province | null; district: string | null };
+
+// Best-effort parse of a free-text address/location string. Never guesses a
+// district it cannot find; returns nulls instead so callers can mark unknown.
+export function parseLocation(input: string | null | undefined): LocationHint {
+  if (!input) return { province: null, district: null };
+  const words = input.split(/[,\s]+/);
+  let district: string | null = null;
+  for (const w of words) {
+    const d = normalizeDistrict(w);
+    if (d) {
+      district = d;
+      break;
+    }
+  }
+  const province =
+    (district ? provinceOfDistrict(district) : null) ?? normalizeProvince(input) ?? null;
+  return { province, district };
+}
+
+export type BusinessLocationFilter = {
+  province?: Province | null;
+  district?: string | null;
+  industry?: IndustryKey | null;
+};
+
+export function matchesLocation(
+  b: { province?: string | null; district?: string | null; address?: string | null },
+  f: BusinessLocationFilter,
+): boolean {
+  if (f.industry) {
+    // industry handled elsewhere (needs category); here we only filter geography
+  }
+  if (f.district) {
+    const d = b.district ?? parseLocation(b.address).district;
+    if (normalizeDistrict(d) !== normalizeDistrict(f.district)) return false;
+  }
+  if (f.province) {
+    const p = b.province ?? parseLocation(b.address).province;
+    if (normalizeProvince(p) !== f.province) return false;
+  }
+  return true;
 }

@@ -94,9 +94,42 @@ export type Database = {
         Row: {
           activity_checked_at: string | null
           address: string | null
+          business_model: string | null
           business_status: string | null
           category: string | null
+          cell: string | null
+          contact_page: string | null
+          contact_suppressed: boolean
           created_at: string
+          description: string | null
+          district: string | null
+          employee_count_status: string
+          employees_max: number | null
+          employees_min: number | null
+          exports: boolean | null
+          founded_date: string | null
+          founded_status: string
+          industry: string | null
+          industry_secondary: string | null
+          intel_updated_at: string | null
+          legal_name: string | null
+          legal_structure: string | null
+          location_verified: boolean
+          markets_served: string | null
+          parent_organization: string | null
+          preferred_channel: string | null
+          products_services: string | null
+          profile_confidence: string
+          profile_verified_at: string | null
+          province: string | null
+          registration_date: string | null
+          registration_id: string | null
+          registration_status: string | null
+          sector: string | null
+          supply_chain_role: string | null
+          suppression_reason: string | null
+          target_customers: string | null
+          trading_names: string[]
           discovery_run_id: string | null
           emails: string[]
           id: string
@@ -130,6 +163,39 @@ export type Database = {
         }
         Insert: {
           activity_checked_at?: string | null
+          business_model?: string | null
+          cell?: string | null
+          contact_page?: string | null
+          contact_suppressed?: boolean
+          description?: string | null
+          district?: string | null
+          employee_count_status?: string
+          employees_max?: number | null
+          employees_min?: number | null
+          exports?: boolean | null
+          founded_date?: string | null
+          founded_status?: string
+          industry?: string | null
+          industry_secondary?: string | null
+          intel_updated_at?: string | null
+          legal_name?: string | null
+          legal_structure?: string | null
+          location_verified?: boolean
+          markets_served?: string | null
+          parent_organization?: string | null
+          preferred_channel?: string | null
+          products_services?: string | null
+          profile_confidence?: string
+          profile_verified_at?: string | null
+          province?: string | null
+          registration_date?: string | null
+          registration_id?: string | null
+          registration_status?: string | null
+          sector?: string | null
+          supply_chain_role?: string | null
+          suppression_reason?: string | null
+          target_customers?: string | null
+          trading_names?: string[]
           address?: string | null
           business_status?: string | null
           category?: string | null
@@ -158,7 +224,7 @@ export type Database = {
           source?: string
           status?: string
           updated_at?: string
-          validation_plan?: Json | null
+          validation_plan?: Json
           visibility_score?: number | null
           website?: string | null
           website_check?: Json
@@ -167,6 +233,39 @@ export type Database = {
         }
         Update: {
           activity_checked_at?: string | null
+          business_model?: string | null
+          cell?: string | null
+          contact_page?: string | null
+          contact_suppressed?: boolean
+          description?: string | null
+          district?: string | null
+          employee_count_status?: string
+          employees_max?: number | null
+          employees_min?: number | null
+          exports?: boolean | null
+          founded_date?: string | null
+          founded_status?: string
+          industry?: string | null
+          industry_secondary?: string | null
+          intel_updated_at?: string | null
+          legal_name?: string | null
+          legal_structure?: string | null
+          location_verified?: boolean
+          markets_served?: string | null
+          parent_organization?: string | null
+          preferred_channel?: string | null
+          products_services?: string | null
+          profile_confidence?: string
+          profile_verified_at?: string | null
+          province?: string | null
+          registration_date?: string | null
+          registration_id?: string | null
+          registration_status?: string | null
+          sector?: string | null
+          supply_chain_role?: string | null
+          suppression_reason?: string | null
+          target_customers?: string | null
+          trading_names?: string[]
           address?: string | null
           business_status?: string | null
           category?: string | null
@@ -195,12 +294,237 @@ export type Database = {
           source?: string
           status?: string
           updated_at?: string
-          validation_plan?: Json | null
+          validation_plan?: Json
           visibility_score?: number | null
           website?: string | null
           website_check?: Json
           website_checked_at?: string | null
           website_source?: string | null
+        }
+        Relationships: []
+      }
+      business_facts: {
+        Row: {
+          business_id: string
+          confidence: number
+          created_at: string
+          excerpt: string | null
+          field: string
+          id: string
+          method: string
+          observed_at: string
+          owner_id: string
+          source_id: string | null
+          source_name: string
+          source_type: string
+          status: string
+          url: string | null
+          value: Json | null
+        }
+        Insert: {
+          business_id: string
+          confidence?: number
+          created_at?: string
+          excerpt?: string | null
+          field: string
+          id?: string
+          method?: string
+          observed_at?: string
+          owner_id?: string
+          source_id?: string | null
+          source_name: string
+          source_type?: string
+          status?: string
+          url?: string | null
+          value?: Json | null
+        }
+        Update: {
+          business_id?: string
+          confidence?: number
+          created_at?: string
+          excerpt?: string | null
+          field?: string
+          id?: string
+          method?: string
+          observed_at?: string
+          owner_id?: string
+          source_id?: string | null
+          source_name?: string
+          source_type?: string
+          status?: string
+          url?: string | null
+          value?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_facts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_sources: {
+        Row: {
+          business_id: string
+          confidence: number
+          created_at: string
+          excerpt: string | null
+          first_seen_at: string
+          id: string
+          last_checked_at: string
+          last_verified_at: string | null
+          method: string
+          owner_id: string
+          source_id: string
+          source_name: string
+          source_type: string
+          status: string
+          url: string | null
+        }
+        Insert: {
+          business_id: string
+          confidence?: number
+          created_at?: string
+          excerpt?: string | null
+          first_seen_at?: string
+          id?: string
+          last_checked_at?: string
+          last_verified_at?: string | null
+          method?: string
+          owner_id?: string
+          source_id: string
+          source_name: string
+          source_type?: string
+          status?: string
+          url?: string | null
+        }
+        Update: {
+          business_id?: string
+          confidence?: number
+          created_at?: string
+          excerpt?: string | null
+          first_seen_at?: string
+          id?: string
+          last_checked_at?: string
+          last_verified_at?: string | null
+          method?: string
+          owner_id?: string
+          source_id?: string
+          source_name?: string
+          source_type?: string
+          status?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_sources_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_events: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          dedupe_key: string | null
+          details: Json
+          event_kind: string
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          owner_id: string
+          source_date: string | null
+          source_id: string | null
+          source_url: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          details?: Json
+          event_kind: string
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          owner_id?: string
+          source_date?: string | null
+          source_id?: string | null
+          source_url?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          details?: Json
+          event_kind?: string
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          owner_id?: string
+          source_date?: string | null
+          source_id?: string | null
+          source_url?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      source_scans: {
+        Row: {
+          cost_usd: number
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          items_found: number
+          new_items: number
+          owner_id: string
+          source_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          cost_usd?: number
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          items_found?: number
+          new_items?: number
+          owner_id?: string
+          source_id: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          cost_usd?: number
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          items_found?: number
+          new_items?: number
+          owner_id?: string
+          source_id?: string
+          started_at?: string
+          status?: string
         }
         Relationships: []
       }

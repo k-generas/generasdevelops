@@ -6,6 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { investigateBusiness } from "@/lib/discovery.functions";
 import { BusinessWorkspace } from "@/components/BusinessWorkspace";
 import { ValidationPlanner } from "@/components/ValidationPlanner";
+import { OutreachMessages } from "@/components/OutreachMessages";
+import { BusinessIntelModal } from "@/components/BusinessIntelModal";
+import type { IntelBusinessRow, IntelInvestigationRow } from "@/components/BusinessIntelModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { freshnessDays } from "@/lib/evidence";
@@ -48,6 +51,10 @@ function BusinessPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [provider, setProvider] = useState<"auto" | "openai" | "gemini" | "lovable">("auto");
+  // Bumped after a successful investigation to trigger outreach drafting.
+  const [packToken, setPackToken] = useState(0);
+  // Full-report modal, opened right after a run and re-openable any time.
+  const [modalOpen, setModalOpen] = useState(false);
 
   const biz = useQuery({
     queryKey: ["business", id],
@@ -81,12 +88,17 @@ function BusinessPage() {
   });
 
   async function run() {
+    // Open the report modal immediately so the business is visible even if the
+    // run later fails (e.g. missing AI/Maps keys). It fills in as data arrives.
+    setModalOpen(true);
     setBusy(true);
     setErr(null);
     try {
       const r = await investigate({ data: { businessId: id, provider } });
-      if (r.proposalError)
-        setErr(`Investigation saved, but the proposal draft failed: ${r.proposalError}`);
+      // Draft the multi-channel outreach pack when the business fits an offer.
+      if (!r.permanentlyClosed && !String(r.recommendedOffer ?? "").startsWith("No offer")) {
+        setPackToken((t) => t + 1);
+      }
       qc.invalidateQueries({ queryKey: ["biz-proposals", id] });
       qc.invalidateQueries({ queryKey: ["biz-events", id] });
       qc.invalidateQueries({ queryKey: ["investigation", id] });
@@ -272,6 +284,9 @@ function BusinessPage() {
           <option value="gemini">AI: Gemini</option>
           <option value="lovable">AI: Lovable</option>
         </select>
+        <Button variant="outline" onClick={() => setModalOpen(true)}>
+          View full report
+        </Button>
         {inv.data && (
           <span className="text-xs text-muted-foreground">
             Last run {new Date(inv.data.created_at).toLocaleString()}
@@ -477,6 +492,14 @@ function BusinessPage() {
           </aside>
         </div>
       )}
+      <OutreachMessages
+        businessId={id}
+        provider={provider}
+        enabled={
+          !!report && !closedPermanent && !(report.recommended_offer ?? "").startsWith("No offer")
+        }
+        generateToken={packToken}
+      />
       <ValidationPlanner
         businessId={id}
         businessName={b.name}
@@ -484,6 +507,18 @@ function BusinessPage() {
         onSaved={() => qc.invalidateQueries({ queryKey: ["business", id] })}
       />
       <BusinessWorkspace businessId={id} />
+      <BusinessIntelModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        business={b as unknown as IntelBusinessRow}
+        investigation={(inv.data ?? null) as unknown as IntelInvestigationRow | null}
+        provider={provider}
+        investigating={busy}
+        error={err}
+        outreachEnabled={
+          !!report && !closedPermanent && !(report.recommended_offer ?? "").startsWith("No offer")
+        }
+      />
     </div>
   );
 }
