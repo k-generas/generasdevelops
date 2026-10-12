@@ -57,6 +57,7 @@ function Businesses() {
   const [industry, setIndustry] = useState<IndustryKey | "ALL">("ALL");
   const [q, setQ] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
 
   const businesses = useQuery({
     queryKey: ["businesses"],
@@ -97,14 +98,17 @@ function Businesses() {
     });
   }, [businesses.data, website, province, industry, q]);
 
-  async function runInvestigation(id: string) {
+  async function runInvestigation(id: string, name: string) {
     setBusyId(id);
+    setNote(null);
     try {
       await investigate({ data: { businessId: id, provider: "auto" } });
       qc.invalidateQueries({ queryKey: ["businesses"] });
       qc.invalidateQueries({ queryKey: ["businesses-investigated"] });
-    } catch {
-      // keep the list usable; the row simply stays un-investigated
+      setNote({ ok: true, text: `Investigation complete for ${name}.` });
+    } catch (e) {
+      const text = e instanceof Error ? e.message : String(e);
+      setNote({ ok: false, text: `Investigation failed: ${text}` });
     }
     setBusyId(null);
   }
@@ -162,6 +166,18 @@ function Businesses() {
           </select>
         </div>
       </div>
+
+      {note && (
+        <p
+          className={`rounded border p-3 text-sm ${
+            note.ok
+              ? "border-emerald-500/50 text-emerald-500"
+              : "border-destructive text-destructive"
+          }`}
+        >
+          {note.text}
+        </p>
+      )}
 
       {businesses.isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
@@ -223,7 +239,7 @@ function Businesses() {
                     size="sm"
                     variant="outline"
                     disabled={busyId === b.id}
-                    onClick={() => runInvestigation(b.id)}
+                    onClick={() => runInvestigation(b.id, b.name)}
                   >
                     {busyId === b.id ? "Investigating…" : "Run investigation"}
                   </Button>
