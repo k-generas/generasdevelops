@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { downloadCsv, rowsToCsv } from "@/lib/csv";
 
 export const STATUSES = [
   "DRAFT",
@@ -41,7 +42,35 @@ function Proposals() {
   });
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Proposals</h1>
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-bold">Proposals</h1>
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const data = list.data ?? [];
+              const csv = rowsToCsv(
+                data.map((p) => ({
+                  id: p.id,
+                  title: p.title,
+                  mode: p.mode,
+                  status: p.status,
+                  price: p.price,
+                  currency: p.currency,
+                  channel: p.channel,
+                  current_version: p.current_version,
+                  business_name: p.businesses?.name,
+                  updated_at: p.updated_at,
+                })),
+              );
+              downloadCsv(csv, `proposals-${new Date().toISOString().slice(0, 10)}.csv`);
+            }}
+          >
+            Export CSV
+          </Button>
+        </div>
+      </div>
       <div className="flex flex-wrap gap-2">
         {["ALL", ...STATUSES].map((s) => (
           <Button

@@ -8,13 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useInvoices, type InvoiceRow } from "@/lib/invoices.hooks";
 import {
-  INVOICE_STATUSES,
   formatMoney,
   invoiceTotals,
   isOverdue,
   nextInvoiceNumber,
   renderInvoiceText,
+  INVOICE_STATUSES,
 } from "@/lib/invoices";
+import { downloadCsv, rowsToCsv } from "@/lib/csv";
 
 export const Route = createFileRoute("/_authenticated/invoices")({
   head: () => ({
@@ -161,6 +162,29 @@ function Invoices() {
           <p className="text-sm text-muted-foreground">
             Make a document from a proposal, then mark it paid or unpaid. No online payment.
           </p>
+        </div>
+        <div className="ml-auto">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              const csv = rowsToCsv(
+                list.map((i) => ({
+                  number: i.number,
+                  business_name: i.businesses?.name,
+                  amount: i.amount,
+                  currency: i.currency,
+                  status: i.status,
+                  issued_at: i.issued_at,
+                  due_at: i.due_at,
+                  paid_at: i.paid_at,
+                })),
+              );
+              downloadCsv(csv, `invoices-${new Date().toISOString().slice(0, 10)}.csv`);
+            }}
+          >
+            Export CSV
+          </Button>
         </div>
       </div>
 
