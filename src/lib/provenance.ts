@@ -44,7 +44,7 @@ export function resolveField(facts: Fact[], now: Date = new Date()): {
   const values = Array.from(new Map(facts.map((f) => [key(f.value), f.value])).values());
   const sources = Array.from(new Set(facts.map((f) => f.source_name)));
   if (values.length > 1) return { status: "conflicting", values, sources };
-  const maxAge = FRESHNESS_DAYS[facts[0].field];
+  const maxAge = FRESHNESS_DAYS[facts[0]?.field ?? ""];
   const newest = Math.max(...facts.map((f) => Date.parse(f.last_checked_at)));
   if (maxAge && now.getTime() - newest > maxAge * 86400000) return { status: "outdated", values, sources };
   const nonAi = facts.filter((f) => f.source_type !== "ai" && f.source_type !== "inferred");
