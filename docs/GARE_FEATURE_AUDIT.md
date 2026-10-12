@@ -68,6 +68,7 @@ Legend: **Done** = implemented and wired · **Partial** — exists but limited �
 | Themes | Done | `theme.tsx` / `theme-constants.ts`, 12 accents × 3 modes |
 | Offers / pricing catalog | Done | owner-scoped `offers` table (migration 0004); editable in Settings; drives proposal dropdown + floor list; falls back to built-ins when absent |
 | Orders | Missing | no table, routes or server work |
+| Orders + delivery | Done | Orders UI + checklist + status transitions (0006). |
 | Invoices | Missing | none |
 | Payments | Missing | none — nothing is charged; Settings states this plainly |
 | Customers / CRM | Missing | businesses serve as leads; no customer records, no lifecycle |
