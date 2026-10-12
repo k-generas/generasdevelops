@@ -181,3 +181,7 @@ this in the banner. See `docs/GARE_DB_RUNBOOK.md`.
 
 Add a dated section for each change set with: the baseline results, the changes, any
 non-breaking design decisions, and the results of the four verification commands.
+
+## 2026-10-12 — Orders + delivery + CSV exports
+- Added orders (0006), UI with checklist, CSV exports on three pages. All verify commands passed.
+
