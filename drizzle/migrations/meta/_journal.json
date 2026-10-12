@@ -43,6 +43,13 @@
       "when": 1792100000000,
       "tag": "0005_invoices",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791795039836,
+      "tag": "0006_orders_delivery",
+      "breakpoints": true
     }
   ]
 }

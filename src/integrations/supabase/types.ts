@@ -92,6 +92,7 @@ export type Database = {
       }
       businesses: {
         Row: {
+          activity_checked_at: string | null
           address: string | null
           business_status: string | null
           category: string | null
@@ -99,17 +100,22 @@ export type Database = {
           discovery_run_id: string | null
           emails: string[]
           id: string
+          last_activity_at: string | null
           last_investigated_at: string | null
           last_opened_at: string | null
           latitude: number | null
           longitude: number | null
           maps_url: string | null
           name: string
+          open_now: boolean | null
+          opening_hours: Json
           owner_id: string
           phone: string | null
           place_id: string
           rating: number | null
+          recent_reviews: Json
           review_count: number | null
+          reviews_last_90d: number | null
           score: number | null
           socials: Json
           source: string
@@ -122,6 +128,7 @@ export type Database = {
           website_source: string | null
         }
         Insert: {
+          activity_checked_at?: string | null
           address?: string | null
           business_status?: string | null
           category?: string | null
@@ -129,17 +136,22 @@ export type Database = {
           discovery_run_id?: string | null
           emails?: string[]
           id?: string
+          last_activity_at?: string | null
           last_investigated_at?: string | null
           last_opened_at?: string | null
           latitude?: number | null
           longitude?: number | null
           maps_url?: string | null
           name: string
+          open_now?: boolean | null
+          opening_hours?: Json
           owner_id?: string
           phone?: string | null
           place_id: string
           rating?: number | null
+          recent_reviews?: Json
           review_count?: number | null
+          reviews_last_90d?: number | null
           score?: number | null
           socials?: Json
           source?: string
@@ -152,6 +164,7 @@ export type Database = {
           website_source?: string | null
         }
         Update: {
+          activity_checked_at?: string | null
           address?: string | null
           business_status?: string | null
           category?: string | null
@@ -159,17 +172,22 @@ export type Database = {
           discovery_run_id?: string | null
           emails?: string[]
           id?: string
+          last_activity_at?: string | null
           last_investigated_at?: string | null
           last_opened_at?: string | null
           latitude?: number | null
           longitude?: number | null
           maps_url?: string | null
           name?: string
+          open_now?: boolean | null
+          opening_hours?: Json
           owner_id?: string
           phone?: string | null
           place_id?: string
           rating?: number | null
+          recent_reviews?: Json
           review_count?: number | null
+          reviews_last_90d?: number | null
           score?: number | null
           socials?: Json
           source?: string
@@ -283,6 +301,190 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount: number
+          business_id: string | null
+          created_at: string
+          currency: string
+          due_at: string | null
+          id: string
+          issued_at: string
+          notes: string | null
+          number: string
+          owner_id: string
+          paid_at: string | null
+          proposal_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          business_id?: string | null
+          created_at?: string
+          currency?: string
+          due_at?: string | null
+          id?: string
+          issued_at?: string
+          notes?: string | null
+          number: string
+          owner_id?: string
+          paid_at?: string | null
+          proposal_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          business_id?: string | null
+          created_at?: string
+          currency?: string
+          due_at?: string | null
+          id?: string
+          issued_at?: string
+          notes?: string | null
+          number?: string
+          owner_id?: string
+          paid_at?: string | null
+          proposal_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offers: {
+        Row: {
+          active: boolean
+          created_at: string
+          currency: string
+          default_price: number | null
+          deliverables: string | null
+          id: string
+          name: string
+          notes: string | null
+          owner_id: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          default_price?: number | null
+          deliverables?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          owner_id?: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          default_price?: number | null
+          deliverables?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          owner_id?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          amount: number
+          business_id: string | null
+          checklist: Json
+          created_at: string
+          currency: string
+          due_at: string | null
+          fulfilled_at: string | null
+          id: string
+          invoice_id: string | null
+          notes: string | null
+          number: string
+          owner_id: string
+          proposal_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          business_id?: string | null
+          checklist?: Json
+          created_at?: string
+          currency?: string
+          due_at?: string | null
+          fulfilled_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          number: string
+          owner_id?: string
+          proposal_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          business_id?: string | null
+          checklist?: Json
+          created_at?: string
+          currency?: string
+          due_at?: string | null
+          fulfilled_at?: string | null
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          number?: string
+          owner_id?: string
+          proposal_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
             referencedColumns: ["id"]
           },
         ]
