@@ -1,22 +1,34 @@
 import { describe, expect, it } from "vitest";
-import { scanHealth } from "@/lib/sources";
+import { scanHealth, type Source } from "@/lib/sources";
+
+function src(over: Partial<Source>): Source {
+  return {
+    id: "s1",
+    kind: "rss",
+    name: "Test",
+    url: null,
+    enabled: true,
+    configured: true,
+    last_ok_at: new Date().toISOString(),
+    last_attempt_at: new Date().toISOString(),
+    error: null,
+    fresh_ok: true,
+    ...over,
+  };
+}
 
 describe("sources", () => {
-  it("reports health correctly", () => {
-    const now = new Date();
-    const ok: any = {
-      enabled: true,
-      configured: true,
-      last_ok_at: now.toISOString(),
-      last_attempt_at: now.toISOString(),
-      error: null,
-    };
-    expect(scanHealth(ok, 7).ok).toBe(true);
+  it("reports healthy source", () => {
+    expect(scanHealth(src({}), 7).ok).toBe(true);
+  });
+
+  it("flags a stale source", () => {
     const old = new Date();
     old.setDate(old.getDate() - 10);
-    const stale: any = { ...ok, last_ok_at: old.toISOString() };
-    expect(scanHealth(stale, 7).ok).toBe(false);
-    const no: any = { enabled: false, configured: true, last_ok_at: null };
-    expect(scanHealth(no, 7).ok).toBe(false);
+    expect(scanHealth(src({ last_ok_at: old.toISOString() }), 7).ok).toBe(false);
+  });
+
+  it("flags an unconfigured source", () => {
+    expect(scanHealth(src({ enabled: false }), 7).ok).toBe(false);
   });
 });
