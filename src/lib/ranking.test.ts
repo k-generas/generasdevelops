@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_WEIGHTS, explainRank, rankScore, type Opportunity } from "@/lib/ranking";
 
-function op(o: Partial<Opportunity>): Opportunity {
+function op(o: Partial<Opportunity> = {}): Opportunity {
   return {
     id: "o1",
     evidence_count: 3,
