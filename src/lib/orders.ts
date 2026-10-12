@@ -1,28 +1,3 @@
-<<<<<<< Updated upstream
-export const ORDER_STATUSES = ["DRAFT", "IN_PROGRESS", "DELIVERED", "FULFILLED", "CANCELLED"] as const;
-
-export type ChecklistItem = { label: string; done: boolean };
-
-export function toChecklist(v: unknown): ChecklistItem[] {
-  if (!Array.isArray(v)) return [];
-  return v
-    .filter((x): x is { label: unknown; done?: unknown } => !!x && typeof x === "object" && "label" in x)
-    .map((x) => ({ label: String(x.label), done: x.done === true }));
-}
-
-export function checklistProgress(c: ChecklistItem[]) {
-  return { done: c.filter((i) => i.done).length, total: c.length };
-}
-
-export function nextOrderNumber(existing: (string | null | undefined)[], year: number): string {
-  const prefix = `ORD-${year}-`;
-  let max = 0;
-  for (const n of existing) {
-    if (n && n.startsWith(prefix)) {
-      const v = Number(n.slice(prefix.length));
-      if (Number.isFinite(v) && v > max) max = v;
-    }
-=======
 // Orders + delivery checklist. Owner-scoped, no payment provider.
 
 export const ORDER_STATUSES = [
@@ -30,6 +5,7 @@ export const ORDER_STATUSES = [
   "PENDING",
   "IN_PROGRESS",
   "READY",
+  "DELIVERED",
   "FULFILLED",
   "CANCELLED",
 ] as const;
@@ -55,32 +31,27 @@ export type Order = {
   notes: string | null;
 };
 
-export function nextOrderNumber(existing: string[], year: number): string {
+export function nextOrderNumber(
+  existing: (string | null | undefined)[],
+  year: number,
+): string {
   const prefix = `ORD-${year}-`;
   let max = 0;
   for (const num of existing) {
-    if (!num.startsWith(prefix)) continue;
+    if (!num || !num.startsWith(prefix)) continue;
     const n = Number(num.slice(prefix.length));
     if (Number.isFinite(n) && n > max) max = n;
->>>>>>> Stashed changes
   }
   return `${prefix}${String(max + 1).padStart(4, "0")}`;
 }
 
-<<<<<<< Updated upstream
-export function orderIsLate(
-  o: { due_at: string | null; status: string },
-  now: Date = new Date(),
-): boolean {
-  if (!o.due_at || o.status === "FULFILLED" || o.status === "CANCELLED") return false;
-=======
 export function toChecklist(x: unknown): ChecklistItem[] {
   if (!Array.isArray(x)) return [];
   const out: ChecklistItem[] = [];
   for (const it of x) {
     if (typeof it === "object" && it !== null) {
       const o = it as Record<string, unknown>;
-      const label = typeof o["label"] === "string" ? o["label"] : "Item";
+      const label = typeof o["label"] === "string" ? o["label"] : "";
       const done = !!o["done"];
       out.push({ label, done });
     } else if (typeof it === "string") {
@@ -99,6 +70,5 @@ export function checklistProgress(c: ChecklistItem[]): { done: number; total: nu
 export function orderIsLate(o: Pick<Order, "status" | "due_at">, now: Date = new Date()): boolean {
   if (o.status === "FULFILLED" || o.status === "CANCELLED") return false;
   if (!o.due_at) return false;
->>>>>>> Stashed changes
   return new Date(o.due_at).getTime() < now.getTime();
 }
