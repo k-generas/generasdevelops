@@ -7,6 +7,7 @@ import { runDiscovery } from "@/lib/discovery.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { scanHealth, type Source } from "@/lib/sources";
 
 export const Route = createFileRoute("/_authenticated/discover")({
   head: () => ({
@@ -87,6 +88,24 @@ function Discover() {
   const investigated = businesses.data?.filter((b) => b.status === "investigated").length ?? 0;
   const closedCount = businesses.data?.filter(isClosed).length ?? 0;
 
+  const runsList = runs.data ?? [];
+  const lastAttempt = runsList[0]?.created_at ?? null;
+  const lastOk = runsList.find((r) => r.status !== "failed")?.created_at ?? null;
+  const lastFailed = runsList.find((r) => r.status === "failed");
+  const gmapsSource: Source = {
+    id: "google-maps",
+    kind: "map",
+    name: "Google Maps (Places API)",
+    url: null,
+    enabled: true,
+    configured: !!lastAttempt,
+    last_ok_at: lastOk,
+    last_attempt_at: lastAttempt,
+    error: lastFailed?.error ?? null,
+    fresh_ok: false,
+  };
+  const gmapsHealth = scanHealth(gmapsSource, 7);
+
   return (
     <div className="space-y-8">
       <section className="grid gap-4 sm:grid-cols-5">
@@ -144,6 +163,30 @@ function Discover() {
             ))}
           </div>
         )}
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-3 text-xs">
+          <span className="font-mono uppercase tracking-widest text-muted-foreground">
+            Source health
+          </span>
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono ${
+              gmapsHealth.ok
+                ? "bg-emerald-500/15 text-emerald-300"
+                : "bg-amber-500/15 text-amber-400"
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                gmapsHealth.ok ? "bg-emerald-400" : "bg-amber-400"
+              }`}
+            />
+            {gmapsSource.name} · {gmapsHealth.reason}
+          </span>
+          {lastFailed?.error && (
+            <span className="font-mono text-destructive" title={lastFailed.error}>
+              last error: {lastFailed.error.slice(0, 60)}
+            </span>
+          )}
+        </div>
       </section>
 
       <section>

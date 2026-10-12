@@ -7,6 +7,7 @@ import { investigateBusiness } from "@/lib/discovery.functions";
 import { BusinessWorkspace } from "@/components/BusinessWorkspace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { freshnessDays } from "@/lib/evidence";
 
 export const Route = createFileRoute("/_authenticated/businesses/$id")({
   head: () => ({
@@ -170,6 +171,24 @@ function BusinessPage() {
                 no reviews yet · may be new or inactive
               </Badge>
             ) : null}
+            {(() => {
+              const stamps = [b.website_checked_at, b.activity_checked_at].filter(
+                (s): s is string => !!s,
+              );
+              if (!stamps.length) return null;
+              const newest = stamps.slice().sort().at(-1)!;
+              const days = freshnessDays(newest);
+              const stale = days > 30;
+              return (
+                <Badge
+                  variant="outline"
+                  className={stale ? "border-amber-500/50 text-amber-400" : "text-muted-foreground"}
+                >
+                  evidence {days === 0 ? "checked today" : `${days}d old`}
+                  {stale ? " · refresh recommended" : ""}
+                </Badge>
+              );
+            })()}
           </div>
           <div className="mt-3 flex flex-wrap gap-3 text-sm">
             {b.phone && (
