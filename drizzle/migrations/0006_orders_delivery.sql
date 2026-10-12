@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 CREATE TABLE IF NOT EXISTS public.orders (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id uuid NOT NULL DEFAULT auth.uid(),
@@ -12,6 +13,23 @@ CREATE TABLE IF NOT EXISTS public.orders (
   fulfilled_at timestamptz,
   checklist jsonb NOT NULL DEFAULT '[]'::jsonb,
   notes text,
+=======
+-- P3: Orders + delivery checklist. Owner-scoped; links to proposal/business/invoice.
+CREATE TABLE public.orders (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id uuid NOT NULL DEFAULT auth.uid(),
+  business_id uuid REFERENCES public.businesses(id) ON DELETE SET NULL,
+  proposal_id uuid REFERENCES public.proposals(id) ON DELETE SET NULL,
+  invoice_id uuid REFERENCES public.invoices(id) ON DELETE SET NULL,
+  number text NOT NULL,
+  status text NOT NULL DEFAULT 'DRAFT',
+  currency text NOT NULL DEFAULT 'USD',
+  amount numeric NOT NULL DEFAULT 0,
+  due_at timestamptz,
+  checklist jsonb NOT NULL DEFAULT '[]'::jsonb,
+  notes text,
+  fulfilled_at timestamptz,
+>>>>>>> Stashed changes
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -19,4 +37,10 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.orders TO authenticated;
 GRANT ALL ON public.orders TO service_role;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "own orders" ON public.orders FOR ALL TO authenticated USING (owner_id = auth.uid()) WITH CHECK (owner_id = auth.uid());
+<<<<<<< Updated upstream
 CREATE INDEX ON public.orders (owner_id, created_at DESC);
+=======
+CREATE INDEX ON public.orders (owner_id, created_at DESC);
+CREATE INDEX ON public.orders (business_id);
+CREATE INDEX ON public.orders (status);
+>>>>>>> Stashed changes
