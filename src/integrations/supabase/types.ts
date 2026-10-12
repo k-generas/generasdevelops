@@ -371,6 +371,48 @@ export type Database = {
           },
         ]
       }
+      offers: {
+        Row: {
+          active: boolean
+          created_at: string
+          currency: string
+          default_price: number | null
+          deliverables: string | null
+          id: string
+          name: string
+          notes: string | null
+          owner_id: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          default_price?: number | null
+          deliverables?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          owner_id?: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          currency?: string
+          default_price?: number | null
+          deliverables?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          owner_id?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           amount: number
@@ -432,62 +474,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "orders_proposal_id_fkey"
-            columns: ["proposal_id"]
-            isOneToOne: false
-            referencedRelation: "proposals"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "orders_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "orders_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
         ]
-      }
-      offers: {
-        Row: {
-          active: boolean
-          created_at: string
-          currency: string
-          default_price: number | null
-          deliverables: string | null
-          id: string
-          name: string
-          notes: string | null
-          owner_id: string
-          position: number
-          updated_at: string
-        }
-        Insert: {
-          active?: boolean
-          created_at?: string
-          currency?: string
-          default_price?: number | null
-          deliverables?: string | null
-          id?: string
-          name: string
-          notes?: string | null
-          owner_id?: string
-          position?: number
-          updated_at?: string
-        }
-        Update: {
-          active?: boolean
-          created_at?: string
-          currency?: string
-          default_price?: number | null
-          deliverables?: string | null
-          id?: string
-          name?: string
-          notes?: string | null
-          owner_id?: string
-          position?: number
-          updated_at?: string
-        }
-        Relationships: []
       }
       proposal_versions: {
         Row: {
