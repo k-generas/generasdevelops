@@ -57,6 +57,13 @@
       "when": 1792300000000,
       "tag": "0007_business_validation_plan",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791827347775,
+      "tag": "0008_rwanda_intelligence_phase1",
+      "breakpoints": true
     }
   ]
 }
