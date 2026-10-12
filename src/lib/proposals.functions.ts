@@ -33,6 +33,7 @@ export const generateProposal = createServerFn({ method: "POST" })
         price: z.number().nonnegative().nullable().optional(),
         currency: z.string().max(8).default("USD"),
         extra: z.string().max(2000).optional(),
+        provider: z.enum(["auto", "openai", "gemini", "lovable"]).default("auto"),
       })
       .parse(d),
   )

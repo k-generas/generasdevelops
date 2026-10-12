@@ -27,12 +27,16 @@ function Discover() {
   const [location, setLocation] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "no_site" | "investigated">("all");
+  const [filter, setFilter] = useState<"all" | "no_site" | "investigated" | "closed">("all");
 
   const businesses = useQuery({
     queryKey: ["businesses"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("businesses").select("*").order("created_at", { ascending: false }).limit(500);
+      const { data, error } = await supabase
+        .from("businesses")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500);
       if (error) throw error;
       return data;
     },
@@ -40,7 +44,11 @@ function Discover() {
   const runs = useQuery({
     queryKey: ["runs"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("discovery_runs").select("*").order("created_at", { ascending: false }).limit(8);
+      const { data, error } = await supabase
+        .from("discovery_runs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(8);
       if (error) throw error;
       return data;
     },
@@ -61,18 +69,38 @@ function Discover() {
     qc.invalidateQueries({ queryKey: ["runs"] });
   }
 
+  const isClosed = (b: { business_status: string | null }) =>
+    b.business_status === "CLOSED_PERMANENTLY" || b.business_status === "CLOSED_TEMPORARILY";
   const list = (businesses.data ?? []).filter((b) =>
-    filter === "no_site" ? !b.website && !!b.website_checked_at : filter === "investigated" ? b.status === "investigated" : true,
+    filter === "no_site"
+      ? !b.website
+      : filter === "investigated"
+        ? b.status === "investigated"
+        : filter === "closed"
+          ? isClosed(b)
+          : true,
   );
   const total = businesses.data?.length ?? 0;
   const noSite = businesses.data?.filter((b) => !b.website && b.website_checked_at).length ?? 0;
+  const noSiteUnverified =
+    businesses.data?.filter((b) => !b.website && !b.website_checked_at).length ?? 0;
   const investigated = businesses.data?.filter((b) => b.status === "investigated").length ?? 0;
+  const closedCount = businesses.data?.filter(isClosed).length ?? 0;
 
   return (
     <div className="space-y-8">
-      <section className="grid gap-4 sm:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-5">
         <Stat label="Businesses" value={total} />
-        <Stat label="No website (confirmed)" value={noSite} hint="Only counted after investigation double-checks" />
+        <Stat
+          label="No website (confirmed)"
+          value={noSite}
+          hint="Only counted after investigation double-checks"
+        />
+        <Stat
+          label="No website (unverified)"
+          value={noSiteUnverified}
+          hint="Discovered on Google Maps, not yet double-checked"
+        />
         <Stat label="Investigated" value={investigated} />
         <Stat label="Revenue (real payments)" value="$0" hint="No payment system connected yet" />
       </section>
@@ -80,17 +108,38 @@ function Discover() {
       <section className="rounded-lg border bg-card p-6">
         <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">01 · Discover</p>
         <form onSubmit={onRun} className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <Input placeholder="What kind of business? e.g. restaurants, salons, hardware shops" value={query} onChange={(e) => setQuery(e.target.value)} required minLength={2} />
-          <Input placeholder="Where? e.g. Kigali, Rwanda" value={location} onChange={(e) => setLocation(e.target.value)} className="sm:max-w-xs" />
-          <Button type="submit" disabled={busy}>{busy ? "Searching…" : "Run discovery"}</Button>
+          <Input
+            placeholder="What kind of business? e.g. restaurants, salons, hardware shops"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            required
+            minLength={2}
+          />
+          <Input
+            placeholder="Where? e.g. Kigali, Rwanda"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            className="sm:max-w-xs"
+          />
+          <Button type="submit" disabled={busy}>
+            {busy ? "Searching…" : "Run discovery"}
+          </Button>
         </form>
-        <p className="mt-2 text-xs text-muted-foreground">Up to 20 real results per run from Google Maps. Each run is a paid Google request, so search deliberately.</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Up to 20 real results per run from Google Maps. Each run is a paid Google request, so
+          search deliberately.
+        </p>
         {result && <p className="mt-3 font-mono text-sm">{result}</p>}
         {!!runs.data?.length && (
           <div className="mt-4 flex flex-wrap gap-2">
             {runs.data.map((r) => (
-              <span key={r.id} className="rounded border px-2 py-1 font-mono text-[11px] text-muted-foreground">
-                {r.query}{r.location ? ` @ ${r.location}` : ""} · {r.status === "failed" ? "failed" : `+${r.new_count}`}
+              <span
+                key={r.id}
+                className="rounded border px-2 py-1 font-mono text-[11px] text-muted-foreground"
+              >
+                {r.query}
+                {r.location ? ` @ ${r.location}` : ""} ·{" "}
+                {r.status === "failed" ? "failed" : `+${r.new_count}`}
               </span>
             ))}
           </div>
@@ -99,10 +148,23 @@ function Discover() {
 
       <section>
         <div className="mb-3 flex items-center gap-2">
-          <p className="mr-auto font-mono text-xs uppercase tracking-[0.3em] text-primary">02 · Pipeline</p>
-          {(["all", "no_site", "investigated"] as const).map((f) => (
-            <Button key={f} size="sm" variant={filter === f ? "default" : "outline"} onClick={() => setFilter(f)}>
-              {f === "all" ? "All" : f === "no_site" ? "No website" : "Investigated"}
+          <p className="mr-auto font-mono text-xs uppercase tracking-[0.3em] text-primary">
+            02 · Pipeline
+          </p>
+          {(["all", "no_site", "investigated", "closed"] as const).map((f) => (
+            <Button
+              key={f}
+              size="sm"
+              variant={filter === f ? "default" : "outline"}
+              onClick={() => setFilter(f)}
+            >
+              {f === "all"
+                ? "All"
+                : f === "no_site"
+                  ? "No website"
+                  : f === "investigated"
+                    ? "Investigated"
+                    : "Closed"}
             </Button>
           ))}
         </div>
@@ -115,16 +177,42 @@ function Discover() {
         ) : (
           <div className="divide-y rounded-lg border bg-card">
             {list.map((b) => (
-              <Link key={b.id} to="/businesses/$id" params={{ id: b.id }} className="flex items-center gap-4 px-4 py-3 hover:bg-muted">
+              <Link
+                key={b.id}
+                to="/businesses/$id"
+                params={{ id: b.id }}
+                className="flex items-center gap-4 px-4 py-3 hover:bg-muted"
+              >
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{b.name}</p>
-                  <p className="truncate text-xs text-muted-foreground">{[b.category, b.address].filter(Boolean).join(" · ")}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {[b.category, b.address].filter(Boolean).join(" · ")}
+                  </p>
                 </div>
-                {!b.website && (b.website_checked_at
-                  ? <Badge variant="outline" className="border-primary text-primary">no website (double-checked)</Badge>
-                  : <Badge variant="outline" className="text-muted-foreground">not on Google · unchecked</Badge>)}
-                {b.rating != null && <span className="font-mono text-xs text-muted-foreground">★ {b.rating} ({b.review_count ?? 0})</span>}
-                <span className="w-12 text-right font-mono text-lg font-semibold text-accent">{b.score ?? "—"}</span>
+                {!b.website &&
+                  (b.website_checked_at ? (
+                    <Badge variant="outline" className="border-primary text-primary">
+                      no website (double-checked)
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-muted-foreground">
+                      no website · unchecked
+                    </Badge>
+                  ))}
+                {b.business_status === "CLOSED_PERMANENTLY" && (
+                  <Badge variant="destructive">closed</Badge>
+                )}
+                {b.business_status === "CLOSED_TEMPORARILY" && (
+                  <Badge variant="destructive">temp. closed</Badge>
+                )}
+                {b.rating != null && (
+                  <span className="font-mono text-xs text-muted-foreground">
+                    ★ {b.rating} ({b.review_count ?? 0})
+                  </span>
+                )}
+                <span className="w-12 text-right font-mono text-lg font-semibold text-accent">
+                  {b.score ?? "—"}
+                </span>
               </Link>
             ))}
           </div>
@@ -137,7 +225,9 @@ function Discover() {
 function Stat({ label, value, hint }: { label: string; value: number | string; hint?: string }) {
   return (
     <div className="rounded-lg border bg-card p-4">
-      <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+        {label}
+      </p>
       <p className="mt-1 text-3xl font-bold">{value}</p>
       {hint && <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>}
     </div>
