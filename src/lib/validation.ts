@@ -33,3 +33,34 @@ export function defaultPlan(hyp: string): ValidationPlan {
 export function canValidate(p: ValidationPlan): boolean {
   return p.cost_usd <= 50 && p.time_hours <= 8;
 }
+
+// Safely read a stored validation_plan (jsonb is unknown). Anything malformed
+// falls back to the provided defaults so the UI never crashes on old data.
+export function readPlan(x: unknown, fallbackHypothesis: string): ValidationPlan {
+  const base = defaultPlan(fallbackHypothesis);
+  if (!x || typeof x !== "object" || Array.isArray(x)) return base;
+  const o = x as Record<string, unknown>;
+  const str = (k: string, d: string) => (typeof o[k] === "string" ? (o[k] as string) : d);
+  const num = (k: string, d: number) =>
+    typeof o[k] === "number" && Number.isFinite(o[k]) ? (o[k] as number) : d;
+  const arr = (k: string) =>
+    Array.isArray(o[k])
+      ? (o[k] as unknown[]).filter((s): s is string => typeof s === "string")
+      : [];
+  const oc = o["outcome"];
+  const outcome: ValidationPlan["outcome"] =
+    oc === "pass" || oc === "fail" || oc === "skip" || oc === "pending" ? oc : "pending";
+  return {
+    hypothesis: str("hypothesis", base.hypothesis),
+    target: str("target", base.target),
+    evidence: arr("evidence"),
+    missing: arr("missing"),
+    cheapest_method: str("cheapest_method", base.cheapest_method),
+    cost_usd: num("cost_usd", base.cost_usd),
+    time_hours: num("time_hours", base.time_hours),
+    success: str("success", base.success),
+    fail: str("fail", base.fail),
+    next_date: str("next_date", base.next_date),
+    outcome,
+  };
+}

@@ -31,10 +31,7 @@ export type Order = {
   notes: string | null;
 };
 
-export function nextOrderNumber(
-  existing: (string | null | undefined)[],
-  year: number,
-): string {
+export function nextOrderNumber(existing: (string | null | undefined)[], year: number): string {
   const prefix = `ORD-${year}-`;
   let max = 0;
   for (const num of existing) {

@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { investigateBusiness } from "@/lib/discovery.functions";
 import { BusinessWorkspace } from "@/components/BusinessWorkspace";
+import { ValidationPlanner } from "@/components/ValidationPlanner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { freshnessDays } from "@/lib/evidence";
@@ -476,6 +477,12 @@ function BusinessPage() {
           </aside>
         </div>
       )}
+      <ValidationPlanner
+        businessId={id}
+        businessName={b.name}
+        storedPlan={b.validation_plan}
+        onSaved={() => qc.invalidateQueries({ queryKey: ["business", id] })}
+      />
       <BusinessWorkspace businessId={id} />
     </div>
   );

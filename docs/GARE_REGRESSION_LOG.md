@@ -177,11 +177,69 @@ this in the banner. See `docs/GARE_DB_RUNBOOK.md`.
 - `npm test` — 6 files / 23 tests passing (added `channels.test.ts`, `outcomes.test.ts`)
 - `npm run build` — succeeded
 
+## 2026-10-12 — Orders + delivery + CSV exports
+
+### Baseline at start of pass
+- `npx tsc --noEmit` — clean
+- `npm run lint` — 0 errors (7 pre-existing warnings)
+- `npm test` — 36 tests passing
+- `npm run build` — succeeded
+
+### Changes
+- **Orders (migration `0006_orders_delivery.sql`)** — owner-scoped `orders` table + Orders page
+  (create from proposal/invoice, delivery checklist, status transitions, mark fulfilled), hooks
+  and pure helpers (`src/lib/orders.ts`) with tests.
+- **CSV export** — `src/lib/csv.ts` (`rowsToCsv`, `downloadCsv`) with tests, wired as an
+  "Export CSV" button on Proposals, Invoices and Orders.
+- **Quick links** — proposal detail has "Create invoice" / "Create order".
+
+### Verification after changes
+- `npx tsc --noEmit` — clean
+- `npm run lint` — 0 errors (same 7 pre-existing warnings)
+- `npm test` — 46 tests passing
+- `npm run build` — succeeded
+
+## 2026-10-12 — Opportunity intelligence foundations + validation planner
+
+### Baseline at start of pass
+- `npx tsc --noEmit` — clean
+- `npm run lint` — 0 errors (7 pre-existing warnings)
+- `npm test` — 46 tests passing
+- `npm run build` — succeeded
+
+### Changes
+- **Evidence integrity (`src/lib/evidence.ts`)** — `freshnessDays`, `isStale`,
+  `normalizeConfidence` (pure + tested).
+- **Source registry (`src/lib/sources.ts`)** — `Source` type + `scanHealth()` (pure + tested).
+- **Explainable ranking (`src/lib/ranking.ts`)** — `rankScore` / `explainRank` over evidence,
+  fit, feasibility, speed and margin with configurable weights (pure + tested).
+- **Validation planner (`src/lib/validation.ts`)** — `defaultPlan`, `canValidate` and a safe
+  `readPlan` jsonb reader (pure + tested).
+- **Discover** — a live "Source health" chip derived from real `discovery_runs` (ok/stale + last
+  error); no new table.
+- **Business page** — an "evidence freshness" badge from real `website_checked_at` /
+  `activity_checked_at` (flags >30 days old).
+- **Validation planner UI (`src/components/ValidationPlanner.tsx`)** — the 9-step low-cost
+  validation plan on the business page; saving stores `businesses.validation_plan` and recording
+  an outcome logs a `validation_outcome` event. Migration `0007_business_validation_plan.sql`
+  adds the nullable column.
+
+### Non-breaking design decisions
+- `0007` adds one nullable jsonb column; reading is safe before it is applied, and saving shows
+  the migration hint instead of failing hard.
+- Ranking is NOT surfaced with invented numbers: the app has no owner skills/budget profile, so
+  fit/margin inputs would be fabricated. The ranker exists as a tested library and will be shown
+  once real owner-profile data exists (audit marks this BLOCKED on owner-profile data).
+- Every new pure module has unit tests; no route/table/column removed or renamed.
+
+### Verification after changes
+- `npx tsc --noEmit` — clean
+- `npm run lint` — 0 errors (same 7 pre-existing warnings)
+- `npm test` — 47 tests passing
+- `npm run build` — succeeded
+
 ## How to use this log
 
 Add a dated section for each change set with: the baseline results, the changes, any
 non-breaking design decisions, and the results of the four verification commands.
-
-## 2026-10-12 � Orders + delivery + CSV exports
-- Added orders (0006), UI with checklist, CSV exports on three pages. All verify commands passed.
 

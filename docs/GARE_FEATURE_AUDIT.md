@@ -67,9 +67,12 @@ Legend: **Done** = implemented and wired · **Partial** — exists but limited �
 | Integration status | Done | `getSystemStatus` + Settings (booleans only, no secrets) |
 | Themes | Done | `theme.tsx` / `theme-constants.ts`, 12 accents × 3 modes |
 | Offers / pricing catalog | Done | owner-scoped `offers` table (migration 0004); editable in Settings; drives proposal dropdown + floor list; falls back to built-ins when absent |
-| Orders | Missing | no table, routes or server work |
-| Orders + delivery | Done | Orders UI + checklist + status transitions (0006). |
-| Invoices | Missing | none |
+| Source registry + scan health | Done | `src/lib/sources.ts` (tested) + live "source health" chip on `/discover` derived from real `discovery_runs` |
+| Evidence freshness | Done | `src/lib/evidence.ts` (tested) + freshness badge on `/businesses/$id` from `website_checked_at` / `activity_checked_at` |
+| Explainable ranking | Partial | `src/lib/ranking.ts` (tested) exists but is not surfaced: needs owner skills/budget profile, so no fabricated scores are shown |
+| Validation planner | Done | `src/lib/validation.ts` + `ValidationPlanner.tsx`; persists `businesses.validation_plan` (migration 0007); outcome logs a `validation_outcome` event |
+| Orders + delivery | Done | Orders UI + checklist + status transitions (migration 0006). |
+| Invoices (invoicing-lite) | Done | owner-scoped `invoices` table (migration 0005), `/invoices` route, create-from-proposal, totals / status / print |
 | Payments | Missing | none — nothing is charged; Settings states this plainly |
 | Customers / CRM | Missing | businesses serve as leads; no customer records, no lifecycle |
 | Outreach logging | Partial | manual log per proposal (channel, time, response) → `business_activity_events` + business timeline; no automated email/WhatsApp sending |

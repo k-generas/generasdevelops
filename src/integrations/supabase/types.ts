@@ -121,6 +121,7 @@ export type Database = {
           source: string
           status: string
           updated_at: string
+          validation_plan: Json | null
           visibility_score: number | null
           website: string | null
           website_check: Json
@@ -157,6 +158,7 @@ export type Database = {
           source?: string
           status?: string
           updated_at?: string
+          validation_plan?: Json
           visibility_score?: number | null
           website?: string | null
           website_check?: Json
@@ -193,6 +195,7 @@ export type Database = {
           source?: string
           status?: string
           updated_at?: string
+          validation_plan?: Json
           visibility_score?: number | null
           website?: string | null
           website_check?: Json

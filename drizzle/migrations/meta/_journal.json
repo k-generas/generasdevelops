@@ -50,6 +50,13 @@
       "when": 1791795039836,
       "tag": "0006_orders_delivery",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792300000000,
+      "tag": "0007_business_validation_plan",
+      "breakpoints": true
     }
   ]
 }
