@@ -64,6 +64,13 @@
       "when": 1792400000000,
       "tag": "0008_rwanda_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791893306097,
+      "tag": "0009_rwanda_intelligence",
+      "breakpoints": true
     }
   ]
 }

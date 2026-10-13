@@ -58,6 +58,68 @@ export type Database = {
           },
         ]
       }
+      business_facts: {
+        Row: {
+          business_id: string
+          confidence: number
+          created_at: string
+          excerpt: string | null
+          field: string
+          id: string
+          method: string
+          observed_at: string
+          owner_id: string
+          source_id: string | null
+          source_name: string
+          source_type: string
+          status: string
+          url: string | null
+          value: Json | null
+        }
+        Insert: {
+          business_id: string
+          confidence?: number
+          created_at?: string
+          excerpt?: string | null
+          field: string
+          id?: string
+          method?: string
+          observed_at?: string
+          owner_id?: string
+          source_id?: string | null
+          source_name: string
+          source_type?: string
+          status?: string
+          url?: string | null
+          value?: Json | null
+        }
+        Update: {
+          business_id?: string
+          confidence?: number
+          created_at?: string
+          excerpt?: string | null
+          field?: string
+          id?: string
+          method?: string
+          observed_at?: string
+          owner_id?: string
+          source_id?: string | null
+          source_name?: string
+          source_type?: string
+          status?: string
+          url?: string | null
+          value?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_facts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_notes: {
         Row: {
           body: string
@@ -90,36 +152,131 @@ export type Database = {
           },
         ]
       }
+      business_sources: {
+        Row: {
+          business_id: string
+          confidence: number
+          created_at: string
+          excerpt: string | null
+          first_seen_at: string
+          id: string
+          last_checked_at: string
+          last_verified_at: string | null
+          method: string
+          owner_id: string
+          source_id: string
+          source_name: string
+          source_type: string
+          status: string
+          url: string | null
+        }
+        Insert: {
+          business_id: string
+          confidence?: number
+          created_at?: string
+          excerpt?: string | null
+          first_seen_at?: string
+          id?: string
+          last_checked_at?: string
+          last_verified_at?: string | null
+          method?: string
+          owner_id?: string
+          source_id: string
+          source_name: string
+          source_type?: string
+          status?: string
+          url?: string | null
+        }
+        Update: {
+          business_id?: string
+          confidence?: number
+          created_at?: string
+          excerpt?: string | null
+          first_seen_at?: string
+          id?: string
+          last_checked_at?: string
+          last_verified_at?: string | null
+          method?: string
+          owner_id?: string
+          source_id?: string
+          source_name?: string
+          source_type?: string
+          status?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_sources_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
           activity_checked_at: string | null
           address: string | null
+          business_model: string | null
           business_status: string | null
           category: string | null
+          cell: string | null
+          contact_page: string | null
+          contact_suppressed: boolean
           created_at: string
+          description: string | null
           discovery_run_id: string | null
+          district: string | null
           emails: string[]
+          employee_count_status: string
+          employees_max: number | null
+          employees_min: number | null
+          exports: boolean | null
+          founded_date: string | null
+          founded_status: string
           id: string
+          industry: string | null
+          industry_secondary: string | null
+          intel_updated_at: string | null
           last_activity_at: string | null
           last_investigated_at: string | null
           last_opened_at: string | null
           latitude: number | null
+          legal_name: string | null
+          legal_structure: string | null
+          location_verified: boolean
           longitude: number | null
           maps_url: string | null
+          markets_served: string | null
           name: string
           open_now: boolean | null
           opening_hours: Json
           owner_id: string
+          parent_organization: string | null
           phone: string | null
           place_id: string
+          preferred_channel: string | null
+          products_services: string | null
+          profile_confidence: string
+          profile_verified_at: string | null
+          province: string | null
           rating: number | null
           recent_reviews: Json
+          registration_date: string | null
+          registration_id: string | null
+          registration_status: string | null
           review_count: number | null
           reviews_last_90d: number | null
           score: number | null
+          sector: string | null
           socials: Json
           source: string
           status: string
+          supply_chain_role: string | null
+          suppression_reason: string | null
+          target_customers: string | null
+          trading_names: string[]
           updated_at: string
           validation_plan: Json | null
           visibility_score: number | null
@@ -131,32 +288,65 @@ export type Database = {
         Insert: {
           activity_checked_at?: string | null
           address?: string | null
+          business_model?: string | null
           business_status?: string | null
           category?: string | null
+          cell?: string | null
+          contact_page?: string | null
+          contact_suppressed?: boolean
           created_at?: string
+          description?: string | null
           discovery_run_id?: string | null
+          district?: string | null
           emails?: string[]
+          employee_count_status?: string
+          employees_max?: number | null
+          employees_min?: number | null
+          exports?: boolean | null
+          founded_date?: string | null
+          founded_status?: string
           id?: string
+          industry?: string | null
+          industry_secondary?: string | null
+          intel_updated_at?: string | null
           last_activity_at?: string | null
           last_investigated_at?: string | null
           last_opened_at?: string | null
           latitude?: number | null
+          legal_name?: string | null
+          legal_structure?: string | null
+          location_verified?: boolean
           longitude?: number | null
           maps_url?: string | null
+          markets_served?: string | null
           name: string
           open_now?: boolean | null
           opening_hours?: Json
           owner_id?: string
+          parent_organization?: string | null
           phone?: string | null
           place_id: string
+          preferred_channel?: string | null
+          products_services?: string | null
+          profile_confidence?: string
+          profile_verified_at?: string | null
+          province?: string | null
           rating?: number | null
           recent_reviews?: Json
+          registration_date?: string | null
+          registration_id?: string | null
+          registration_status?: string | null
           review_count?: number | null
           reviews_last_90d?: number | null
           score?: number | null
+          sector?: string | null
           socials?: Json
           source?: string
           status?: string
+          supply_chain_role?: string | null
+          suppression_reason?: string | null
+          target_customers?: string | null
+          trading_names?: string[]
           updated_at?: string
           validation_plan?: Json | null
           visibility_score?: number | null
@@ -168,32 +358,65 @@ export type Database = {
         Update: {
           activity_checked_at?: string | null
           address?: string | null
+          business_model?: string | null
           business_status?: string | null
           category?: string | null
+          cell?: string | null
+          contact_page?: string | null
+          contact_suppressed?: boolean
           created_at?: string
+          description?: string | null
           discovery_run_id?: string | null
+          district?: string | null
           emails?: string[]
+          employee_count_status?: string
+          employees_max?: number | null
+          employees_min?: number | null
+          exports?: boolean | null
+          founded_date?: string | null
+          founded_status?: string
           id?: string
+          industry?: string | null
+          industry_secondary?: string | null
+          intel_updated_at?: string | null
           last_activity_at?: string | null
           last_investigated_at?: string | null
           last_opened_at?: string | null
           latitude?: number | null
+          legal_name?: string | null
+          legal_structure?: string | null
+          location_verified?: boolean
           longitude?: number | null
           maps_url?: string | null
+          markets_served?: string | null
           name?: string
           open_now?: boolean | null
           opening_hours?: Json
           owner_id?: string
+          parent_organization?: string | null
           phone?: string | null
           place_id?: string
+          preferred_channel?: string | null
+          products_services?: string | null
+          profile_confidence?: string
+          profile_verified_at?: string | null
+          province?: string | null
           rating?: number | null
           recent_reviews?: Json
+          registration_date?: string | null
+          registration_id?: string | null
+          registration_status?: string | null
           review_count?: number | null
           reviews_last_90d?: number | null
           score?: number | null
+          sector?: string | null
           socials?: Json
           source?: string
           status?: string
+          supply_chain_role?: string | null
+          suppression_reason?: string | null
+          target_customers?: string | null
+          trading_names?: string[]
           updated_at?: string
           validation_plan?: Json | null
           visibility_score?: number | null
@@ -203,6 +426,65 @@ export type Database = {
           website_source?: string | null
         }
         Relationships: []
+      }
+      company_events: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          dedupe_key: string | null
+          details: Json
+          event_kind: string
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          owner_id: string
+          source_date: string | null
+          source_id: string | null
+          source_url: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          details?: Json
+          event_kind: string
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          owner_id?: string
+          source_date?: string | null
+          source_id?: string | null
+          source_url?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          details?: Json
+          event_kind?: string
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          owner_id?: string
+          source_date?: string | null
+          source_id?: string | null
+          source_url?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       discovery_runs: {
         Row: {
@@ -658,6 +940,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      source_scans: {
+        Row: {
+          cost_usd: number
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          items_found: number
+          new_items: number
+          owner_id: string
+          source_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          cost_usd?: number
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          items_found?: number
+          new_items?: number
+          owner_id?: string
+          source_id: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          cost_usd?: number
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          items_found?: number
+          new_items?: number
+          owner_id?: string
+          source_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
       }
       tasks: {
         Row: {
