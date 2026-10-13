@@ -58,251 +58,6 @@ export type Database = {
           },
         ]
       }
-      business_notes: {
-        Row: {
-          body: string
-          business_id: string
-          created_at: string
-          id: string
-          owner_id: string
-        }
-        Insert: {
-          body: string
-          business_id: string
-          created_at?: string
-          id?: string
-          owner_id?: string
-        }
-        Update: {
-          body?: string
-          business_id?: string
-          created_at?: string
-          id?: string
-          owner_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "business_notes_business_id_fkey"
-            columns: ["business_id"]
-            isOneToOne: false
-            referencedRelation: "businesses"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      businesses: {
-        Row: {
-          activity_checked_at: string | null
-          address: string | null
-          business_model: string | null
-          business_status: string | null
-          category: string | null
-          cell: string | null
-          contact_page: string | null
-          contact_suppressed: boolean
-          created_at: string
-          description: string | null
-          district: string | null
-          employee_count_status: string
-          employees_max: number | null
-          employees_min: number | null
-          exports: boolean | null
-          founded_date: string | null
-          founded_status: string
-          industry: string | null
-          industry_secondary: string | null
-          intel_updated_at: string | null
-          legal_name: string | null
-          legal_structure: string | null
-          location_verified: boolean
-          markets_served: string | null
-          parent_organization: string | null
-          preferred_channel: string | null
-          products_services: string | null
-          profile_confidence: string
-          profile_verified_at: string | null
-          province: string | null
-          registration_date: string | null
-          registration_id: string | null
-          registration_status: string | null
-          sector: string | null
-          supply_chain_role: string | null
-          suppression_reason: string | null
-          target_customers: string | null
-          trading_names: string[]
-          discovery_run_id: string | null
-          emails: string[]
-          id: string
-          last_activity_at: string | null
-          last_investigated_at: string | null
-          last_opened_at: string | null
-          latitude: number | null
-          longitude: number | null
-          maps_url: string | null
-          name: string
-          open_now: boolean | null
-          opening_hours: Json
-          owner_id: string
-          phone: string | null
-          place_id: string
-          rating: number | null
-          recent_reviews: Json
-          review_count: number | null
-          reviews_last_90d: number | null
-          score: number | null
-          socials: Json
-          source: string
-          status: string
-          updated_at: string
-          validation_plan: Json | null
-          visibility_score: number | null
-          website: string | null
-          website_check: Json
-          website_checked_at: string | null
-          website_source: string | null
-        }
-        Insert: {
-          activity_checked_at?: string | null
-          business_model?: string | null
-          cell?: string | null
-          contact_page?: string | null
-          contact_suppressed?: boolean
-          description?: string | null
-          district?: string | null
-          employee_count_status?: string
-          employees_max?: number | null
-          employees_min?: number | null
-          exports?: boolean | null
-          founded_date?: string | null
-          founded_status?: string
-          industry?: string | null
-          industry_secondary?: string | null
-          intel_updated_at?: string | null
-          legal_name?: string | null
-          legal_structure?: string | null
-          location_verified?: boolean
-          markets_served?: string | null
-          parent_organization?: string | null
-          preferred_channel?: string | null
-          products_services?: string | null
-          profile_confidence?: string
-          profile_verified_at?: string | null
-          province?: string | null
-          registration_date?: string | null
-          registration_id?: string | null
-          registration_status?: string | null
-          sector?: string | null
-          supply_chain_role?: string | null
-          suppression_reason?: string | null
-          target_customers?: string | null
-          trading_names?: string[]
-          address?: string | null
-          business_status?: string | null
-          category?: string | null
-          created_at?: string
-          discovery_run_id?: string | null
-          emails?: string[]
-          id?: string
-          last_activity_at?: string | null
-          last_investigated_at?: string | null
-          last_opened_at?: string | null
-          latitude?: number | null
-          longitude?: number | null
-          maps_url?: string | null
-          name: string
-          open_now?: boolean | null
-          opening_hours?: Json
-          owner_id?: string
-          phone?: string | null
-          place_id: string
-          rating?: number | null
-          recent_reviews?: Json
-          review_count?: number | null
-          reviews_last_90d?: number | null
-          score?: number | null
-          socials?: Json
-          source?: string
-          status?: string
-          updated_at?: string
-          validation_plan?: Json
-          visibility_score?: number | null
-          website?: string | null
-          website_check?: Json
-          website_checked_at?: string | null
-          website_source?: string | null
-        }
-        Update: {
-          activity_checked_at?: string | null
-          business_model?: string | null
-          cell?: string | null
-          contact_page?: string | null
-          contact_suppressed?: boolean
-          description?: string | null
-          district?: string | null
-          employee_count_status?: string
-          employees_max?: number | null
-          employees_min?: number | null
-          exports?: boolean | null
-          founded_date?: string | null
-          founded_status?: string
-          industry?: string | null
-          industry_secondary?: string | null
-          intel_updated_at?: string | null
-          legal_name?: string | null
-          legal_structure?: string | null
-          location_verified?: boolean
-          markets_served?: string | null
-          parent_organization?: string | null
-          preferred_channel?: string | null
-          products_services?: string | null
-          profile_confidence?: string
-          profile_verified_at?: string | null
-          province?: string | null
-          registration_date?: string | null
-          registration_id?: string | null
-          registration_status?: string | null
-          sector?: string | null
-          supply_chain_role?: string | null
-          suppression_reason?: string | null
-          target_customers?: string | null
-          trading_names?: string[]
-          address?: string | null
-          business_status?: string | null
-          category?: string | null
-          created_at?: string
-          discovery_run_id?: string | null
-          emails?: string[]
-          id?: string
-          last_activity_at?: string | null
-          last_investigated_at?: string | null
-          last_opened_at?: string | null
-          latitude?: number | null
-          longitude?: number | null
-          maps_url?: string | null
-          name?: string
-          open_now?: boolean | null
-          opening_hours?: Json
-          owner_id?: string
-          phone?: string | null
-          place_id?: string
-          rating?: number | null
-          recent_reviews?: Json
-          review_count?: number | null
-          reviews_last_90d?: number | null
-          score?: number | null
-          socials?: Json
-          source?: string
-          status?: string
-          updated_at?: string
-          validation_plan?: Json
-          visibility_score?: number | null
-          website?: string | null
-          website_check?: Json
-          website_checked_at?: string | null
-          website_source?: string | null
-        }
-        Relationships: []
-      }
       business_facts: {
         Row: {
           business_id: string
@@ -358,6 +113,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "business_facts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_notes: {
+        Row: {
+          body: string
+          business_id: string
+          created_at: string
+          id: string
+          owner_id: string
+        }
+        Insert: {
+          body: string
+          business_id: string
+          created_at?: string
+          id?: string
+          owner_id?: string
+        }
+        Update: {
+          body?: string
+          business_id?: string
+          created_at?: string
+          id?: string
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_notes_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
@@ -427,6 +214,219 @@ export type Database = {
           },
         ]
       }
+      businesses: {
+        Row: {
+          activity_checked_at: string | null
+          address: string | null
+          business_model: string | null
+          business_status: string | null
+          category: string | null
+          cell: string | null
+          contact_page: string | null
+          contact_suppressed: boolean
+          created_at: string
+          description: string | null
+          discovery_run_id: string | null
+          district: string | null
+          emails: string[]
+          employee_count_status: string
+          employees_max: number | null
+          employees_min: number | null
+          exports: boolean | null
+          founded_date: string | null
+          founded_status: string
+          id: string
+          industry: string | null
+          industry_secondary: string | null
+          intel_updated_at: string | null
+          last_activity_at: string | null
+          last_investigated_at: string | null
+          last_opened_at: string | null
+          latitude: number | null
+          legal_name: string | null
+          legal_structure: string | null
+          location_verified: boolean
+          longitude: number | null
+          maps_url: string | null
+          markets_served: string | null
+          name: string
+          open_now: boolean | null
+          opening_hours: Json
+          owner_id: string
+          parent_organization: string | null
+          phone: string | null
+          place_id: string
+          preferred_channel: string | null
+          products_services: string | null
+          profile_confidence: string
+          profile_verified_at: string | null
+          province: string | null
+          rating: number | null
+          recent_reviews: Json
+          registration_date: string | null
+          registration_id: string | null
+          registration_status: string | null
+          review_count: number | null
+          reviews_last_90d: number | null
+          score: number | null
+          sector: string | null
+          socials: Json
+          source: string
+          status: string
+          supply_chain_role: string | null
+          suppression_reason: string | null
+          target_customers: string | null
+          trading_names: string[]
+          updated_at: string
+          validation_plan: Json | null
+          visibility_score: number | null
+          website: string | null
+          website_check: Json
+          website_checked_at: string | null
+          website_source: string | null
+        }
+        Insert: {
+          activity_checked_at?: string | null
+          address?: string | null
+          business_model?: string | null
+          business_status?: string | null
+          category?: string | null
+          cell?: string | null
+          contact_page?: string | null
+          contact_suppressed?: boolean
+          created_at?: string
+          description?: string | null
+          discovery_run_id?: string | null
+          district?: string | null
+          emails?: string[]
+          employee_count_status?: string
+          employees_max?: number | null
+          employees_min?: number | null
+          exports?: boolean | null
+          founded_date?: string | null
+          founded_status?: string
+          id?: string
+          industry?: string | null
+          industry_secondary?: string | null
+          intel_updated_at?: string | null
+          last_activity_at?: string | null
+          last_investigated_at?: string | null
+          last_opened_at?: string | null
+          latitude?: number | null
+          legal_name?: string | null
+          legal_structure?: string | null
+          location_verified?: boolean
+          longitude?: number | null
+          maps_url?: string | null
+          markets_served?: string | null
+          name: string
+          open_now?: boolean | null
+          opening_hours?: Json
+          owner_id?: string
+          parent_organization?: string | null
+          phone?: string | null
+          place_id: string
+          preferred_channel?: string | null
+          products_services?: string | null
+          profile_confidence?: string
+          profile_verified_at?: string | null
+          province?: string | null
+          rating?: number | null
+          recent_reviews?: Json
+          registration_date?: string | null
+          registration_id?: string | null
+          registration_status?: string | null
+          review_count?: number | null
+          reviews_last_90d?: number | null
+          score?: number | null
+          sector?: string | null
+          socials?: Json
+          source?: string
+          status?: string
+          supply_chain_role?: string | null
+          suppression_reason?: string | null
+          target_customers?: string | null
+          trading_names?: string[]
+          updated_at?: string
+          validation_plan?: Json | null
+          visibility_score?: number | null
+          website?: string | null
+          website_check?: Json
+          website_checked_at?: string | null
+          website_source?: string | null
+        }
+        Update: {
+          activity_checked_at?: string | null
+          address?: string | null
+          business_model?: string | null
+          business_status?: string | null
+          category?: string | null
+          cell?: string | null
+          contact_page?: string | null
+          contact_suppressed?: boolean
+          created_at?: string
+          description?: string | null
+          discovery_run_id?: string | null
+          district?: string | null
+          emails?: string[]
+          employee_count_status?: string
+          employees_max?: number | null
+          employees_min?: number | null
+          exports?: boolean | null
+          founded_date?: string | null
+          founded_status?: string
+          id?: string
+          industry?: string | null
+          industry_secondary?: string | null
+          intel_updated_at?: string | null
+          last_activity_at?: string | null
+          last_investigated_at?: string | null
+          last_opened_at?: string | null
+          latitude?: number | null
+          legal_name?: string | null
+          legal_structure?: string | null
+          location_verified?: boolean
+          longitude?: number | null
+          maps_url?: string | null
+          markets_served?: string | null
+          name?: string
+          open_now?: boolean | null
+          opening_hours?: Json
+          owner_id?: string
+          parent_organization?: string | null
+          phone?: string | null
+          place_id?: string
+          preferred_channel?: string | null
+          products_services?: string | null
+          profile_confidence?: string
+          profile_verified_at?: string | null
+          province?: string | null
+          rating?: number | null
+          recent_reviews?: Json
+          registration_date?: string | null
+          registration_id?: string | null
+          registration_status?: string | null
+          review_count?: number | null
+          reviews_last_90d?: number | null
+          score?: number | null
+          sector?: string | null
+          socials?: Json
+          source?: string
+          status?: string
+          supply_chain_role?: string | null
+          suppression_reason?: string | null
+          target_customers?: string | null
+          trading_names?: string[]
+          updated_at?: string
+          validation_plan?: Json | null
+          visibility_score?: number | null
+          website?: string | null
+          website_check?: Json
+          website_checked_at?: string | null
+          website_source?: string | null
+        }
+        Relationships: []
+      }
       company_events: {
         Row: {
           business_id: string | null
@@ -485,48 +485,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      source_scans: {
-        Row: {
-          cost_usd: number
-          created_at: string
-          error: string | null
-          finished_at: string | null
-          id: string
-          items_found: number
-          new_items: number
-          owner_id: string
-          source_id: string
-          started_at: string
-          status: string
-        }
-        Insert: {
-          cost_usd?: number
-          created_at?: string
-          error?: string | null
-          finished_at?: string | null
-          id?: string
-          items_found?: number
-          new_items?: number
-          owner_id?: string
-          source_id: string
-          started_at?: string
-          status?: string
-        }
-        Update: {
-          cost_usd?: number
-          created_at?: string
-          error?: string | null
-          finished_at?: string | null
-          id?: string
-          items_found?: number
-          new_items?: number
-          owner_id?: string
-          source_id?: string
-          started_at?: string
-          status?: string
-        }
-        Relationships: []
       }
       discovery_runs: {
         Row: {
@@ -982,6 +940,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      source_scans: {
+        Row: {
+          cost_usd: number
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          items_found: number
+          new_items: number
+          owner_id: string
+          source_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          cost_usd?: number
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          items_found?: number
+          new_items?: number
+          owner_id?: string
+          source_id: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          cost_usd?: number
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          items_found?: number
+          new_items?: number
+          owner_id?: string
+          source_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
       }
       tasks: {
         Row: {
