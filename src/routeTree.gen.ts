@@ -19,6 +19,7 @@ import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticated/invoices'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedProposalsRouteImport } from './routes/_authenticated/proposals'
+import { Route as AuthenticatedRadarRouteImport } from './routes/_authenticated/radar'
 import { Route as AuthenticatedRwandaRouteImport } from './routes/_authenticated/rwanda'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
@@ -75,6 +76,11 @@ const AuthenticatedProposalsRoute = AuthenticatedProposalsRouteImport.update({
   path: '/proposals',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRadarRoute = AuthenticatedRadarRouteImport.update({
+  id: '/radar',
+  path: '/radar',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRwandaRoute = AuthenticatedRwandaRouteImport.update({
   id: '/rwanda',
   path: '/rwanda',
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/invoices': typeof AuthenticatedInvoicesRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/proposals': typeof AuthenticatedProposalsRouteWithChildren
+  '/radar': typeof AuthenticatedRadarRoute
   '/rwanda': typeof AuthenticatedRwandaRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tasks': typeof AuthenticatedTasksRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/invoices': typeof AuthenticatedInvoicesRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/proposals': typeof AuthenticatedProposalsRouteWithChildren
+  '/radar': typeof AuthenticatedRadarRoute
   '/rwanda': typeof AuthenticatedRwandaRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tasks': typeof AuthenticatedTasksRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/_authenticated/invoices': typeof AuthenticatedInvoicesRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
   '/_authenticated/proposals': typeof AuthenticatedProposalsRouteWithChildren
+  '/_authenticated/radar': typeof AuthenticatedRadarRoute
   '/_authenticated/rwanda': typeof AuthenticatedRwandaRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
@@ -173,6 +182,7 @@ export interface FileRouteTypes {
     | '/invoices'
     | '/orders'
     | '/proposals'
+    | '/radar'
     | '/rwanda'
     | '/settings'
     | '/tasks'
@@ -190,6 +200,7 @@ export interface FileRouteTypes {
     | '/invoices'
     | '/orders'
     | '/proposals'
+    | '/radar'
     | '/rwanda'
     | '/settings'
     | '/tasks'
@@ -208,6 +219,7 @@ export interface FileRouteTypes {
     | '/_authenticated/invoices'
     | '/_authenticated/orders'
     | '/_authenticated/proposals'
+    | '/_authenticated/radar'
     | '/_authenticated/rwanda'
     | '/_authenticated/settings'
     | '/_authenticated/tasks'
@@ -292,6 +304,13 @@ declare module '@tanstack/react-router' {
       path: '/proposals'
       fullPath: '/proposals'
       preLoaderRoute: typeof AuthenticatedProposalsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/radar': {
+      id: '/_authenticated/radar'
+      path: '/radar'
+      fullPath: '/radar'
+      preLoaderRoute: typeof AuthenticatedRadarRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rwanda': {
@@ -386,6 +405,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInvoicesRoute: typeof AuthenticatedInvoicesRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
   AuthenticatedProposalsRoute: typeof AuthenticatedProposalsRouteWithChildren
+  AuthenticatedRadarRoute: typeof AuthenticatedRadarRoute
   AuthenticatedRwandaRoute: typeof AuthenticatedRwandaRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
@@ -399,6 +419,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInvoicesRoute: AuthenticatedInvoicesRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
   AuthenticatedProposalsRoute: AuthenticatedProposalsRouteWithChildren,
+  AuthenticatedRadarRoute: AuthenticatedRadarRoute,
   AuthenticatedRwandaRoute: AuthenticatedRwandaRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,

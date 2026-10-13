@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   ListChecks,
   LogOut,
+  Radar,
   Receipt,
   ClipboardList,
   Settings as SettingsIcon,
@@ -69,6 +70,7 @@ type NavItem = { to: string; label: string; icon: LucideIcon };
 
 const NAV: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/radar", label: "Radar", icon: Radar },
   { to: "/discover", label: "Discover", icon: Compass },
   { to: "/proposals", label: "Proposals", icon: FileText },
   { to: "/invoices", label: "Invoices", icon: Receipt },
