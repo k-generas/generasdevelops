@@ -32,6 +32,16 @@ export const Route = createFileRoute("/_authenticated/proposals/$id")({
       { name: "description", content: "Edit, version and track a proposal." },
     ],
   }),
+  errorComponent: ({ error }) => (
+    <div className="space-y-2">
+      <p className="text-sm text-destructive">
+        Something went wrong opening this proposal: {(error as Error).message}
+      </p>
+      <Link to="/proposals" className="text-sm text-primary underline">
+        Back to proposals
+      </Link>
+    </div>
+  ),
   component: Editor,
 });
 
@@ -40,9 +50,15 @@ function Editor() {
   const qc = useQueryClient();
   const prop = useQuery({
     queryKey: ["proposal", id],
-    queryFn: async () =>
-      (await supabase.from("proposals").select("*, businesses(id,name)").eq("id", id).single())
-        .data,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("proposals")
+        .select("*, businesses(id,name)")
+        .eq("id", id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
   });
   const versions = useQuery({
     queryKey: ["pversions", id],
@@ -197,7 +213,27 @@ function Editor() {
     setInvBusy(false);
   }
 
-  if (!p) return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (prop.isLoading) return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (prop.error)
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-destructive">
+          Couldn’t load this proposal: {(prop.error as Error).message}
+        </p>
+        <Link to="/proposals" className="text-sm text-primary underline">
+          Back to proposals
+        </Link>
+      </div>
+    );
+  if (!p)
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">This proposal wasn’t found.</p>
+        <Link to="/proposals" className="text-sm text-primary underline">
+          Back to proposals
+        </Link>
+      </div>
+    );
   const why = (p.why ?? []) as unknown as { statement: string; kind: string; evidence: string }[];
 
   return (
@@ -297,7 +333,7 @@ function Editor() {
               why.map((w, i) => (
                 <div key={i} className="mb-3">
                   <span className="font-mono text-[10px] uppercase text-accent">
-                    {w.kind.replace(/_/g, " ")}
+                    {String(w.kind ?? "").replace(/_/g, " ")}
                   </span>
                   <p>{w.statement}</p>
                   <p className="text-xs text-muted-foreground">Evidence: {w.evidence}</p>
