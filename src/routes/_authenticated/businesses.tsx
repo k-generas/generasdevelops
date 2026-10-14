@@ -3,7 +3,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { investigateBusiness } from "@/lib/discovery.functions";
+import { BusinessIntelModal } from "@/components/BusinessIntelModal";
+import { type IntelBusinessRow, type IntelInvestigationRow } from "@/components/BusinessIntelModal";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,6 +21,7 @@ import {
   type IndustryKey,
   type Province,
 } from "@/lib/rwanda";
+import { matchesBusinessSearch } from "@/lib/business-search";
 
 export const Route = createFileRoute("/_authenticated/businesses")({
   head: () => ({
@@ -34,6 +38,15 @@ export const Route = createFileRoute("/_authenticated/businesses")({
 
 const WEBSITE_OPTIONS = ["no_site", "has_site", "all"] as const;
 type WebsiteFilter = (typeof WEBSITE_OPTIONS)[number];
+
+type LeadRow = {
+  id: string;
+  name: string;
+  business_status?: string | null;
+  website?: string | null;
+};
+
+type BusinessRow = Database["public"]["Tables"]["businesses"]["Row"];
 
 type LocationLike = {
   address: string | null;
@@ -58,17 +71,45 @@ function Businesses() {
   const [q, setQ] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+  // The business whose full-report modal is open (null = closed).
+  const [modalBiz, setModalBiz] = useState<LeadRow | null>(null);
 
   const businesses = useQuery({
     queryKey: ["businesses"],
     queryFn: async () => {
+      // Read every discovered business from local storage so a search never
+      // depends on Google Maps being reachable. PostgREST caps a single
+      // response, so page through until the dataset is exhausted.
+      const PAGE = 1000;
+      const all: BusinessRow[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from("businesses")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const batch = (data ?? []) as BusinessRow[];
+        all.push(...batch);
+        if (batch.length < PAGE) break;
+      }
+      return all;
+    },
+  });
+
+  const modalInv = useQuery({
+    queryKey: ["investigation", (modalBiz?.id as string) ?? null],
+    enabled: !!modalBiz?.id,
+    queryFn: async () => {
       const { data, error } = await supabase
-        .from("businesses")
+        .from("investigations")
         .select("*")
+        .eq("business_id", modalBiz!.id as string)
         .order("created_at", { ascending: false })
-        .limit(500);
+        .limit(1)
+        .maybeSingle();
       if (error) throw error;
-      return data ?? [];
+      return data;
     },
   });
 
@@ -90,21 +131,24 @@ function Businesses() {
         (b.industry as IndustryKey | null) ??
         classifyIndustry(`${b.category ?? ""} ${b.name ?? ""}`);
       if (industry !== "ALL" && ind !== industry) return false;
-      if (q.trim()) {
-        const s = `${b.name} ${b.category ?? ""} ${b.address ?? ""}`.toLowerCase();
-        if (!s.includes(q.toLowerCase())) return false;
-      }
+      if (!matchesBusinessSearch(b, q)) return false;
       return true;
     });
   }, [businesses.data, website, province, industry, q]);
 
-  async function runInvestigation(id: string, name: string) {
+  async function runInvestigation(b: LeadRow) {
+    const id = b.id;
+    const name = b.name;
+    // Open the report modal immediately so the business is visible even if the
+    // run later fails (e.g. missing AI/Maps keys).
+    setModalBiz(b);
     setBusyId(id);
     setNote(null);
     try {
       await investigate({ data: { businessId: id, provider: "auto" } });
       qc.invalidateQueries({ queryKey: ["businesses"] });
       qc.invalidateQueries({ queryKey: ["businesses-investigated"] });
+      qc.invalidateQueries({ queryKey: ["investigation", id] });
       setNote({ ok: true, text: `Investigation complete for ${name}.` });
     } catch (e) {
       const text = e instanceof Error ? e.message : String(e);
@@ -121,14 +165,15 @@ function Businesses() {
         <div>
           <h1 className="text-2xl font-bold">Leads</h1>
           <p className="text-sm text-muted-foreground">
-            {businesses.data?.length ?? "…"} total · {noSite} without a website shown
+            {rows.length} shown of {businesses.data?.length ?? "…"} saved · {noSite} without a
+            website
           </p>
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search…"
+            placeholder="Search saved leads…"
             className="w-44"
           />
           <select
@@ -237,9 +282,19 @@ function Businesses() {
                   </span>
                   <Button
                     size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setModalBiz(b);
+                      setNote(null);
+                    }}
+                  >
+                    View
+                  </Button>
+                  <Button
+                    size="sm"
                     variant="outline"
                     disabled={busyId === b.id}
-                    onClick={() => runInvestigation(b.id, b.name)}
+                    onClick={() => runInvestigation(b)}
                   >
                     {busyId === b.id ? "Investigating…" : "Run investigation"}
                   </Button>
@@ -249,6 +304,31 @@ function Businesses() {
           </div>
         </div>
       )}
+
+      {modalBiz && (
+        <BusinessIntelModal
+          open={!!modalBiz}
+          onOpenChange={(o) => {
+            if (!o) {
+              setModalBiz(null);
+              setNote(null);
+            }
+          }}
+          business={modalBiz as unknown as IntelBusinessRow}
+          investigation={(modalInv.data ?? null) as unknown as IntelInvestigationRow | null}
+          provider="auto"
+          investigating={busyId === (modalBiz.id as string)}
+          error={note && !note.ok ? note.text : null}
+          outreachEnabled={outreachEnabled(modalBiz, modalInv.data)}
+        />
+      )}
     </div>
   );
+}
+
+function outreachEnabled(biz: LeadRow, inv: unknown): boolean {
+  if (biz.business_status === "CLOSED_PERMANENTLY") return false;
+  const report = (inv as { report?: { recommended_offer?: string } } | null)?.report;
+  if (!report) return false;
+  return !String(report.recommended_offer ?? "").startsWith("No offer");
 }
