@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS public.monitoring_settings (
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.monitoring_settings TO authenticated;
 GRANT ALL ON public.monitoring_settings TO service_role;
 ALTER TABLE public.monitoring_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own monitoring_settings" ON public.monitoring_settings;
 CREATE POLICY "own monitoring_settings" ON public.monitoring_settings FOR ALL TO authenticated
   USING (owner_id = auth.uid()) WITH CHECK (owner_id = auth.uid());
 
@@ -46,6 +47,7 @@ CREATE TABLE IF NOT EXISTS public.daily_digests (
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.daily_digests TO authenticated;
 GRANT ALL ON public.daily_digests TO service_role;
 ALTER TABLE public.daily_digests ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own daily_digests" ON public.daily_digests;
 CREATE POLICY "own daily_digests" ON public.daily_digests FOR ALL TO authenticated
   USING (owner_id = auth.uid()) WITH CHECK (owner_id = auth.uid());
 CREATE UNIQUE INDEX IF NOT EXISTS daily_digests_owner_date
