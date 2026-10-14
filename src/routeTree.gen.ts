@@ -23,6 +23,7 @@ import { Route as AuthenticatedRadarRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedRwandaRouteImport } from './routes/_authenticated/rwanda'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
+import { Route as AuthenticatedUpdatesRouteImport } from './routes/_authenticated/updates'
 import { Route as AuthenticatedBusinessesIdRouteImport } from './routes/_authenticated/businesses.$id'
 import { Route as AuthenticatedHistoryIdRouteImport } from './routes/_authenticated/history.$id'
 import { Route as AuthenticatedProposalsIdRouteImport } from './routes/_authenticated/proposals.$id'
@@ -96,6 +97,11 @@ const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
   path: '/tasks',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedUpdatesRoute = AuthenticatedUpdatesRouteImport.update({
+  id: '/updates',
+  path: '/updates',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedBusinessesIdRoute =
   AuthenticatedBusinessesIdRouteImport.update({
     id: '/$id',
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/rwanda': typeof AuthenticatedRwandaRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tasks': typeof AuthenticatedTasksRoute
+  '/updates': typeof AuthenticatedUpdatesRoute
   '/businesses/$id': typeof AuthenticatedBusinessesIdRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
   '/proposals/$id': typeof AuthenticatedProposalsIdRoute
@@ -146,6 +153,7 @@ export interface FileRoutesByTo {
   '/rwanda': typeof AuthenticatedRwandaRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tasks': typeof AuthenticatedTasksRoute
+  '/updates': typeof AuthenticatedUpdatesRoute
   '/businesses/$id': typeof AuthenticatedBusinessesIdRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
   '/proposals/$id': typeof AuthenticatedProposalsIdRoute
@@ -166,6 +174,7 @@ export interface FileRoutesById {
   '/_authenticated/rwanda': typeof AuthenticatedRwandaRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
+  '/_authenticated/updates': typeof AuthenticatedUpdatesRoute
   '/_authenticated/businesses/$id': typeof AuthenticatedBusinessesIdRoute
   '/_authenticated/history/$id': typeof AuthenticatedHistoryIdRoute
   '/_authenticated/proposals/$id': typeof AuthenticatedProposalsIdRoute
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
     | '/rwanda'
     | '/settings'
     | '/tasks'
+    | '/updates'
     | '/businesses/$id'
     | '/history/$id'
     | '/proposals/$id'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/rwanda'
     | '/settings'
     | '/tasks'
+    | '/updates'
     | '/businesses/$id'
     | '/history/$id'
     | '/proposals/$id'
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rwanda'
     | '/_authenticated/settings'
     | '/_authenticated/tasks'
+    | '/_authenticated/updates'
     | '/_authenticated/businesses/$id'
     | '/_authenticated/history/$id'
     | '/_authenticated/proposals/$id'
@@ -334,6 +346,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTasksRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/updates': {
+      id: '/_authenticated/updates'
+      path: '/updates'
+      fullPath: '/updates'
+      preLoaderRoute: typeof AuthenticatedUpdatesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/businesses/$id': {
       id: '/_authenticated/businesses/$id'
       path: '/$id'
@@ -409,6 +428,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRwandaRoute: typeof AuthenticatedRwandaRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
+  AuthenticatedUpdatesRoute: typeof AuthenticatedUpdatesRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -423,6 +443,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRwandaRoute: AuthenticatedRwandaRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
+  AuthenticatedUpdatesRoute: AuthenticatedUpdatesRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

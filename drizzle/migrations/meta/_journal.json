@@ -78,6 +78,13 @@
       "when": 1791893318623,
       "tag": "0010_business_facts_align",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792500000000,
+      "tag": "0011_monitoring_digests",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,8 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
+  Bell,
   Building2,
   Compass,
   Factory,
@@ -70,6 +72,7 @@ type NavItem = { to: string; label: string; icon: LucideIcon };
 
 const NAV: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/updates", label: "Updates", icon: Bell },
   { to: "/radar", label: "Radar", icon: Radar },
   { to: "/discover", label: "Discover", icon: Compass },
   { to: "/proposals", label: "Proposals", icon: FileText },
@@ -85,6 +88,14 @@ const NAV: NavItem[] = [
 // Bottom tabs stay at five; Settings lives in the account menu on mobile.
 const MOBILE_NAV = NAV.slice(0, 5);
 
+function NavBadge({ count }: { count: number }) {
+  return (
+    <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
 function BrandMark() {
   return (
     <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
@@ -96,6 +107,18 @@ function BrandMark() {
 function Shell() {
   const navigate = useNavigate();
   const [email, setEmail] = useState<string>("");
+
+  const unread = useQuery({
+    queryKey: ["updates-unread"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("daily_digests")
+        .select("id", { count: "exact", head: true })
+        .is("read_at", null);
+      return count ?? 0;
+    },
+  });
+  const unreadCount = unread.data ?? 0;
 
   useEffect(() => {
     void trackVisit();
@@ -131,6 +154,7 @@ function Shell() {
             >
               <n.icon className="h-4 w-4" />
               {n.label}
+              {n.to === "/updates" && unreadCount > 0 && <NavBadge count={unreadCount} />}
             </Link>
           ))}
         </nav>
@@ -218,7 +242,14 @@ function Shell() {
               to={n.to}
               className="flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium text-muted-foreground transition-colors data-[status=active]:text-primary"
             >
-              <n.icon className="h-5 w-5" />
+              <span className="relative">
+                <n.icon className="h-5 w-5" />
+                {n.to === "/updates" && unreadCount > 0 && (
+                  <span className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-semibold text-primary-foreground">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </span>
               {n.label}
             </Link>
           ))}

@@ -5,6 +5,11 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { investigateBusiness } from "@/lib/discovery.functions";
 import { runRwandaScan } from "@/lib/rwanda-discovery.functions";
+import {
+  getMonitoringSettings,
+  runMonitoringNow,
+  saveMonitoringSettings,
+} from "@/lib/monitoring.functions";
 import { generateProposal } from "@/lib/proposals.functions";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -71,6 +76,9 @@ function RadarPage() {
   const scan = useServerFn(runRwandaScan);
   const investigate = useServerFn(investigateBusiness);
   const draft = useServerFn(generateProposal);
+  const loadMonitoring = useServerFn(getMonitoringSettings);
+  const saveMonitoring = useServerFn(saveMonitoringSettings);
+  const runDailyNow = useServerFn(runMonitoringNow);
   const { data: offersResult } = useOffers();
   const offers = useMemo(() => offersResult?.offers ?? [], [offersResult]);
 
@@ -79,6 +87,8 @@ function RadarPage() {
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   const [scanBusy, setScanBusy] = useState(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
+  const [autoBusy, setAutoBusy] = useState(false);
+  const [autoNote, setAutoNote] = useState<string | null>(null);
   const [view, setView] = useState<"clusters" | "map">("clusters");
   const [gapFilter, setGapFilter] = useState<string | null>(null);
 
@@ -89,6 +99,49 @@ function RadarPage() {
       /* storage unavailable */
     }
   }, [settings]);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadMonitoring()
+      .then((row) => {
+        if (cancelled || !row) return;
+        setSettings((s) => ({
+          ...s,
+          district: row.district ?? s.district,
+          category: (row.category as RadarCategoryKey) ?? s.category,
+          monitoring: row.enabled ? "daily" : s.monitoring,
+        }));
+        if (row.last_run_at) {
+          setAutoNote(
+            `Daily target saved · last run ${new Date(row.last_run_at).toLocaleString()}`,
+          );
+        }
+      })
+      .catch(() => {
+        /* not signed in or offline — local settings still work */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadMonitoring]);
+
+  // Keep the saved daily target in sync when its area/focus changes.
+  useEffect(() => {
+    if (settings.monitoring !== "daily" || !settings.district) return;
+    const t = setTimeout(() => {
+      saveMonitoring({
+        data: {
+          enabled: true,
+          district: settings.district,
+          category: settings.category,
+          maxQueries: 10,
+        },
+      }).catch(() => {
+        /* best effort — the toggle already reports hard failures */
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [settings.monitoring, settings.district, settings.category, saveMonitoring]);
 
   const businesses = useQuery({
     queryKey: ["radar-businesses"],
@@ -226,6 +279,62 @@ function RadarPage() {
       setNote({ ok: false, text: `Scan failed: ${e instanceof Error ? e.message : String(e)}` });
     } finally {
       setScanBusy(false);
+    }
+  }
+
+  async function changeMonitoring(key: RadarMonitoringKey) {
+    if (key === "daily" && !settings.district) {
+      setNote({ ok: false, text: "Pick a district before enabling the daily scan." });
+      return;
+    }
+    setSettings((s) => ({ ...s, monitoring: key }));
+    setAutoBusy(true);
+    setNote(null);
+    try {
+      const row = await saveMonitoring({
+        data: {
+          enabled: key === "daily",
+          district: settings.district,
+          category: settings.category,
+          maxQueries: 10,
+        },
+      });
+      setAutoNote(
+        key === "daily"
+          ? `Daily automatic scan on · ${row.district ?? "all districts"} · ${categoryLabel(settings.category)}`
+          : "Automatic daily scan off.",
+      );
+    } catch (e) {
+      setNote({
+        ok: false,
+        text: `Could not save target: ${e instanceof Error ? e.message : String(e)}`,
+      });
+    } finally {
+      setAutoBusy(false);
+    }
+  }
+
+  async function runDailyScanNow() {
+    setAutoBusy(true);
+    setNote(null);
+    setAutoNote(null);
+    try {
+      const out = await runDailyNow();
+      if (out.status === "failed") {
+        setAutoNote(`Daily scan failed: ${out.error}`);
+      } else {
+        setAutoNote(
+          `Daily scan finished · ${out.result?.found ?? 0} found · ${out.added} new · see Updates.`,
+        );
+        qc.invalidateQueries({ queryKey: ["radar-businesses"] });
+      }
+    } catch (e) {
+      setNote({
+        ok: false,
+        text: `Daily scan failed: ${e instanceof Error ? e.message : String(e)}`,
+      });
+    } finally {
+      setAutoBusy(false);
     }
   }
 
@@ -373,9 +482,8 @@ function RadarPage() {
             <select
               className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
               value={settings.monitoring}
-              onChange={(e) =>
-                setSettings((s) => ({ ...s, monitoring: e.target.value as RadarMonitoringKey }))
-              }
+              disabled={autoBusy}
+              onChange={(e) => void changeMonitoring(e.target.value as RadarMonitoringKey)}
             >
               {RADAR_MONITORING.map((m) => (
                 <option key={m.key} value={m.key}>
@@ -401,6 +509,30 @@ function RadarPage() {
               ))}
             </div>
           </div>
+        </div>
+
+        <div className="space-y-2 rounded-md border bg-background/40 p-3">
+          <p className="text-sm font-medium">Automatic daily scan</p>
+          <p className="text-xs text-muted-foreground">
+            Set <span className="font-medium">Monitoring</span> to “Daily scan” above to save this
+            target (area + industry focus). Once the daily job is scheduled, it is scanned every day
+            and what it found appears in Updates. You can also run it right now.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={autoBusy || !settings.district}
+              onClick={runDailyScanNow}
+            >
+              {autoBusy ? "Working…" : "Run daily scan now"}
+            </Button>
+            <Button type="button" size="sm" variant="ghost" asChild>
+              <Link to="/updates">View updates</Link>
+            </Button>
+          </div>
+          {autoNote && <p className="text-xs text-muted-foreground">{autoNote}</p>}
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

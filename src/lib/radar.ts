@@ -696,7 +696,7 @@ export function monitoringPolicy(m: RadarMonitoringKey): MonitoringPolicy {
         label: "Daily scan",
         cadenceHours: 24,
         claimsRealtime: false,
-        note: "A daily check is periodic, not real-time. Automatic scheduling needs a background job, which is not enabled yet — use “Run radar scan” to check now.",
+        note: "A daily check is periodic, not real-time. Once the daily background job is scheduled, this saved target is scanned automatically and results land in Updates — or run it now with “Run daily scan now”.",
       };
     default:
       return {

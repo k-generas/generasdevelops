@@ -486,6 +486,69 @@ export type Database = {
           },
         ]
       }
+      daily_digests: {
+        Row: {
+          added: number
+          category: string
+          cost_usd: number
+          created_at: string
+          district: string | null
+          duplicates: number
+          error: string | null
+          failed_queries: number
+          for_date: string
+          found: number
+          id: string
+          new_businesses: Json
+          owner_id: string
+          queries: number
+          read_at: string | null
+          run_id: string | null
+          scan_id: string | null
+          status: string
+        }
+        Insert: {
+          added?: number
+          category?: string
+          cost_usd?: number
+          created_at?: string
+          district?: string | null
+          duplicates?: number
+          error?: string | null
+          failed_queries?: number
+          for_date?: string
+          found?: number
+          id?: string
+          new_businesses?: Json
+          owner_id?: string
+          queries?: number
+          read_at?: string | null
+          run_id?: string | null
+          scan_id?: string | null
+          status?: string
+        }
+        Update: {
+          added?: number
+          category?: string
+          cost_usd?: number
+          created_at?: string
+          district?: string | null
+          duplicates?: number
+          error?: string | null
+          failed_queries?: number
+          for_date?: string
+          found?: number
+          id?: string
+          new_businesses?: Json
+          owner_id?: string
+          queries?: number
+          read_at?: string | null
+          run_id?: string | null
+          scan_id?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       discovery_runs: {
         Row: {
           archived: boolean
@@ -655,6 +718,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      monitoring_settings: {
+        Row: {
+          category: string
+          created_at: string
+          district: string | null
+          enabled: boolean
+          industries: string[]
+          last_run_at: string | null
+          max_queries: number
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          district?: string | null
+          enabled?: boolean
+          industries?: string[]
+          last_run_at?: string | null
+          max_queries?: number
+          owner_id?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          district?: string | null
+          enabled?: boolean
+          industries?: string[]
+          last_run_at?: string | null
+          max_queries?: number
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       offers: {
         Row: {
