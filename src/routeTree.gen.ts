@@ -16,10 +16,17 @@ import { Route as AuthenticatedBusinessesRouteImport } from './routes/_authentic
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDiscoverRouteImport } from './routes/_authenticated/discover'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
+import { Route as AuthenticatedIntentRouteImport } from './routes/_authenticated/intent'
 import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticated/invoices'
+import { Route as AuthenticatedLeaksRouteImport } from './routes/_authenticated/leaks'
+import { Route as AuthenticatedOffersRouteImport } from './routes/_authenticated/offers'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
+import { Route as AuthenticatedPartnersRouteImport } from './routes/_authenticated/partners'
 import { Route as AuthenticatedProposalsRouteImport } from './routes/_authenticated/proposals'
 import { Route as AuthenticatedRadarRouteImport } from './routes/_authenticated/radar'
+import { Route as AuthenticatedRecoveryRouteImport } from './routes/_authenticated/recovery'
+import { Route as AuthenticatedReferralsRouteImport } from './routes/_authenticated/referrals'
+import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticated/revenue'
 import { Route as AuthenticatedRwandaRouteImport } from './routes/_authenticated/rwanda'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
@@ -62,14 +69,34 @@ const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedIntentRoute = AuthenticatedIntentRouteImport.update({
+  id: '/intent',
+  path: '/intent',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedInvoicesRoute = AuthenticatedInvoicesRouteImport.update({
   id: '/invoices',
   path: '/invoices',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLeaksRoute = AuthenticatedLeaksRouteImport.update({
+  id: '/leaks',
+  path: '/leaks',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedOffersRoute = AuthenticatedOffersRouteImport.update({
+  id: '/offers',
+  path: '/offers',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPartnersRoute = AuthenticatedPartnersRouteImport.update({
+  id: '/partners',
+  path: '/partners',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProposalsRoute = AuthenticatedProposalsRouteImport.update({
@@ -80,6 +107,21 @@ const AuthenticatedProposalsRoute = AuthenticatedProposalsRouteImport.update({
 const AuthenticatedRadarRoute = AuthenticatedRadarRouteImport.update({
   id: '/radar',
   path: '/radar',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRecoveryRoute = AuthenticatedRecoveryRouteImport.update({
+  id: '/recovery',
+  path: '/recovery',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedReferralsRoute = AuthenticatedReferralsRouteImport.update({
+  id: '/referrals',
+  path: '/referrals',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRevenueRoute = AuthenticatedRevenueRouteImport.update({
+  id: '/revenue',
+  path: '/revenue',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedRwandaRoute = AuthenticatedRwandaRouteImport.update({
@@ -127,10 +169,17 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/discover': typeof AuthenticatedDiscoverRoute
   '/history': typeof AuthenticatedHistoryRouteWithChildren
+  '/intent': typeof AuthenticatedIntentRoute
   '/invoices': typeof AuthenticatedInvoicesRoute
+  '/leaks': typeof AuthenticatedLeaksRoute
+  '/offers': typeof AuthenticatedOffersRoute
   '/orders': typeof AuthenticatedOrdersRoute
+  '/partners': typeof AuthenticatedPartnersRoute
   '/proposals': typeof AuthenticatedProposalsRouteWithChildren
   '/radar': typeof AuthenticatedRadarRoute
+  '/recovery': typeof AuthenticatedRecoveryRoute
+  '/referrals': typeof AuthenticatedReferralsRoute
+  '/revenue': typeof AuthenticatedRevenueRoute
   '/rwanda': typeof AuthenticatedRwandaRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tasks': typeof AuthenticatedTasksRoute
@@ -146,10 +195,17 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/discover': typeof AuthenticatedDiscoverRoute
   '/history': typeof AuthenticatedHistoryRouteWithChildren
+  '/intent': typeof AuthenticatedIntentRoute
   '/invoices': typeof AuthenticatedInvoicesRoute
+  '/leaks': typeof AuthenticatedLeaksRoute
+  '/offers': typeof AuthenticatedOffersRoute
   '/orders': typeof AuthenticatedOrdersRoute
+  '/partners': typeof AuthenticatedPartnersRoute
   '/proposals': typeof AuthenticatedProposalsRouteWithChildren
   '/radar': typeof AuthenticatedRadarRoute
+  '/recovery': typeof AuthenticatedRecoveryRoute
+  '/referrals': typeof AuthenticatedReferralsRoute
+  '/revenue': typeof AuthenticatedRevenueRoute
   '/rwanda': typeof AuthenticatedRwandaRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/tasks': typeof AuthenticatedTasksRoute
@@ -167,10 +223,17 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/discover': typeof AuthenticatedDiscoverRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRouteWithChildren
+  '/_authenticated/intent': typeof AuthenticatedIntentRoute
   '/_authenticated/invoices': typeof AuthenticatedInvoicesRoute
+  '/_authenticated/leaks': typeof AuthenticatedLeaksRoute
+  '/_authenticated/offers': typeof AuthenticatedOffersRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
+  '/_authenticated/partners': typeof AuthenticatedPartnersRoute
   '/_authenticated/proposals': typeof AuthenticatedProposalsRouteWithChildren
   '/_authenticated/radar': typeof AuthenticatedRadarRoute
+  '/_authenticated/recovery': typeof AuthenticatedRecoveryRoute
+  '/_authenticated/referrals': typeof AuthenticatedReferralsRoute
+  '/_authenticated/revenue': typeof AuthenticatedRevenueRoute
   '/_authenticated/rwanda': typeof AuthenticatedRwandaRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
@@ -188,10 +251,17 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/discover'
     | '/history'
+    | '/intent'
     | '/invoices'
+    | '/leaks'
+    | '/offers'
     | '/orders'
+    | '/partners'
     | '/proposals'
     | '/radar'
+    | '/recovery'
+    | '/referrals'
+    | '/revenue'
     | '/rwanda'
     | '/settings'
     | '/tasks'
@@ -207,10 +277,17 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/discover'
     | '/history'
+    | '/intent'
     | '/invoices'
+    | '/leaks'
+    | '/offers'
     | '/orders'
+    | '/partners'
     | '/proposals'
     | '/radar'
+    | '/recovery'
+    | '/referrals'
+    | '/revenue'
     | '/rwanda'
     | '/settings'
     | '/tasks'
@@ -227,10 +304,17 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/discover'
     | '/_authenticated/history'
+    | '/_authenticated/intent'
     | '/_authenticated/invoices'
+    | '/_authenticated/leaks'
+    | '/_authenticated/offers'
     | '/_authenticated/orders'
+    | '/_authenticated/partners'
     | '/_authenticated/proposals'
     | '/_authenticated/radar'
+    | '/_authenticated/recovery'
+    | '/_authenticated/referrals'
+    | '/_authenticated/revenue'
     | '/_authenticated/rwanda'
     | '/_authenticated/settings'
     | '/_authenticated/tasks'
@@ -297,6 +381,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/intent': {
+      id: '/_authenticated/intent'
+      path: '/intent'
+      fullPath: '/intent'
+      preLoaderRoute: typeof AuthenticatedIntentRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/invoices': {
       id: '/_authenticated/invoices'
       path: '/invoices'
@@ -304,11 +395,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInvoicesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/leaks': {
+      id: '/_authenticated/leaks'
+      path: '/leaks'
+      fullPath: '/leaks'
+      preLoaderRoute: typeof AuthenticatedLeaksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/offers': {
+      id: '/_authenticated/offers'
+      path: '/offers'
+      fullPath: '/offers'
+      preLoaderRoute: typeof AuthenticatedOffersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/orders': {
       id: '/_authenticated/orders'
       path: '/orders'
       fullPath: '/orders'
       preLoaderRoute: typeof AuthenticatedOrdersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/partners': {
+      id: '/_authenticated/partners'
+      path: '/partners'
+      fullPath: '/partners'
+      preLoaderRoute: typeof AuthenticatedPartnersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/proposals': {
@@ -323,6 +435,27 @@ declare module '@tanstack/react-router' {
       path: '/radar'
       fullPath: '/radar'
       preLoaderRoute: typeof AuthenticatedRadarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/recovery': {
+      id: '/_authenticated/recovery'
+      path: '/recovery'
+      fullPath: '/recovery'
+      preLoaderRoute: typeof AuthenticatedRecoveryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/referrals': {
+      id: '/_authenticated/referrals'
+      path: '/referrals'
+      fullPath: '/referrals'
+      preLoaderRoute: typeof AuthenticatedReferralsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/revenue': {
+      id: '/_authenticated/revenue'
+      path: '/revenue'
+      fullPath: '/revenue'
+      preLoaderRoute: typeof AuthenticatedRevenueRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rwanda': {
@@ -421,10 +554,17 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDiscoverRoute: typeof AuthenticatedDiscoverRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRouteWithChildren
+  AuthenticatedIntentRoute: typeof AuthenticatedIntentRoute
   AuthenticatedInvoicesRoute: typeof AuthenticatedInvoicesRoute
+  AuthenticatedLeaksRoute: typeof AuthenticatedLeaksRoute
+  AuthenticatedOffersRoute: typeof AuthenticatedOffersRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
+  AuthenticatedPartnersRoute: typeof AuthenticatedPartnersRoute
   AuthenticatedProposalsRoute: typeof AuthenticatedProposalsRouteWithChildren
   AuthenticatedRadarRoute: typeof AuthenticatedRadarRoute
+  AuthenticatedRecoveryRoute: typeof AuthenticatedRecoveryRoute
+  AuthenticatedReferralsRoute: typeof AuthenticatedReferralsRoute
+  AuthenticatedRevenueRoute: typeof AuthenticatedRevenueRoute
   AuthenticatedRwandaRoute: typeof AuthenticatedRwandaRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
@@ -436,10 +576,17 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDiscoverRoute: AuthenticatedDiscoverRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRouteWithChildren,
+  AuthenticatedIntentRoute: AuthenticatedIntentRoute,
   AuthenticatedInvoicesRoute: AuthenticatedInvoicesRoute,
+  AuthenticatedLeaksRoute: AuthenticatedLeaksRoute,
+  AuthenticatedOffersRoute: AuthenticatedOffersRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
+  AuthenticatedPartnersRoute: AuthenticatedPartnersRoute,
   AuthenticatedProposalsRoute: AuthenticatedProposalsRouteWithChildren,
   AuthenticatedRadarRoute: AuthenticatedRadarRoute,
+  AuthenticatedRecoveryRoute: AuthenticatedRecoveryRoute,
+  AuthenticatedReferralsRoute: AuthenticatedReferralsRoute,
+  AuthenticatedRevenueRoute: AuthenticatedRevenueRoute,
   AuthenticatedRwandaRoute: AuthenticatedRwandaRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,

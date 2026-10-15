@@ -99,3 +99,60 @@ reviews-in-last-90-days. **No** private data and no invented data.
   publishable key), so some integrations are exercised only on the hosted platform.
 - AI provider availability depends on secrets present at runtime (`OPENAI_API_KEY`,
   `GEMINI_API_KEY`, `LOVABLE_API_KEY`); `getSystemStatus` reports which are configured.
+
+---
+
+## Addendum 2026-10-14 — Revenue Growth Engine audit (Features A–H)
+
+Audit of the app against the "GARE Revenue Growth Engine" brief, done before any
+implementation. Statuses: **COMPLETE** / **PARTIAL** / **MISSING** / **MOCKED** /
+**BLOCKED** / **BROKEN**. Nothing below is aspirational.
+
+### Regression baseline (start of pass)
+
+- `git` HEAD `412ab13`; working tree clean; `main == origin/main`.
+- `npx tsc --noEmit` — clean · `npx eslint .` — 0 errors (7 pre-existing warnings) ·
+  `npx vitest run` — 25 files / 161 tests passing · `npx vite build` — succeeds.
+
+### Since the 2026-10-12 audit, these shipped and are verified
+
+- **Monitoring**: automatic daily radar scan + in-app digest feed — migration
+  `0011_monitoring_digests.sql` (`monitoring_settings`, `daily_digests`),
+  `monitoring.ts` / `monitoring.server.ts` / `monitoring.functions.ts`, `/updates`
+  route + nav unread badge; Radar page gained "run daily scan now". Committed `3e858d9`.
+- **Saved-leads search**: `business-search.ts` + paginated search on `/businesses`.
+- **Rwanda scan core** extracted to `rwanda-scan.server.ts` (shared by scan + monitoring).
+- **Phase 1 (A + F)**: `revenue-leaks.ts` + `feasibility.ts` (pure, tested) + `revenue_leaks`
+  table & `user_preferences.feasibility_defaults` (migration 0012) + `/leaks` page.
+- **Phase 2 (B)**: `partners.ts` (pure overflow + matching, tested) + owner-scoped
+  `partners` / `partner_handoffs` (migration 0013) + `/partners` page.
+- **Phase 3 (C + G)**: `recurring.ts` + `recovery.ts` (pure, tested) + owner-scoped
+  `subscriptions` (migration 0014) + `/revenue` and `/recovery` pages; recovery reuses `tasks`.
+- **Phase 4 (E)**: `offer-kit.ts` (pure, tested) + owner-scoped `offer_kits` (migration 0015)
+  + `/offers` studio; leak cards gained a **Plan delivery** action that turns a kit's checklist
+  into deduped `tasks`.
+- **Phase 5 (D + H)**: `intent.ts` + `referrals.ts` (pure, tested) + `/intent` board
+  (no new table) + owner-scoped `referrals` ledger (migration 0016) + `/referrals` page.
+
+### Capability matrix (Features A–H)
+
+| Feature | Status | Evidence / gap (pre-implementation) |
+| --- | --- | --- |
+| **A. Revenue leak detector** | **MISSING→DONE (this pass)** | No leak concept existed. Was **PARTIAL** as "review detected problems": `business-intel.deriveObservedProblems` + `service-match` derived problems from measured website evidence, shown inside the intel modal only — no persistent, reviewable, owner-scoped leak list. Now: `revenue-leaks.ts` (pure) + `/leaks` feed + `revenue_leaks` table (migration 0012). |
+| **B. Agency overflow / sub-contract work finder** | **MISSING→DONE (this pass)** | No concept existed. Now: `partners.ts` (pure overflow detection + honest partner matching) + owner-scoped `partners` / `partner_handoffs` (migration 0013) + `/partners` page (overflow list, partner directory, handoff tracker). |
+| **C. Recurring revenue builder** | **PARTIAL→DONE (this pass)** | `MatchExplanation.recurring` flagged recurring offers and the `offers` catalog existed, but there was no recurring pipeline. Now: `recurring.ts` (pure MRR/ARR/churn/renewal model that keeps proposed/paused/churned value out of MRR) + owner-scoped `subscriptions` (migration 0014) + `/revenue` page (snapshot stats, renewals, recurring-leak opportunities, lifecycle status). |
+| **D. Buyer-intent signals** | **PARTIAL→DONE (this pass)** | `company_events`, `activity.ts` (hiring detection + disclaimer), `reviews_last_90d`, `last_activity_at` existed as badges with no board. Now: `intent.ts` (pure scorer that blends measured gaps, review/activity recency, activity signals and pipeline stage; every score carries reasons, uncertainties and a limitation) + `/intent` board ranked by tier. No new table. |
+| **E. Repeatable offer factory** | **PARTIAL→DONE (this pass)** | The `offers` catalog (name, default price, deliverables, notes) existed but carried no reusable scope or delivery template. Now: `offer-kit.ts` (pure templates + scope summary + delivery checklist, derived from the shared offer rules) + owner-scoped `offer_kits` (migration 0015) + `/offers` studio; a leak's **Plan delivery** materialises the offer's checklist into deduped `tasks` (reuses `tasks`, no new pipeline). |
+| **F. Profit & delivery feasibility engine** | **MISSING→DONE (this pass)** | No profit/capacity/margin model existed anywhere. `ranking.ts` has a ranking score, not a financial model. Now: `feasibility.ts` (pure, scenarios + capacity + honest flags) + stored assumptions (migration 0012) + per-leak profit check on `/leaks`. |
+| **G. Lost-deal recovery** | **PARTIAL→DONE (this pass)** | `proposals.outcome` + `outcomes.ts` captured reasons but there was no dormant-lead detection. Now: `recovery.ts` (pure) detects no-response / soft-no / lost with priority + a respectful next step; `/recovery` page lists candidates and creates a deduped follow-up **task** (reuses `tasks`, no new table, never messages the buyer). |
+| **H. Referral / partnership intelligence** | **MISSING→DONE (this pass)** | No referral tracking or partnership candidates existed. Now: `referrals.ts` (pure referral summary + evidence-only `partnershipCandidates` from recorded clients/partners) + owner-scoped `referrals` ledger (migration 0016) + `/referrals` page. Clusters are hypotheses derived only from recorded businesses. |
+
+### Safety-relevant findings carried into implementation
+
+- All financial concepts must stay separate; `feasibility.RevenueLedger` + `actualProfit`
+  compute profit only from **collected cash − refunds − costs** (never from proposed/invoiced).
+- The leak detector asserts **no monetary loss**: every leak carries `evidence`, an explicit
+  `limitation`, and `hypothesis` when confidence < 0.6 (`REVENUE_LEAK_RULE`).
+- New tables are owner-scoped `owner_id = auth.uid()`; UI degrades gracefully when migration
+  0012 is not yet applied (returns `[]` / `applied:false` instead of throwing).
+

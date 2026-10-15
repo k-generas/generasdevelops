@@ -2,19 +2,26 @@ import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
+  AlertTriangle,
   Bell,
   Building2,
   Compass,
   Factory,
   FileText,
+  Flame,
+  Handshake,
   History,
   LayoutDashboard,
   ListChecks,
   LogOut,
+  Package,
   Radar,
   Receipt,
   ClipboardList,
+  Repeat,
   Settings as SettingsIcon,
+  Undo2,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,6 +80,13 @@ type NavItem = { to: string; label: string; icon: LucideIcon };
 const NAV: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/updates", label: "Updates", icon: Bell },
+  { to: "/leaks", label: "Revenue Leaks", icon: AlertTriangle },
+  { to: "/offers", label: "Offer studio", icon: Package },
+  { to: "/partners", label: "Partners", icon: Handshake },
+  { to: "/revenue", label: "Recurring", icon: Repeat },
+  { to: "/recovery", label: "Recovery", icon: Undo2 },
+  { to: "/intent", label: "Intent", icon: Flame },
+  { to: "/referrals", label: "Referrals", icon: Users },
   { to: "/radar", label: "Radar", icon: Radar },
   { to: "/discover", label: "Discover", icon: Compass },
   { to: "/proposals", label: "Proposals", icon: FileText },
@@ -86,7 +100,16 @@ const NAV: NavItem[] = [
 ];
 
 // Bottom tabs stay at five; Settings lives in the account menu on mobile.
-const MOBILE_NAV = NAV.slice(0, 5);
+const MOBILE_NAV = NAV.filter(
+  (n) =>
+    n.to !== "/leaks" &&
+    n.to !== "/offers" &&
+    n.to !== "/partners" &&
+    n.to !== "/revenue" &&
+    n.to !== "/recovery" &&
+    n.to !== "/intent" &&
+    n.to !== "/referrals",
+).slice(0, 5);
 
 function NavBadge({ count }: { count: number }) {
   return (

@@ -11,6 +11,290 @@ npm test
 npm run build
 ```
 
+## 2026-10-14 — Buyer Intent (D) + Referral/Partnership (H)
+
+Phase 5 (final) of the Revenue Growth Engine plan. Turns recorded signals into an
+honest buyer-intent board, and adds a referral ledger plus evidence-only partnership
+candidates. No invented connections and no new pipeline.
+
+### Baseline at start of pass
+- `git` HEAD `412ab13`; working tree dirty from Phases 1–4 (uncommitted)
+- `npx tsc --noEmit` — clean
+- `npx eslint .` — 0 errors (7 pre-existing `react-refresh` warnings)
+- `npx vitest run` — 31 files / 224 tests passing
+- `npx vite build` — succeeded
+
+### Changes
+- **`src/lib/intent.ts`** (+ `intent.test.ts`) — pure Buyer Intent scorer: blends measured gaps,
+  review/activity recency, activity events (reusing `activity.signalStrength`) and pipeline stage;
+  returns score, tier, reasons, uncertainties and an explicit limitation. `rankByIntent`,
+  `summarizeIntent`, `toActivityEvent`, `INTENT_DISCLAIMER`.
+- **`src/lib/intent.server.ts`** + **`intent.functions.ts`** — loads businesses, open leaks,
+  `company_events` and pipeline; tolerates absent tables; `getIntentBoard` ranks and counts. No new table.
+- **`src/routes/_authenticated/intent.tsx`** + nav — tier counts, tier filter, per-lead
+  reasons / uncertainties / limitation.
+- **`src/lib/referrals.ts`** (+ `referrals.test.ts`) — pure referral summary (rewards counted only on
+  won referrals, kept separate) and `partnershipCandidates` (industries where recorded clients cluster,
+  flagged `hypothesis`, `hasPartner`). `referralPrompt`, `REFERRAL_DISCLAIMER`, `PARTNERSHIP_DISCLAIMER`.
+- **Migration `0016_referrals.sql`** — additive owner-scoped `referrals` ledger (RLS, grants, index).
+  Journal idx 16; `types.ts` updated.
+- **`src/lib/referrals.functions.ts`** — `getReferrals`, `saveReferral`, `deleteReferral`,
+  `getPartnershipCandidates` (derived from active subscriptions + won proposals + recorded partners).
+- **`src/routes/_authenticated/referrals.tsx`** + nav — summary, partnership candidates, referral CRUD.
+
+### Non-breaking design decisions
+- Additive only: no existing route, table, column or server function removed or renamed; mobile
+  bottom tabs stay at five (`/intent`, `/referrals` filtered out of `MOBILE_NAV`).
+- Feature D adds **no table** (pure derivation from existing evidence); Feature H adds one ledger.
+- Every intent score carries reasons, uncertainties and a limitation; hiring-derived signals reuse
+  `HIRING_DISCLAIMER`. Partnership clusters are hypotheses from recorded data only.
+- Reward totals count only won referrals and are never blended with pipeline value; UI degrades
+  gracefully when `company_events`, `revenue_leaks`, `subscriptions` or `partners` are absent.
+
+### Verification after changes
+- `npx tsc --noEmit` — clean
+- `npx eslint .` — 0 errors (same 7 pre-existing warnings)
+- `npx vitest run` — 33 files / 237 tests passing (added `intent`, `referrals`)
+- `npx vite build` — succeeded (emits `intent` + `referrals` route chunks)
+
+### Known limitations / follow-ups
+- Migration `0016` is applied on the Lovable platform, not from this environment.
+- `company_events` is defined but not yet populated by any collector, so external activity signals
+  are currently empty; the scorer handles this honestly (fit/recency drive the score).
+- Referral `referrer_business_id` / `referred_business_id` are entered as uuids (no picker yet).
+- This completes the A–H brief; see `docs/GARE_FEATURE_AUDIT.md` for the final capability matrix.
+
+## 2026-10-14 — Repeatable Offer Factory (E)
+
+Phase 4 of the Revenue Growth Engine plan. Packages each offer into a reusable kit
+(scope in/out, delivery checklist, typical timeline, revisions, deposit) and lets a
+leak's suggested offer be turned into delivery tasks. Templates are starting points
+the owner edits; nothing is priced or promised automatically.
+
+### Baseline at start of pass
+- `git` HEAD `412ab13`; working tree dirty from Phases 1–3 (uncommitted)
+- `npx tsc --noEmit` — clean
+- `npx eslint .` — 0 errors (7 pre-existing `react-refresh` warnings)
+- `npx vitest run` — 30 files / 212 tests passing
+- `npx vite build` — succeeded
+
+### Changes
+- **`src/lib/offer-kit.ts`** (+ `offer-kit.test.ts`) — pure Repeatable Offer Factory:
+  `suggestKit` (category templates mirroring `service-match`'s offer rules), `problemKeysForOffer`,
+  `kitScopeSummary` (states includes *and* excludes honestly), `deliverableTaskTitle` /
+  `kitTaskKey` (stable per-business dedupe), `normalizeKit` (defensive), `resolveKit`
+  (stored kit else suggested starter), `OFFER_KIT_DISCLAIMER`.
+- **Migration `0015_offer_kits.sql`** — additive owner-scoped `offer_kits` table
+  (`text[]` scope/checklist columns, `UNIQUE (owner_id, offer)`; RLS, grants, index).
+  Journal idx 15; `types.ts` updated.
+- **`src/lib/offer-kit.functions.ts`** — `getOfferKits`, `saveOfferKit` (upsert on
+  owner+offer), `deleteOfferKit`, `createKitTasks` (resolves the kit, inserts one deduped
+  `tasks` row per deliverable, returns created/skipped/total).
+- **`src/routes/_authenticated/offers.tsx`** + nav — "Offer studio": each active offer shows
+  its resolved kit (stored or suggested), the open leaks it addresses, and an editor to
+  save / reset-to-template / remove.
+- **`src/routes/_authenticated/leaks.tsx`** — each leak with a suggested offer gained a
+  **Plan delivery** action that calls `createKitTasks` for that business.
+
+### Non-breaking design decisions
+- Additive only: no existing route, table, column or server function removed or renamed;
+  mobile bottom tabs stay at five (`/offers` filtered out of `MOBILE_NAV`).
+- Feature E adds no pipeline: materialised delivery is ordinary `tasks`, deduped so
+  re-planning never duplicates work.
+- Kits are editable starting points; the UI never auto-applies scope or price; unsaved
+  offers show a "suggested starter" badge rather than presenting a template as fact.
+
+### Verification after changes
+- `npx tsc --noEmit` — clean
+- `npx eslint .` — 0 errors (same 7 pre-existing warnings)
+- `npx vitest run` — 31 files / 224 tests passing (added `offer-kit`)
+- `npx vite build` — succeeded (emits `offers` route + `offer-kit.functions` chunks)
+
+### Known limitations / follow-ups
+- Migration `0015` is applied on the Lovable platform, not from this environment.
+- `offer_kits.offer` links to offers by name (the catalog has no stable slug) — renaming an
+  offer leaves an orphaned kit; a follow-up could reconcile by name.
+- `createKitTasks` does not set a proposal link unless given one; wiring it from the proposal
+  page is a follow-up.
+- Phase 5 (D + H) remains per `docs/GARE_IMPLEMENTATION_PLAN.md`.
+
+## 2026-10-14 — Recurring Revenue Builder (C) + Lost-Deal Recovery (G)
+
+Phase 3 of the Revenue Growth Engine plan. Tracks recurring offers as a retainer
+pipeline (MRR is a record, not a forecast) and surfaces respectful re-approach prompts
+for proposals that went quiet or were rejected. Never messages anyone automatically.
+
+### Baseline at start of pass
+- `git` HEAD `412ab13`; working tree dirty from Phases 1–2 (uncommitted)
+- `npx tsc --noEmit` — clean
+- `npx eslint .` — 0 errors (7 pre-existing `react-refresh` warnings)
+- `npx vitest run` — 28 files / 196 tests passing
+- `npx vite build` — succeeded
+
+### Changes
+- **`src/lib/recurring.ts`** (+ `recurring.test.ts`) — pure model: `recurringSnapshot`
+  (active MRR/ARR; proposed/paused/churned value tracked separately and never added to MRR;
+  `mixedCurrency` flag), `churnRate` (null until a decided subscription exists, never a fake
+  0%), `upcomingRenewals` / `overdueRenewals`, `recurringOpportunities` (open recurring
+  leaks), `RECURRING_RULE`.
+- **`src/lib/recovery.ts`** (+ `recovery.test.ts`) — pure Lost-Deal Recovery:
+  `classifyRecovery` (no-response / soft-no / lost, with priority), `recoveryCandidates`
+  (priority then value), `nextRecoveryStep`, `recoveryTaskKey` (stable dedupe), `RECOVERY_WINDOWS`,
+  `RECOVERY_DISCLAIMER` (a rejection is not proof of no need).
+- **Migration `0014_subscriptions.sql`** — additive owner-scoped `subscriptions` table
+  (RLS, grants, indexes). Journal idx 14; `types.ts` updated.
+- **`src/lib/recurring.functions.ts`** — `getSubscriptions`, `saveSubscription`,
+  `deleteSubscription`, `setSubscriptionStatus` (sets `canceled_at` when churned); returns
+  `[]` when migration 0014 is absent.
+- **`src/lib/recovery.functions.ts`** — `getRecoveryCandidates` (reads `proposals` +
+  business name, runs the pure classifier) and `createRecoveryTask` (writes a normal `tasks`
+  row with a stable `dedupe_key`; returns `created:false` if the follow-up already exists).
+- **`src/routes/_authenticated/revenue.tsx`** + nav — MRR/ARR/active/churn stats, a note that
+  proposed/paused/churned value is excluded, renewals, recurring-leak opportunities with
+  "Add subscription", and a subscription list with lifecycle status + CRUD.
+- **`src/routes/_authenticated/recovery.tsx`** + nav — reason/priority badges, age, value,
+  recommended approach, "Open lead" and "Create follow-up task".
+
+### Non-breaking design decisions
+- Additive only: no existing route, table, column or server function removed or renamed;
+  mobile bottom tabs stay at five (`/leaks`, `/partners`, `/revenue`, `/recovery` filtered
+  out of `MOBILE_NAV`).
+- Feature G adds no table — it reuses `tasks` (deduped) — and never sends a message.
+- Money stays honest: proposed/paused/churned value is shown but excluded from MRR;
+  `churnRate` is null rather than 0 when undecided; no revenue is forecast.
+- Both pages degrade gracefully when migrations 0012/0014 are not yet applied.
+
+### Verification after changes
+- `npx tsc --noEmit` — clean
+- `npx eslint .` — 0 errors (same 7 pre-existing warnings)
+- `npx vitest run` — 30 files / 212 tests passing (added `recurring`, `recovery`)
+- `npx vite build` — succeeded (emits `revenue` + `recovery` route chunks)
+
+### Known limitations / follow-ups
+- Migrations `0012`–`0014` are applied on the Lovable platform, not from this environment.
+- Subscription `business_id` is entered as a uuid (no business picker yet) — follow-up.
+- Recovery windows are fixed constants (`staleDays:14`, `recentLostDays:30`); making them
+  owner-configurable is a follow-up.
+- Phases 4–5 (E, D+H) remain per `docs/GARE_IMPLEMENTATION_PLAN.md`.
+
+## 2026-10-14 — Agency Overflow Work Finder (B)
+
+Phase 2 of the Revenue Growth Engine plan. Routes work the owner cannot deliver
+alone to partners the owner recorded; never contacts anyone automatically.
+
+### Baseline at start of pass
+- `git` HEAD `412ab13`; working tree clean; `main == origin/main`
+- `npx tsc --noEmit` — clean
+- `npx eslint .` — 0 errors (7 pre-existing `react-refresh` warnings)
+- `npx vitest run` — 27 files / 183 tests passing
+- `npx vite build` — succeeded
+
+### Changes
+- **`src/lib/partners.ts`** (+ `partners.test.ts`) — pure Agency Overflow Work Finder:
+  `detectOverflow` (capacity / skills / manual) reusing `feasibility.computeCapacity`; keyword
+  `serviceOverlap`; `matchPartners` scores active partners on service overlap, industry, region and
+  availability, marks weak matches `hypothesis` (cap 0.59) and lists `uncertainties` for dimensions
+  the owner did not record; `PARTNER_DISCLAIMER` states a match is only as good as the owner's notes.
+  `summarizeHandoffs` keeps the partner's delivery value separate from the owner's cut.
+- **Migration `0013_partners.sql`** — additive owner-scoped `partners` and `partner_handoffs`
+  tables (RLS, grants, indexes; FKs to `businesses` / `revenue_leaks`). Journal idx 13; `types.ts`
+  updated.
+- **`src/lib/partners.server.ts`** — `computeOverflowCandidates` loads open `revenue_leaks`, the
+  owner's saved feasibility defaults, business industry/district and derives overflow candidates;
+  returns `applied:false` with a clear message when migration 0012/0013 is absent.
+- **`src/lib/partners.functions.ts`** — authenticated server functions `getPartners`, `savePartner`,
+  `deletePartner`, `getHandoffs`, `createHandoff`, `setHandoffStatus`, `getOverflowCandidates`.
+- **`src/routes/_authenticated/partners.tsx`** + nav entry — Overflow list with per-item "Find
+  partners" (inline `matchPartners` results, delivery value / cut inputs, "Create handoff"), an
+  editable partner directory (with source/notes), and a handoff tracker with status transitions and
+  separated delivery-value / owner-cut totals.
+
+### Non-breaking design decisions
+- Additive only: no existing route, table, column or server function removed or renamed; mobile
+  bottom tabs keep their original five (`/leaks` and `/partners` are filtered out of `MOBILE_NAV`).
+- Partner matching never invents reputation/capability: unknown dimensions stay neutral and are
+  surfaced as uncertainties; inactive partners are ignored.
+- No money is combined: `summarizeHandoffs` reports delivery value and owner cut separately, and
+  no profit is claimed. UI degrades gracefully when migration 0013 is not applied.
+
+### Verification after changes
+- `npx tsc --noEmit` — clean
+- `npx eslint .` — 0 errors (same 7 pre-existing warnings)
+- `npx vitest run` — 28 files / 196 tests passing (added `partners`)
+- `npx vite build` — succeeded (emits `partners` route + `partners.functions` chunks)
+
+### Known limitations / follow-ups
+- Migration `0013` is applied on the Lovable platform, not from this environment.
+- Handoff values are set at creation; editing money on an existing handoff is a follow-up.
+- Phases 3–5 (C+G, E, D+H) remain per `docs/GARE_IMPLEMENTATION_PLAN.md`.
+
+## 2026-10-14 — Revenue Leak Detector (A) + Profit/Delivery Feasibility Engine (F)
+
+Start of the "GARE Revenue Growth Engine" work. Phase 1 of the phased plan; audit and
+matrix recorded in `docs/GARE_FEATURE_AUDIT.md` (Addendum 2026-10-14).
+
+### Baseline at start of pass
+- `git` HEAD `412ab13`; working tree clean; `main == origin/main`
+- `npx tsc --noEmit` — clean
+- `npx eslint .` — 0 errors (7 pre-existing `react-refresh` warnings)
+- `npx vitest run` — 25 files / 161 tests passing
+- `npx vite build` — succeeded
+
+### Changes
+- **`src/lib/feasibility.ts`** (+ `feasibility.test.ts`) — pure Profit & Delivery
+  Feasibility Engine: `computeFeasibility` returns best/base/worst scenarios (explicit
+  spread, not a forecast), base/best/worst net contribution, margin, profit-per-hour,
+  time-to-first-payment, recurring monthly/annual net and a capacity check, plus honest
+  `flags` (loss, over-capacity, unclear terms, undemonstrated skills, over-budget upfront,
+  unknown win probability). `expectedValue` stays **null** unless a `winProbability` is
+  supplied. `RevenueLedger` + `actualProfit`/`sumLedger` keep potential / proposed /
+  accepted / invoiced / collected / refunds / costs strictly separate; profit is only ever
+  computed from collected cash. `readFeasibilityAssumptions` is a defensive jsonb reader.
+- **`src/lib/revenue-leaks.ts`** (+ `revenue-leaks.test.ts`) — pure Revenue Leak Detector:
+  `buildRevenueLeaks` turns the measured `deriveObservedProblems` output into per-business
+  leaks, attaching the owner offer that addresses each one. Every leak carries
+  `evidence`/`source`/`observedAt`, an explicit `limitation`, a `hypothesis` flag when
+  confidence < 0.6, and a `nextStep`. `REVENUE_LEAK_RULE` states that a leak is a gap, not
+  a claimed loss. `dedupeLeaks`, `mergeLeakStatus` (preserves review decisions),
+  `isActionable` and `summarizeLeaks`.
+- **Migration `0012_revenue_leaks.sql`** — owner-scoped `revenue_leaks` table (unique
+  `(owner_id, dedupe_key)`, RLS, grants, indexes) + `user_preferences.feasibility_defaults`
+  jsonb. Journal updated (idx 12); `types.ts` updated.
+- **`src/lib/leaks.server.ts`** — `refreshOwnerLeaks` re-derives leaks from stored
+  evidence, upserts idempotently by `(owner_id, dedupe_key)` and **preserves** each leak's
+  dismissed/resolved status; returns `applied:false` with a clear message when migration
+  0012 is absent. `setLeakStatus` records the review decision.
+- **`src/lib/leaks.functions.ts`** — authenticated server functions `getRevenueLeaks`,
+  `refreshRevenueLeaks`, `setRevenueLeakStatus`, `getFeasibilityDefaults`,
+  `saveFeasibilityDefaults` (all owner-scoped via RLS).
+- **`src/routes/_authenticated/leaks.tsx`** + nav entry — "Revenue Leaks" page: summary
+  counts, status/severity filters, an editable profit-assumptions panel, and per-leak cards
+  showing evidence, limitation, suggested offer, next step, a client-side profit check
+  (`computeFeasibility`) and dismiss / resolve / reopen. Mobile bottom tabs unchanged
+  (`/leaks` filtered out of `MOBILE_NAV`).
+
+### Non-breaking design decisions
+- Additive only: no existing route, table, column, offer or server function was removed or
+  renamed. The lease detector reuses the tested `business-intel` / `service-match` problem
+  derivation, so no new matching rules were introduced.
+- UI degrades gracefully when migration 0012 is not applied (reads return `[]`; refresh
+  reports the migration hint) instead of throwing.
+- No fabricated data: profit is computed only from owner-supplied assumptions; win
+  probability is never invented; leak text never asserts an amount lost.
+
+### Verification after changes
+- `npx tsc --noEmit` — clean
+- `npx eslint .` — 0 errors (same 7 pre-existing warnings)
+- `npx vitest run` — 27 files / 183 tests passing (added `feasibility`, `revenue-leaks`)
+- `npx vite build` — succeeded (emits `leaks` route chunk)
+
+### Known limitations / follow-ups
+- Migration `0012` is applied on the Lovable platform, not from this environment. Until
+  applied, `/leaks` shows the empty state; "Refresh leaks" reports the migration hint.
+- Feasibility `winProbability` and explicit effort/revenue ranges are supported by the
+  engine but have no UI inputs yet (only stored defaults are edited); a follow-up.
+- Phases 2–5 (B, C+G, E, D+H) remain per `docs/GARE_IMPLEMENTATION_PLAN.md`.
+
 ## 2026-10-12 — Post-investigation business report modal
 
 ### What changed

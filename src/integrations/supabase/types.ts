@@ -755,6 +755,57 @@ export type Database = {
         }
         Relationships: []
       }
+      offer_kits: {
+        Row: {
+          active: boolean
+          created_at: string
+          deliverables: string[]
+          deposit_percent: number | null
+          id: string
+          notes: string | null
+          offer: string
+          owner_id: string
+          recurring: boolean
+          revisions: number | null
+          scope_excludes: string[]
+          scope_includes: string[]
+          timeline_days: number | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          deliverables?: string[]
+          deposit_percent?: number | null
+          id?: string
+          notes?: string | null
+          offer: string
+          owner_id?: string
+          recurring?: boolean
+          revisions?: number | null
+          scope_excludes?: string[]
+          scope_includes?: string[]
+          timeline_days?: number | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          deliverables?: string[]
+          deposit_percent?: number | null
+          id?: string
+          notes?: string | null
+          offer?: string
+          owner_id?: string
+          recurring?: boolean
+          revisions?: number | null
+          scope_excludes?: string[]
+          scope_includes?: string[]
+          timeline_days?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       offers: {
         Row: {
           active: boolean
@@ -872,6 +923,142 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      partner_handoffs: {
+        Row: {
+          business_id: string | null
+          created_at: string
+          currency: string
+          delivery_value: number
+          id: string
+          leak_id: string | null
+          note: string | null
+          owner_cut: number
+          owner_id: string
+          partner_id: string
+          reason: string | null
+          service: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string
+          currency?: string
+          delivery_value?: number
+          id?: string
+          leak_id?: string | null
+          note?: string | null
+          owner_cut?: number
+          owner_id?: string
+          partner_id: string
+          reason?: string | null
+          service?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string
+          currency?: string
+          delivery_value?: number
+          id?: string
+          leak_id?: string | null
+          note?: string | null
+          owner_cut?: number
+          owner_id?: string
+          partner_id?: string
+          reason?: string | null
+          service?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_handoffs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_handoffs_leak_id_fkey"
+            columns: ["leak_id"]
+            isOneToOne: false
+            referencedRelation: "revenue_leaks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_handoffs_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partners: {
+        Row: {
+          active: boolean
+          available_hours_per_week: number
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          currency: string
+          districts: string[]
+          id: string
+          industries: string[]
+          kind: string
+          name: string
+          notes: string | null
+          owner_id: string
+          rate: number
+          services: string[]
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          available_hours_per_week?: number
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          currency?: string
+          districts?: string[]
+          id?: string
+          industries?: string[]
+          kind?: string
+          name: string
+          notes?: string | null
+          owner_id?: string
+          rate?: number
+          services?: string[]
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          available_hours_per_week?: number
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          currency?: string
+          districts?: string[]
+          id?: string
+          industries?: string[]
+          kind?: string
+          name?: string
+          notes?: string | null
+          owner_id?: string
+          rate?: number
+          services?: string[]
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       proposal_versions: {
         Row: {
@@ -998,6 +1185,143 @@ export type Database = {
           },
         ]
       }
+      referrals: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          notes: string | null
+          owner_id: string
+          referred_business_id: string | null
+          referred_name: string | null
+          referrer_business_id: string | null
+          referrer_name: string
+          reward_type: string
+          reward_value: number
+          source: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          referred_business_id?: string | null
+          referred_name?: string | null
+          referrer_business_id?: string | null
+          referrer_name: string
+          reward_type?: string
+          reward_value?: number
+          source?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          referred_business_id?: string | null
+          referred_name?: string | null
+          referrer_business_id?: string | null
+          referrer_name?: string
+          reward_type?: string
+          reward_value?: number
+          source?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      revenue_leaks: {
+        Row: {
+          business_id: string
+          business_relevance: string | null
+          confidence: number
+          created_at: string
+          dedupe_key: string
+          effort: string | null
+          evidence_url: string | null
+          hypothesis: boolean
+          id: string
+          label: string
+          limitation: string | null
+          next_step: string | null
+          observed_at: string | null
+          owner_id: string
+          problem_key: string
+          recurring: boolean
+          reviewed_at: string | null
+          severity: string
+          source: string | null
+          status: string
+          status_note: string | null
+          suggested_offer: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          business_relevance?: string | null
+          confidence?: number
+          created_at?: string
+          dedupe_key: string
+          effort?: string | null
+          evidence_url?: string | null
+          hypothesis?: boolean
+          id?: string
+          label: string
+          limitation?: string | null
+          next_step?: string | null
+          observed_at?: string | null
+          owner_id?: string
+          problem_key: string
+          recurring?: boolean
+          reviewed_at?: string | null
+          severity?: string
+          source?: string | null
+          status?: string
+          status_note?: string | null
+          suggested_offer?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          business_relevance?: string | null
+          confidence?: number
+          created_at?: string
+          dedupe_key?: string
+          effort?: string | null
+          evidence_url?: string | null
+          hypothesis?: boolean
+          id?: string
+          label?: string
+          limitation?: string | null
+          next_step?: string | null
+          observed_at?: string | null
+          owner_id?: string
+          problem_key?: string
+          recurring?: boolean
+          reviewed_at?: string | null
+          severity?: string
+          source?: string | null
+          status?: string
+          status_note?: string | null
+          suggested_offer?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_leaks_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       search_run_results: {
         Row: {
           business_id: string
@@ -1082,6 +1406,65 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          business_id: string | null
+          canceled_at: string | null
+          created_at: string
+          currency: string
+          id: string
+          monthly_value: number
+          next_renewal_at: string | null
+          notes: string | null
+          offer: string
+          owner_id: string
+          source: string | null
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          canceled_at?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          monthly_value?: number
+          next_renewal_at?: string | null
+          notes?: string | null
+          offer: string
+          owner_id?: string
+          source?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          canceled_at?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          monthly_value?: number
+          next_renewal_at?: string | null
+          notes?: string | null
+          offer?: string
+          owner_id?: string
+          source?: string | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           business_id: string | null
@@ -1147,6 +1530,7 @@ export type Database = {
       }
       user_preferences: {
         Row: {
+          feasibility_defaults: Json
           last_visit_at: string | null
           min_prices: Json
           owner_id: string
@@ -1154,6 +1538,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          feasibility_defaults?: Json
           last_visit_at?: string | null
           min_prices?: Json
           owner_id?: string
@@ -1161,6 +1546,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          feasibility_defaults?: Json
           last_visit_at?: string | null
           min_prices?: Json
           owner_id?: string
