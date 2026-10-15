@@ -160,15 +160,15 @@ function Shell() {
   return (
     <div className="min-h-screen bg-background">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r bg-sidebar lg:flex">
-        <Link to="/dashboard" className="flex h-16 items-center gap-3 px-5">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col overflow-hidden border-r bg-sidebar lg:flex">
+        <Link to="/dashboard" className="flex h-16 shrink-0 items-center gap-3 px-5">
           <BrandMark />
           <span className="leading-tight">
             <span className="block text-sm font-semibold text-sidebar-foreground">GARE</span>
             <span className="block text-[11px] text-muted-foreground">Revenue Engine</span>
           </span>
         </Link>
-        <nav className="flex-1 space-y-1 px-3 py-2">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain scroll-smooth px-3 py-2">
           {NAV.map((n) => (
             <Link
               key={n.to}
@@ -181,7 +181,7 @@ function Shell() {
             </Link>
           ))}
         </nav>
-        <div className="border-t border-sidebar-border p-3">
+        <div className="shrink-0 border-t border-sidebar-border p-3">
           <div className="flex items-center gap-3 rounded-lg px-2 py-2">
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-secondary text-xs font-semibold text-secondary-foreground">
