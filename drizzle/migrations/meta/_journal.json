@@ -115,20 +115,11 @@
       "breakpoints": true
     },
     {
-      "idx": 15,
-      "version": "7",
-      "when": 1792900000000,
-      "tag": "0015_offer_kits",
-      "breakpoints": true
-    },
-    {
       "idx": 16,
       "version": "7",
       "when": 1793000000000,
       "tag": "0016_referrals",
       "breakpoints": true
     }
-  ]
-}
   ]
 }
