@@ -17,7 +17,7 @@ export const STATUSES = [
   "CANCELLED",
 ] as const;
 
-export const Route = createFileRoute("/_authenticated/proposals")({
+export const Route = createFileRoute("/_authenticated/proposals/")({
   head: () => ({
     meta: [{ title: "Proposals — GARE" }, { name: "description", content: "Proposal history." }],
   }),

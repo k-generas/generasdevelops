@@ -23,7 +23,7 @@ import {
 } from "@/lib/rwanda";
 import { matchesBusinessSearch } from "@/lib/business-search";
 
-export const Route = createFileRoute("/_authenticated/businesses")({
+export const Route = createFileRoute("/_authenticated/businesses/")({
   head: () => ({
     meta: [
       { title: "Leads — GARE" },

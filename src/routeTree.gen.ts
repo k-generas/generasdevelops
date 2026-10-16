@@ -12,17 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedBusinessesRouteImport } from './routes/_authenticated/businesses'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDiscoverRouteImport } from './routes/_authenticated/discover'
-import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedIntentRouteImport } from './routes/_authenticated/intent'
 import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticated/invoices'
 import { Route as AuthenticatedLeaksRouteImport } from './routes/_authenticated/leaks'
 import { Route as AuthenticatedOffersRouteImport } from './routes/_authenticated/offers'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedPartnersRouteImport } from './routes/_authenticated/partners'
-import { Route as AuthenticatedProposalsRouteImport } from './routes/_authenticated/proposals'
 import { Route as AuthenticatedRadarRouteImport } from './routes/_authenticated/radar'
 import { Route as AuthenticatedRecoveryRouteImport } from './routes/_authenticated/recovery'
 import { Route as AuthenticatedReferralsRouteImport } from './routes/_authenticated/referrals'
@@ -31,8 +28,11 @@ import { Route as AuthenticatedRwandaRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedUpdatesRouteImport } from './routes/_authenticated/updates'
+import { Route as AuthenticatedBusinessesIndexRouteImport } from './routes/_authenticated/businesses.index'
 import { Route as AuthenticatedBusinessesIdRouteImport } from './routes/_authenticated/businesses.$id'
+import { Route as AuthenticatedHistoryIndexRouteImport } from './routes/_authenticated/history.index'
 import { Route as AuthenticatedHistoryIdRouteImport } from './routes/_authenticated/history.$id'
+import { Route as AuthenticatedProposalsIndexRouteImport } from './routes/_authenticated/proposals.index'
 import { Route as AuthenticatedProposalsIdRouteImport } from './routes/_authenticated/proposals.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -49,11 +49,6 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedBusinessesRoute = AuthenticatedBusinessesRouteImport.update({
-  id: '/businesses',
-  path: '/businesses',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -62,11 +57,6 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const AuthenticatedDiscoverRoute = AuthenticatedDiscoverRouteImport.update({
   id: '/discover',
   path: '/discover',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedHistoryRoute = AuthenticatedHistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedIntentRoute = AuthenticatedIntentRouteImport.update({
@@ -97,11 +87,6 @@ const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
 const AuthenticatedPartnersRoute = AuthenticatedPartnersRouteImport.update({
   id: '/partners',
   path: '/partners',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedProposalsRoute = AuthenticatedProposalsRouteImport.update({
-  id: '/proposals',
-  path: '/proposals',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedRadarRoute = AuthenticatedRadarRouteImport.update({
@@ -144,38 +129,53 @@ const AuthenticatedUpdatesRoute = AuthenticatedUpdatesRouteImport.update({
   path: '/updates',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBusinessesIndexRoute =
+  AuthenticatedBusinessesIndexRouteImport.update({
+    id: '/businesses/',
+    path: '/businesses/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedBusinessesIdRoute =
   AuthenticatedBusinessesIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => AuthenticatedBusinessesRoute,
+    id: '/businesses/$id',
+    path: '/businesses/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedHistoryIndexRoute =
+  AuthenticatedHistoryIndexRouteImport.update({
+    id: '/history/',
+    path: '/history/',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedHistoryIdRoute = AuthenticatedHistoryIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthenticatedHistoryRoute,
+  id: '/history/$id',
+  path: '/history/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProposalsIndexRoute =
+  AuthenticatedProposalsIndexRouteImport.update({
+    id: '/proposals/',
+    path: '/proposals/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProposalsIdRoute =
   AuthenticatedProposalsIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => AuthenticatedProposalsRoute,
+    id: '/proposals/$id',
+    path: '/proposals/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/businesses': typeof AuthenticatedBusinessesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/discover': typeof AuthenticatedDiscoverRoute
-  '/history': typeof AuthenticatedHistoryRouteWithChildren
   '/intent': typeof AuthenticatedIntentRoute
   '/invoices': typeof AuthenticatedInvoicesRoute
   '/leaks': typeof AuthenticatedLeaksRoute
   '/offers': typeof AuthenticatedOffersRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/partners': typeof AuthenticatedPartnersRoute
-  '/proposals': typeof AuthenticatedProposalsRouteWithChildren
   '/radar': typeof AuthenticatedRadarRoute
   '/recovery': typeof AuthenticatedRecoveryRoute
   '/referrals': typeof AuthenticatedReferralsRoute
@@ -187,21 +187,21 @@ export interface FileRoutesByFullPath {
   '/businesses/$id': typeof AuthenticatedBusinessesIdRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
   '/proposals/$id': typeof AuthenticatedProposalsIdRoute
+  '/businesses/': typeof AuthenticatedBusinessesIndexRoute
+  '/history/': typeof AuthenticatedHistoryIndexRoute
+  '/proposals/': typeof AuthenticatedProposalsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/businesses': typeof AuthenticatedBusinessesRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/discover': typeof AuthenticatedDiscoverRoute
-  '/history': typeof AuthenticatedHistoryRouteWithChildren
   '/intent': typeof AuthenticatedIntentRoute
   '/invoices': typeof AuthenticatedInvoicesRoute
   '/leaks': typeof AuthenticatedLeaksRoute
   '/offers': typeof AuthenticatedOffersRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/partners': typeof AuthenticatedPartnersRoute
-  '/proposals': typeof AuthenticatedProposalsRouteWithChildren
   '/radar': typeof AuthenticatedRadarRoute
   '/recovery': typeof AuthenticatedRecoveryRoute
   '/referrals': typeof AuthenticatedReferralsRoute
@@ -213,23 +213,23 @@ export interface FileRoutesByTo {
   '/businesses/$id': typeof AuthenticatedBusinessesIdRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
   '/proposals/$id': typeof AuthenticatedProposalsIdRoute
+  '/businesses': typeof AuthenticatedBusinessesIndexRoute
+  '/history': typeof AuthenticatedHistoryIndexRoute
+  '/proposals': typeof AuthenticatedProposalsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_authenticated/businesses': typeof AuthenticatedBusinessesRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/discover': typeof AuthenticatedDiscoverRoute
-  '/_authenticated/history': typeof AuthenticatedHistoryRouteWithChildren
   '/_authenticated/intent': typeof AuthenticatedIntentRoute
   '/_authenticated/invoices': typeof AuthenticatedInvoicesRoute
   '/_authenticated/leaks': typeof AuthenticatedLeaksRoute
   '/_authenticated/offers': typeof AuthenticatedOffersRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
   '/_authenticated/partners': typeof AuthenticatedPartnersRoute
-  '/_authenticated/proposals': typeof AuthenticatedProposalsRouteWithChildren
   '/_authenticated/radar': typeof AuthenticatedRadarRoute
   '/_authenticated/recovery': typeof AuthenticatedRecoveryRoute
   '/_authenticated/referrals': typeof AuthenticatedReferralsRoute
@@ -241,23 +241,23 @@ export interface FileRoutesById {
   '/_authenticated/businesses/$id': typeof AuthenticatedBusinessesIdRoute
   '/_authenticated/history/$id': typeof AuthenticatedHistoryIdRoute
   '/_authenticated/proposals/$id': typeof AuthenticatedProposalsIdRoute
+  '/_authenticated/businesses/': typeof AuthenticatedBusinessesIndexRoute
+  '/_authenticated/history/': typeof AuthenticatedHistoryIndexRoute
+  '/_authenticated/proposals/': typeof AuthenticatedProposalsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/auth'
-    | '/businesses'
     | '/dashboard'
     | '/discover'
-    | '/history'
     | '/intent'
     | '/invoices'
     | '/leaks'
     | '/offers'
     | '/orders'
     | '/partners'
-    | '/proposals'
     | '/radar'
     | '/recovery'
     | '/referrals'
@@ -269,21 +269,21 @@ export interface FileRouteTypes {
     | '/businesses/$id'
     | '/history/$id'
     | '/proposals/$id'
+    | '/businesses/'
+    | '/history/'
+    | '/proposals/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
-    | '/businesses'
     | '/dashboard'
     | '/discover'
-    | '/history'
     | '/intent'
     | '/invoices'
     | '/leaks'
     | '/offers'
     | '/orders'
     | '/partners'
-    | '/proposals'
     | '/radar'
     | '/recovery'
     | '/referrals'
@@ -295,22 +295,22 @@ export interface FileRouteTypes {
     | '/businesses/$id'
     | '/history/$id'
     | '/proposals/$id'
+    | '/businesses'
+    | '/history'
+    | '/proposals'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
-    | '/_authenticated/businesses'
     | '/_authenticated/dashboard'
     | '/_authenticated/discover'
-    | '/_authenticated/history'
     | '/_authenticated/intent'
     | '/_authenticated/invoices'
     | '/_authenticated/leaks'
     | '/_authenticated/offers'
     | '/_authenticated/orders'
     | '/_authenticated/partners'
-    | '/_authenticated/proposals'
     | '/_authenticated/radar'
     | '/_authenticated/recovery'
     | '/_authenticated/referrals'
@@ -322,6 +322,9 @@ export interface FileRouteTypes {
     | '/_authenticated/businesses/$id'
     | '/_authenticated/history/$id'
     | '/_authenticated/proposals/$id'
+    | '/_authenticated/businesses/'
+    | '/_authenticated/history/'
+    | '/_authenticated/proposals/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -353,13 +356,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/businesses': {
-      id: '/_authenticated/businesses'
-      path: '/businesses'
-      fullPath: '/businesses'
-      preLoaderRoute: typeof AuthenticatedBusinessesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -372,13 +368,6 @@ declare module '@tanstack/react-router' {
       path: '/discover'
       fullPath: '/discover'
       preLoaderRoute: typeof AuthenticatedDiscoverRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/history': {
-      id: '/_authenticated/history'
-      path: '/history'
-      fullPath: '/history'
-      preLoaderRoute: typeof AuthenticatedHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/intent': {
@@ -421,13 +410,6 @@ declare module '@tanstack/react-router' {
       path: '/partners'
       fullPath: '/partners'
       preLoaderRoute: typeof AuthenticatedPartnersRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/proposals': {
-      id: '/_authenticated/proposals'
-      path: '/proposals'
-      fullPath: '/proposals'
-      preLoaderRoute: typeof AuthenticatedProposalsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/radar': {
@@ -486,81 +468,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUpdatesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/businesses/': {
+      id: '/_authenticated/businesses/'
+      path: '/businesses'
+      fullPath: '/businesses/'
+      preLoaderRoute: typeof AuthenticatedBusinessesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/businesses/$id': {
       id: '/_authenticated/businesses/$id'
-      path: '/$id'
+      path: '/businesses/$id'
       fullPath: '/businesses/$id'
       preLoaderRoute: typeof AuthenticatedBusinessesIdRouteImport
-      parentRoute: typeof AuthenticatedBusinessesRoute
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/history/': {
+      id: '/_authenticated/history/'
+      path: '/history'
+      fullPath: '/history/'
+      preLoaderRoute: typeof AuthenticatedHistoryIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/history/$id': {
       id: '/_authenticated/history/$id'
-      path: '/$id'
+      path: '/history/$id'
       fullPath: '/history/$id'
       preLoaderRoute: typeof AuthenticatedHistoryIdRouteImport
-      parentRoute: typeof AuthenticatedHistoryRoute
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/proposals/': {
+      id: '/_authenticated/proposals/'
+      path: '/proposals'
+      fullPath: '/proposals/'
+      preLoaderRoute: typeof AuthenticatedProposalsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/proposals/$id': {
       id: '/_authenticated/proposals/$id'
-      path: '/$id'
+      path: '/proposals/$id'
       fullPath: '/proposals/$id'
       preLoaderRoute: typeof AuthenticatedProposalsIdRouteImport
-      parentRoute: typeof AuthenticatedProposalsRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
-interface AuthenticatedBusinessesRouteChildren {
-  AuthenticatedBusinessesIdRoute: typeof AuthenticatedBusinessesIdRoute
-}
-
-const AuthenticatedBusinessesRouteChildren: AuthenticatedBusinessesRouteChildren =
-  {
-    AuthenticatedBusinessesIdRoute: AuthenticatedBusinessesIdRoute,
-  }
-
-const AuthenticatedBusinessesRouteWithChildren =
-  AuthenticatedBusinessesRoute._addFileChildren(
-    AuthenticatedBusinessesRouteChildren,
-  )
-
-interface AuthenticatedHistoryRouteChildren {
-  AuthenticatedHistoryIdRoute: typeof AuthenticatedHistoryIdRoute
-}
-
-const AuthenticatedHistoryRouteChildren: AuthenticatedHistoryRouteChildren = {
-  AuthenticatedHistoryIdRoute: AuthenticatedHistoryIdRoute,
-}
-
-const AuthenticatedHistoryRouteWithChildren =
-  AuthenticatedHistoryRoute._addFileChildren(AuthenticatedHistoryRouteChildren)
-
-interface AuthenticatedProposalsRouteChildren {
-  AuthenticatedProposalsIdRoute: typeof AuthenticatedProposalsIdRoute
-}
-
-const AuthenticatedProposalsRouteChildren: AuthenticatedProposalsRouteChildren =
-  {
-    AuthenticatedProposalsIdRoute: AuthenticatedProposalsIdRoute,
-  }
-
-const AuthenticatedProposalsRouteWithChildren =
-  AuthenticatedProposalsRoute._addFileChildren(
-    AuthenticatedProposalsRouteChildren,
-  )
-
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedBusinessesRoute: typeof AuthenticatedBusinessesRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDiscoverRoute: typeof AuthenticatedDiscoverRoute
-  AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRouteWithChildren
   AuthenticatedIntentRoute: typeof AuthenticatedIntentRoute
   AuthenticatedInvoicesRoute: typeof AuthenticatedInvoicesRoute
   AuthenticatedLeaksRoute: typeof AuthenticatedLeaksRoute
   AuthenticatedOffersRoute: typeof AuthenticatedOffersRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
   AuthenticatedPartnersRoute: typeof AuthenticatedPartnersRoute
-  AuthenticatedProposalsRoute: typeof AuthenticatedProposalsRouteWithChildren
   AuthenticatedRadarRoute: typeof AuthenticatedRadarRoute
   AuthenticatedRecoveryRoute: typeof AuthenticatedRecoveryRoute
   AuthenticatedReferralsRoute: typeof AuthenticatedReferralsRoute
@@ -569,20 +530,23 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedUpdatesRoute: typeof AuthenticatedUpdatesRoute
+  AuthenticatedBusinessesIdRoute: typeof AuthenticatedBusinessesIdRoute
+  AuthenticatedHistoryIdRoute: typeof AuthenticatedHistoryIdRoute
+  AuthenticatedProposalsIdRoute: typeof AuthenticatedProposalsIdRoute
+  AuthenticatedBusinessesIndexRoute: typeof AuthenticatedBusinessesIndexRoute
+  AuthenticatedHistoryIndexRoute: typeof AuthenticatedHistoryIndexRoute
+  AuthenticatedProposalsIndexRoute: typeof AuthenticatedProposalsIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedBusinessesRoute: AuthenticatedBusinessesRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDiscoverRoute: AuthenticatedDiscoverRoute,
-  AuthenticatedHistoryRoute: AuthenticatedHistoryRouteWithChildren,
   AuthenticatedIntentRoute: AuthenticatedIntentRoute,
   AuthenticatedInvoicesRoute: AuthenticatedInvoicesRoute,
   AuthenticatedLeaksRoute: AuthenticatedLeaksRoute,
   AuthenticatedOffersRoute: AuthenticatedOffersRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
   AuthenticatedPartnersRoute: AuthenticatedPartnersRoute,
-  AuthenticatedProposalsRoute: AuthenticatedProposalsRouteWithChildren,
   AuthenticatedRadarRoute: AuthenticatedRadarRoute,
   AuthenticatedRecoveryRoute: AuthenticatedRecoveryRoute,
   AuthenticatedReferralsRoute: AuthenticatedReferralsRoute,
@@ -591,6 +555,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedUpdatesRoute: AuthenticatedUpdatesRoute,
+  AuthenticatedBusinessesIdRoute: AuthenticatedBusinessesIdRoute,
+  AuthenticatedHistoryIdRoute: AuthenticatedHistoryIdRoute,
+  AuthenticatedProposalsIdRoute: AuthenticatedProposalsIdRoute,
+  AuthenticatedBusinessesIndexRoute: AuthenticatedBusinessesIndexRoute,
+  AuthenticatedHistoryIndexRoute: AuthenticatedHistoryIndexRoute,
+  AuthenticatedProposalsIndexRoute: AuthenticatedProposalsIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
