@@ -12,22 +12,61 @@ export const Route = createFileRoute("/_authenticated/history/$id")({
   component: RunPage,
 });
 
+type ResultRow = {
+  id: string;
+  name: string;
+  address: string | null;
+  website: string | null;
+  score: number | null;
+  status: string;
+  was_new: boolean;
+};
+
 function RunPage() {
   const { id } = Route.useParams();
   const run = useQuery({
     queryKey: ["run", id],
-    queryFn: async () =>
-      (await supabase.from("discovery_runs").select("*").eq("id", id).single()).data,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("discovery_runs")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
   });
   const rows = useQuery({
     queryKey: ["run-results", id],
-    queryFn: async () =>
-      (
-        await supabase
-          .from("search_run_results")
-          .select("was_new, businesses(id,name,address,website,score,status)")
-          .eq("run_id", id)
-      ).data ?? [],
+    queryFn: async (): Promise<ResultRow[]> => {
+      // Primary source: the link table (correct for reruns too). Some rows may be
+      // missing for older runs, so fall back to businesses stamped with this run.
+      const linkRes = await supabase
+        .from("search_run_results")
+        .select("was_new, businesses(id,name,address,website,score,status)")
+        .eq("run_id", id)
+        .limit(500);
+      if (!linkRes.error && (linkRes.data?.length ?? 0) > 0) {
+        const linked = (
+          linkRes.data as unknown as {
+            was_new: boolean;
+            businesses: Omit<ResultRow, "was_new"> | null;
+          }[]
+        )
+          .filter((x) => x.businesses)
+          .map((x) => ({ ...(x.businesses as Omit<ResultRow, "was_new">), was_new: x.was_new }));
+        if (linked.length > 0) return linked;
+      }
+
+      const bizRes = await supabase
+        .from("businesses")
+        .select("id,name,address,website,score,status")
+        .eq("discovery_run_id", id)
+        .order("score", { ascending: false, nullsFirst: false })
+        .limit(200);
+      if (bizRes.error) throw bizRes.error;
+      return (bizRes.data ?? []).map((b) => ({ ...b, was_new: false }));
+    },
   });
   const r = run.data;
   return (
@@ -35,6 +74,13 @@ function RunPage() {
       <Link to="/history" className="text-xs text-muted-foreground hover:text-foreground">
         ← Search History
       </Link>
+      {run.isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+      {run.isError && (
+        <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          Could not load this search:{" "}
+          {run.error instanceof Error ? run.error.message : "unknown error"}
+        </p>
+      )}
       {r && (
         <div>
           <h1 className="text-2xl font-bold">{r.title ?? r.query}</h1>
@@ -49,28 +95,31 @@ function RunPage() {
         </div>
       )}
       <div className="divide-y rounded-lg border bg-card">
-        {rows.data?.map(
-          (x) =>
-            x.businesses && (
-              <Link
-                key={x.businesses.id}
-                to="/businesses/$id"
-                params={{ id: x.businesses.id }}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-muted"
-              >
-                <span className="min-w-0 flex-1 truncate">{x.businesses.name}</span>
-                {x.was_new && <span className="font-mono text-[10px] text-accent">new</span>}
-                <span className="font-mono text-xs text-muted-foreground">
-                  {x.businesses.status}
-                </span>
-                <span className="w-10 text-right font-mono text-accent">
-                  {x.businesses.score ?? "—"}
-                </span>
-              </Link>
-            ),
+        {rows.isLoading && <p className="p-4 text-sm text-muted-foreground">Loading results…</p>}
+        {rows.isError && (
+          <p className="p-4 text-sm text-destructive">
+            Could not load results:{" "}
+            {rows.error instanceof Error ? rows.error.message : "unknown error"}
+          </p>
         )}
+        {rows.data?.map((b) => (
+          <Link
+            key={b.id}
+            to="/businesses/$id"
+            params={{ id: b.id }}
+            className="flex items-center gap-3 px-4 py-3 hover:bg-muted"
+          >
+            <span className="min-w-0 flex-1 truncate">{b.name}</span>
+            {b.was_new && <span className="font-mono text-[10px] text-accent">new</span>}
+            <span className="font-mono text-xs text-muted-foreground">{b.status}</span>
+            <span className="w-10 text-right font-mono text-accent">{b.score ?? "—"}</span>
+          </Link>
+        ))}
         {rows.data?.length === 0 && (
-          <p className="p-4 text-sm text-muted-foreground">No linked results.</p>
+          <p className="p-4 text-sm text-muted-foreground">
+            No linked results. This search may predate result-linking, or its businesses were
+            deleted.
+          </p>
         )}
       </div>
     </div>
