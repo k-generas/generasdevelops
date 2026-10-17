@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,12 +7,23 @@ import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  validateSearch: (search: Record<string, unknown>): { mode?: "signup" | "signin" } => {
+    if (search["mode"] === "signup") return { mode: "signup" };
+    if (search["mode"] === "signin") return { mode: "signin" };
+    return {};
+  },
   head: () => ({
     meta: [
-      { title: "Sign in — GARE" },
-      { name: "description", content: "Owner sign-in for the private GARE revenue engine." },
-      { property: "og:title", content: "Sign in — GARE" },
-      { property: "og:description", content: "Owner sign-in for the private GARE revenue engine." },
+      { title: "Sign in or join — GARE" },
+      {
+        name: "description",
+        content: "Sign in to GARE, or create an account to join early access.",
+      },
+      { property: "og:title", content: "Sign in or join — GARE" },
+      {
+        property: "og:description",
+        content: "Sign in to GARE, or create an account to join early access.",
+      },
     ],
   }),
   component: AuthPage,
@@ -20,7 +31,8 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"in" | "up">("in");
+  const searchMode = Route.useSearch().mode;
+  const [mode, setMode] = useState<"in" | "up">(searchMode === "signup" ? "up" : "in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -48,15 +60,26 @@ function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4">
+      <Link
+        to="/"
+        className="rounded-md text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        ← Back to overview
+      </Link>
       <form onSubmit={submit} className="w-full max-w-sm space-y-5 rounded-lg border bg-card p-8">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
-            GARE // private
+            GARE // early access
           </p>
           <h1 className="mt-2 text-2xl font-bold">
-            {mode === "in" ? "Owner sign in" : "Create owner account"}
+            {mode === "in" ? "Sign in to GARE" : "Create your GARE account"}
           </h1>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {mode === "in"
+              ? "Your workspace is private to this account."
+              : "No card, no subscription. Pricing is shared before anything is charged."}
+          </p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
@@ -88,7 +111,7 @@ function AuthPage() {
           className="w-full text-center text-xs text-muted-foreground hover:text-foreground"
           onClick={() => setMode(mode === "in" ? "up" : "in")}
         >
-          {mode === "in" ? "First time? Create the owner account" : "Have an account? Sign in"}
+          {mode === "in" ? "New here? Create an account" : "Already have an account? Sign in"}
         </button>
       </form>
     </div>

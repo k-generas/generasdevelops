@@ -5,13 +5,7 @@ import { cn } from "@/lib/utils";
 export const FOCUS_RING =
   "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
-export function Wordmark({
-  className,
-  size = "md",
-}: {
-  className?: string;
-  size?: "sm" | "md";
-}) {
+export function Wordmark({ className, size = "md" }: { className?: string; size?: "sm" | "md" }) {
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
       <span

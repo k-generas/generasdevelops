@@ -64,7 +64,7 @@ export function ProductPreview() {
         <div className="flex flex-wrap items-center gap-3 px-4 pt-4 sm:px-5">
           <div className="flex items-center gap-2">
             <Radar className="h-4 w-4 text-primary" aria-hidden="true" />
-            <h3 className="text-sm font-semibold">Local opportunity radar</h3>
+            <p className="text-sm font-semibold">Local opportunity radar</p>
           </div>
           <Button size="sm" className="ml-auto" disabled aria-disabled="true">
             Run discovery
@@ -147,8 +147,8 @@ export function ProductPreview() {
       </div>
 
       <figcaption className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-        Interface preview built from GARE's components. Stat limits are enforced values; table
-        rows are illustrative categories, not customer records.
+        Interface preview built from GARE's components. Stat limits are enforced values; table rows
+        are illustrative categories, not customer records.
       </figcaption>
     </figure>
   );
