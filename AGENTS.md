@@ -13,5 +13,6 @@
 
 - Every data table is owner-scoped via `owner_id = auth.uid()` RLS — the app is single-owner private, no roles needed yet.
 - Google Places calls go only through authenticated server functions in `src/lib/discovery.functions.ts` — Maps usage is paid and must stay bounded (max 20 results/run, dedupe by place_id).
+- `src/lib/places.server.ts` picks the places provider: Google via the Lovable connector when `LOVABLE_API_KEY` + `GOOGLE_MAPS_API_KEY` are present, else the free Geoapify fallback when `GEOAPIFY_API_KEY` is set (local dev). Both keep the 20-results/run bound and dedupe on `place_id`.
 - AI investigation uses raw streamed `/v1/responses` with strict json_schema in `src/lib/investigate.server.ts` — AI may only interpret collected evidence, never invent facts.
 - Authenticated pages live under `src/routes/_authenticated/` (client-side session gate, ssr: false).

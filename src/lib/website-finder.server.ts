@@ -1,7 +1,11 @@
 // Double-checks whether a business really has no website before we say so.
-// Steps: 1) fresh Google Place Details lookup, 2) guess likely domains from the
-// business name and verify the page actually mentions the business.
+// Steps: 1) fresh place-details lookup (Google via Lovable, else Geoapify),
+// 2) guess likely domains from the business name and verify the page actually
+// mentions the business.
+import { GEOAPIFY_PLACE_ID_PREFIX } from "./places.server";
+
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_maps";
+const GEOAPIFY_PLACE_DETAILS_URL = "https://api.geoapify.com/v2/place-details";
 
 export type WebsiteCheck = {
   website: string | null;
@@ -57,17 +61,40 @@ function countryTlds(address: string | null) {
 async function placeDetailsWebsite(placeId: string): Promise<string | null> {
   const lovableKey = process.env["LOVABLE_API_KEY"];
   const mapsKey = process.env["GOOGLE_MAPS_API_KEY"];
-  if (!lovableKey || !mapsKey) return null;
-  const res = await fetch(`${GATEWAY_URL}/places/v1/places/${encodeURIComponent(placeId)}`, {
-    headers: {
-      Authorization: `Bearer ${lovableKey}`,
-      "X-Connection-Api-Key": mapsKey,
-      "X-Goog-FieldMask": "websiteUri",
-    },
-  });
-  if (!res.ok) return null;
-  const d = (await res.json()) as { websiteUri?: string };
-  return d.websiteUri ?? null;
+  const isGeoapify = placeId.startsWith(GEOAPIFY_PLACE_ID_PREFIX);
+
+  if (lovableKey && mapsKey && !isGeoapify) {
+    const res = await fetch(`${GATEWAY_URL}/places/v1/places/${encodeURIComponent(placeId)}`, {
+      headers: {
+        Authorization: `Bearer ${lovableKey}`,
+        "X-Connection-Api-Key": mapsKey,
+        "X-Goog-FieldMask": "websiteUri",
+      },
+    });
+    if (res.ok) {
+      const d = (await res.json()) as { websiteUri?: string };
+      if (d.websiteUri) return d.websiteUri;
+    }
+  }
+
+  const geoKey = process.env["GEOAPIFY_API_KEY"];
+  if (geoKey) {
+    const id = isGeoapify ? placeId.slice(GEOAPIFY_PLACE_ID_PREFIX.length) : placeId;
+    const url = new URL(GEOAPIFY_PLACE_DETAILS_URL);
+    url.searchParams.set("id", id);
+    url.searchParams.set("apiKey", geoKey);
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (res.ok) {
+      const d = (await res.json()) as {
+        features?: { properties?: { website?: string; contact?: { website?: string } } }[];
+      };
+      const props = d.features?.[0]?.properties;
+      const w = props?.website ?? props?.contact?.website ?? null;
+      if (w) return w;
+    }
+  }
+
+  return null;
 }
 
 async function pageMentions(url: string, tokens: string[]): Promise<boolean> {
@@ -107,12 +134,12 @@ export async function verifyWebsite(b: {
       website: b.website,
       source: "google_places",
       confidence: "confirmed",
-      steps: [{ step: "Google Maps listing", result: b.website }],
+      steps: [{ step: "Places listing", result: b.website }],
     };
 
-  steps.push({ step: "Google Maps listing", result: "no website listed" });
+  steps.push({ step: "Places listing", result: "no website listed" });
   const detail = await placeDetailsWebsite(b.place_id);
-  steps.push({ step: "Fresh Google Place Details lookup", result: detail ?? "no website" });
+  steps.push({ step: "Fresh place-details lookup", result: detail ?? "no website" });
   if (detail) return { website: detail, source: "place_details", confidence: "confirmed", steps };
 
   const tokens = nameTokens(b.name);

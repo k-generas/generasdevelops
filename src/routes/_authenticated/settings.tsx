@@ -331,9 +331,20 @@ function Settings() {
           ) : (
             <>
               <StatusRow
-                label="Google Maps (discovery)"
-                ok={!!sys.data?.maps}
-                hint="Needs LOVABLE_API_KEY + GOOGLE_MAPS_API_KEY"
+                label="Places (discovery)"
+                ok={!!sys.data?.placesProvider}
+                hint={
+                  sys.data?.placesProvider === "google"
+                    ? "Google Maps via Lovable connector"
+                    : sys.data?.placesProvider === "geoapify"
+                      ? "Geoapify (local fallback)"
+                      : "Google Maps connector or GEOAPIFY_API_KEY"
+                }
+              />
+              <StatusRow
+                label="Geoapify (local fallback)"
+                ok={!!sys.data?.geoapify}
+                hint="GEOAPIFY_API_KEY"
               />
               <StatusRow label="AI · OpenAI" ok={!!sys.data?.ai.openai} hint="OPENAI_API_KEY" />
               <StatusRow label="AI · Gemini" ok={!!sys.data?.ai.gemini} hint="GEMINI_API_KEY" />
