@@ -14,6 +14,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { summarizeOutcomes } from "@/lib/outcomes";
 import { Button } from "@/components/ui/button";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -161,6 +162,19 @@ function Dashboard() {
         </Button>
       </header>
 
+      {(businesses.isError || proposals.isError || tasks.isError || failedRuns.isError) && (
+        <ErrorBanner
+          error={(businesses.error ?? proposals.error ?? tasks.error ?? failedRuns.error) as Error}
+          context="Dashboard"
+          onRetry={() => {
+            if (businesses.isError) void businesses.refetch();
+            if (proposals.isError) void proposals.refetch();
+            if (tasks.isError) void tasks.refetch();
+            if (failedRuns.isError) void failedRuns.refetch();
+          }}
+        />
+      )}
+
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label="Businesses" value={total} icon={Globe} />
         <Kpi label="No website" value={noSite} icon={TrendingUp} hint="Leads without a site" />
@@ -212,12 +226,22 @@ function Dashboard() {
               View all
             </Link>
           </div>
-          {businesses.isLoading ? (
+          {businesses.isError ? (
+            <div className="p-4 text-sm text-destructive">
+              Could not load leads. See the error above for the cause and fix.
+            </div>
+          ) : businesses.isLoading ? (
             <p className="p-4 text-sm text-muted-foreground">Loading…</p>
           ) : recentLeads.length === 0 ? (
-            <p className="p-6 text-sm text-muted-foreground">
-              No businesses yet. Run a discovery to find real leads.
-            </p>
+            <EmptyState
+              title="No businesses yet"
+              why="Nothing has been discovered so far. Run a discovery search on the Discover page to import real Google Maps results."
+              action={
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/discover">Go to Discover</Link>
+                </Button>
+              }
+            />
           ) : (
             <div className="divide-y">
               {recentLeads.map((b) => (
@@ -325,10 +349,15 @@ function Dashboard() {
               View all
             </Link>
           </div>
-          {recentProposals.length === 0 ? (
-            <p className="p-6 text-sm text-muted-foreground">
-              No proposals yet. Generate one from a business page.
-            </p>
+          {proposals.isError ? (
+            <div className="p-4 text-sm text-destructive">
+              Could not load proposals — check the error banner above.
+            </div>
+          ) : recentProposals.length === 0 ? (
+            <EmptyState
+              title="No proposals yet"
+              why="Generate one from a business page after running an investigation — the AI drafts it from collected evidence only."
+            />
           ) : (
             <div className="divide-y">
               {recentProposals.map((p) => (
@@ -360,10 +389,15 @@ function Dashboard() {
               View all
             </Link>
           </div>
-          {tasks.data?.length === 0 ? (
-            <p className="p-6 text-sm text-muted-foreground">
-              Nothing to do. Tasks you create appear here.
-            </p>
+          {tasks.isError ? (
+            <div className="p-4 text-sm text-destructive">
+              Could not load tasks — check the error banner above.
+            </div>
+          ) : tasks.data?.length === 0 ? (
+            <EmptyState
+              title="Nothing to do"
+              why="Tasks you create appear here. They are generated automatically from revenue leaks (Plan delivery) or created manually on the Tasks page."
+            />
           ) : (
             <div className="divide-y">
               {tasks.data?.map((t) => (

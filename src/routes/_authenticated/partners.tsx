@@ -30,6 +30,8 @@ import {
   type PartnerKind,
   type PartnerMatch,
 } from "@/lib/partners";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { describeError } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/partners")({
   head: () => ({
@@ -156,7 +158,10 @@ function PartnersPage() {
       setMessage("Partner saved.");
       void qc.invalidateQueries({ queryKey: ["partners"] });
     },
-    onError: (e) => setMessage(e instanceof Error ? e.message : "Could not save partner."),
+    onError: (e) => {
+      const d = describeError(e, "Save partner");
+      setMessage(`${d.title}: ${d.message} How to fix: ${d.fix}`);
+    },
   });
 
   const handoffMutation = useMutation({
@@ -175,7 +180,10 @@ function PartnersPage() {
       setMessage("Handoff created.");
       void qc.invalidateQueries({ queryKey: ["handoffs"] });
     },
-    onError: (e) => setMessage(e instanceof Error ? e.message : "Could not create handoff."),
+    onError: (e) => {
+      const d = describeError(e, "Create handoff");
+      setMessage(`${d.title}: ${d.message} How to fix: ${d.fix}`);
+    },
   });
 
   return (
@@ -195,6 +203,18 @@ function PartnersPage() {
         </p>
       )}
 
+      {(partners.isError || overflow.isError || handoffs.isError) && (
+        <ErrorBanner
+          error={(partners.error ?? overflow.error ?? handoffs.error) as Error}
+          context="Partners"
+          onRetry={() => {
+            if (partners.isError) void partners.refetch();
+            if (overflow.isError) void overflow.refetch();
+            if (handoffs.isError) void handoffs.refetch();
+          }}
+        />
+      )}
+
       <section className="space-y-3">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold">Overflow work</h2>
@@ -208,13 +228,19 @@ function PartnersPage() {
             {overflow.data.error}
           </p>
         )}
-        {overflow.isLoading ? (
+        {overflow.isError ? (
+          <ErrorBanner
+            error={overflow.error}
+            context="Overflow"
+            onRetry={() => void overflow.refetch()}
+          />
+        ) : overflow.isLoading ? (
           <p className="text-sm text-muted-foreground">Checking capacity…</p>
         ) : (overflow.data?.candidates.length ?? 0) === 0 ? (
-          <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-            Nothing to offload right now. Overflow appears when an open leak needs more hours than
-            your remaining weekly capacity, or skills you have not marked as demonstrated.
-          </p>
+          <EmptyState
+            title="Nothing to offload right now"
+            why="Overflow appears when an open leak needs more hours than your remaining weekly capacity, or skills you have not marked as demonstrated. Set your weekly capacity on the Settings page and scan leaks on the Radar page to populate this."
+          />
         ) : (
           (overflow.data?.candidates ?? []).map((c) => (
             <OverflowCard
@@ -264,13 +290,24 @@ function PartnersPage() {
           />
         )}
 
-        {partners.isLoading ? (
+        {partners.isError ? (
+          <ErrorBanner
+            error={partners.error}
+            context="Partner directory"
+            onRetry={() => void partners.refetch()}
+          />
+        ) : partners.isLoading ? (
           <p className="text-sm text-muted-foreground">Loading partners…</p>
         ) : partnerList.length === 0 ? (
-          <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-            No partners recorded yet. Add the agencies and freelancers you already trust; matches
-            use only what you enter here.
-          </p>
+          <EmptyState
+            title="No partners recorded yet"
+            why="Add the agencies and freelancers you already trust — their services, industries and districts drive matching. Matches use only what you enter here; nothing is invented."
+            action={
+              <Button size="sm" variant="outline" onClick={() => setDraft(emptyDraft())}>
+                Add your first partner
+              </Button>
+            }
+          />
         ) : (
           <div className="space-y-2">
             {partnerList.map((p) => (
@@ -304,12 +341,19 @@ function PartnersPage() {
             {handoffSummary.ownerCut.toFixed(0)}
           </span>
         </div>
-        {handoffs.isLoading ? (
+        {handoffs.isError ? (
+          <ErrorBanner
+            error={handoffs.error}
+            context="Handoffs"
+            onRetry={() => void handoffs.refetch()}
+          />
+        ) : handoffs.isLoading ? (
           <p className="text-sm text-muted-foreground">Loading handoffs…</p>
         ) : (handoffs.data?.length ?? 0) === 0 ? (
-          <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-            No handoffs yet. Match an overflow item to a partner to create one.
-          </p>
+          <EmptyState
+            title="No handoffs yet"
+            why="Match an overflow item (above) to a partner to create one. A handoff tracks the delivery value and your cut."
+          />
         ) : (
           <div className="space-y-2">
             {(handoffs.data ?? []).map((h) => (

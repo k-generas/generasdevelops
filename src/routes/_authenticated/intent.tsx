@@ -4,8 +4,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { Flame } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { getIntentBoard, type IntentBoardRow } from "@/lib/intent.functions";
 import { INTENT_DISCLAIMER, INTENT_TIERS, type IntentTier } from "@/lib/intent";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 
 export const Route = createFileRoute("/_authenticated/intent")({
   head: () => ({
@@ -71,13 +73,26 @@ function IntentPage() {
         </label>
       </div>
 
-      {board.isLoading ? (
+      {board.isError && (
+        <ErrorBanner
+          error={board.error}
+          context="Buyer intent board"
+          onRetry={() => void board.refetch()}
+        />
+      )}
+
+      {board.isError ? null : board.isLoading ? (
         <p className="text-sm text-muted-foreground">Scoring leads…</p>
       ) : rows.length === 0 ? (
-        <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-          No leads to score yet. Intent is derived from saved businesses, their measured leaks,
-          recorded activity and pipeline stage. Investigate leads and refresh revenue leaks first.
-        </p>
+        <EmptyState
+          title="No leads to score yet"
+          why="Intent is derived from saved businesses, their measured leaks, recorded activity and pipeline stage. Investigate leads and refresh revenue leaks first."
+          action={
+            <Button asChild size="sm" variant="outline">
+              <Link to="/businesses">Open leads</Link>
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-2">
           {rows.map((r) => (

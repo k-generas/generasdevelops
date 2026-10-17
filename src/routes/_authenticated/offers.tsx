@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
@@ -19,6 +19,8 @@ import {
   suggestKit,
   type OfferKit,
 } from "@/lib/offer-kit";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { describeError } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/offers")({
   head: () => ({
@@ -90,7 +92,10 @@ function OffersPage() {
       setMessage("Kit saved.");
       void qc.invalidateQueries({ queryKey: ["offer-kits"] });
     },
-    onError: (e) => setMessage(e instanceof Error ? e.message : "Could not save kit."),
+    onError: (e) => {
+      const d = describeError(e, "Save offer kit");
+      setMessage(`${d.title}: ${d.message} How to fix: ${d.fix}`);
+    },
   });
 
   return (
@@ -108,18 +113,42 @@ function OffersPage() {
         </p>
       )}
 
-      {!kitsQ.isLoading && kitsQ.data?.length === 0 && (
+      {(offersQ.isError || kitsQ.isError || leaksQ.isError) && (
+        <ErrorBanner
+          error={(offersQ.error ?? kitsQ.error ?? leaksQ.error) as Error}
+          context="Offer studio"
+          onRetry={() => {
+            if (offersQ.isError) void offersQ.refetch();
+            if (kitsQ.isError) void kitsQ.refetch();
+            if (leaksQ.isError) void leaksQ.refetch();
+          }}
+        />
+      )}
+
+      {!kitsQ.isLoading && !kitsQ.isError && kitsQ.data?.length === 0 && (
         <p className="rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
           No kits saved yet — each offer below shows a suggested starter derived from its category.
         </p>
       )}
 
-      {offersQ.isLoading ? (
+      {offersQ.isError ? (
+        <ErrorBanner
+          error={offersQ.error}
+          context="Offers"
+          onRetry={() => void offersQ.refetch()}
+        />
+      ) : offersQ.isLoading ? (
         <p className="text-sm text-muted-foreground">Loading offers…</p>
       ) : offers.length === 0 ? (
-        <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-          No active offers. Add offers in Settings first, then package them here.
-        </p>
+        <EmptyState
+          title="No active offers"
+          why="Offers are managed on the Settings page. Add one there (name, price, category), mark it active, then return here to package it into a delivery kit."
+          action={
+            <Button asChild size="sm" variant="outline">
+              <Link to="/settings">Open Settings</Link>
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-3">
           {offers.map((o) => {

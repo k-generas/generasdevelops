@@ -16,6 +16,8 @@ import {
   INVOICE_STATUSES,
 } from "@/lib/invoices";
 import { downloadCsv, rowsToCsv } from "@/lib/csv";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { describeError } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/invoices")({
   head: () => ({
@@ -112,13 +114,14 @@ function Invoices() {
       setMsg(`Created ${number}.`);
       await invoices.refetch();
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Could not create the invoice.");
+      const d = describeError(e, "Create invoice");
+      setMsg(`${d.title}: ${d.message} How to fix: ${d.fix}`);
     }
     setBusy(false);
   }
 
   async function setStatus(inv: InvoiceRow, status: string) {
-    await supabase
+    const { error } = await supabase
       .from("invoices")
       .update({
         status,
@@ -126,12 +129,20 @@ function Invoices() {
         updated_at: new Date().toISOString(),
       })
       .eq("id", inv.id!);
+    if (error) {
+      const d = describeError(error, "Update invoice");
+      setMsg(`${d.title}: ${d.message} How to fix: ${d.fix}`);
+    }
     await invoices.refetch();
   }
 
   async function remove(inv: InvoiceRow) {
     if (!window.confirm(`Delete ${inv.number}?`)) return;
-    await supabase.from("invoices").delete().eq("id", inv.id!);
+    const { error } = await supabase.from("invoices").delete().eq("id", inv.id!);
+    if (error) {
+      const d = describeError(error, "Delete invoice");
+      setMsg(`${d.title}: ${d.message} How to fix: ${d.fix}`);
+    }
     await invoices.refetch();
   }
 
@@ -187,6 +198,17 @@ function Invoices() {
           </Button>
         </div>
       </div>
+
+      {(invoices.isError || proposals.isError) && (
+        <ErrorBanner
+          error={(invoices.error ?? proposals.error) as Error}
+          context="Invoices"
+          onRetry={() => {
+            if (invoices.isError) void invoices.refetch();
+            if (proposals.isError) void proposals.refetch();
+          }}
+        />
+      )}
 
       {!invoices.isLoading && !persisted && (
         <div className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
@@ -288,53 +310,77 @@ function Invoices() {
       </div>
 
       <div className="divide-y rounded-lg border bg-card">
-        {invoices.isLoading && <p className="p-4 text-sm text-muted-foreground">Loading…</p>}
-        {!invoices.isLoading && filtered.length === 0 && (
-          <p className="p-4 text-sm text-muted-foreground">No invoices yet.</p>
-        )}
-        {filtered.map((inv) => (
-          <div key={inv.id ?? inv.number} className="flex flex-wrap items-center gap-3 px-4 py-3">
-            <div className="min-w-0 flex-1">
-              <p className="font-medium">
-                {inv.number}
-                {inv.businesses?.name ? ` · ${inv.businesses.name}` : ""}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {formatMoney(Number(inv.amount) || 0, inv.currency)} · issued{" "}
-                {new Date(inv.issued_at).toLocaleDateString()}
-                {inv.due_at ? ` · due ${new Date(inv.due_at).toLocaleDateString()}` : ""}
-                {isOverdue(inv) ? " · OVERDUE" : ""}
-              </p>
-            </div>
-            <span className="rounded-full border px-2 py-0.5 text-xs">{inv.status}</span>
-            <div className="flex items-center gap-1">
-              {inv.status === "PAID" ? (
-                <Button size="sm" variant="outline" onClick={() => setStatus(inv, "SENT")}>
-                  Mark unpaid
-                </Button>
-              ) : (
-                <Button size="sm" onClick={() => setStatus(inv, "PAID")}>
-                  Mark paid
-                </Button>
-              )}
-              <Button size="sm" variant="ghost" onClick={() => print(inv)} title="Print / PDF">
-                <Printer className="h-4 w-4" />
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => copy(inv)} title="Copy">
-                <Copy className="h-4 w-4" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => remove(inv)}
-                title="Delete"
-                className="text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
+        {invoices.isError ? (
+          <div className="p-4">
+            <ErrorBanner
+              error={invoices.error}
+              context="Invoice list"
+              onRetry={() => void invoices.refetch()}
+            />
           </div>
-        ))}
+        ) : invoices.isLoading ? (
+          <p className="p-4 text-sm text-muted-foreground">Loading…</p>
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            title={filter === "ALL" ? "No invoices yet" : `No ${filter.toLowerCase()} invoices`}
+            why={
+              filter === "ALL"
+                ? "Create one from a proposal above — it becomes a printable document with a status you can mark paid/unpaid."
+                : "Nothing currently has this status. Change the status filter above to see other invoices."
+            }
+            action={
+              filter !== "ALL" ? (
+                <Button size="sm" variant="outline" onClick={() => setFilter("ALL")}>
+                  Show all
+                </Button>
+              ) : undefined
+            }
+          />
+        ) : (
+          filtered.map((inv) => (
+            <div key={inv.id ?? inv.number} className="flex flex-wrap items-center gap-3 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">
+                  {inv.number}
+                  {inv.businesses?.name ? ` · ${inv.businesses.name}` : ""}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {formatMoney(Number(inv.amount) || 0, inv.currency)} · issued{" "}
+                  {new Date(inv.issued_at).toLocaleDateString()}
+                  {inv.due_at ? ` · due ${new Date(inv.due_at).toLocaleDateString()}` : ""}
+                  {isOverdue(inv) ? " · OVERDUE" : ""}
+                </p>
+              </div>
+              <span className="rounded-full border px-2 py-0.5 text-xs">{inv.status}</span>
+              <div className="flex items-center gap-1">
+                {inv.status === "PAID" ? (
+                  <Button size="sm" variant="outline" onClick={() => setStatus(inv, "SENT")}>
+                    Mark unpaid
+                  </Button>
+                ) : (
+                  <Button size="sm" onClick={() => setStatus(inv, "PAID")}>
+                    Mark paid
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" onClick={() => print(inv)} title="Print / PDF">
+                  <Printer className="h-4 w-4" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => copy(inv)} title="Copy">
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => remove(inv)}
+                  title="Delete"
+                  className="text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

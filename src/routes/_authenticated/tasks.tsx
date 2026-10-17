@@ -4,6 +4,9 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { describeError } from "@/lib/errors";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/tasks")({
   head: () => ({
@@ -43,6 +46,7 @@ function Tasks() {
   const [priority, setPriority] = useState<string>("normal");
   const [businessId, setBusinessId] = useState("");
   const [busy, setBusy] = useState(false);
+  const [createErr, setCreateErr] = useState<string | null>(null);
 
   const tasks = useQuery({
     queryKey: ["tasks", showDone],
@@ -66,17 +70,25 @@ function Tasks() {
   });
 
   async function complete(id: string, status: "done" | "open") {
-    await supabase
+    const { error } = await supabase
       .from("tasks")
       .update({ status, completed_at: status === "done" ? new Date().toISOString() : null })
       .eq("id", id);
+    if (error) {
+      const d = describeError(error, "Update task");
+      toast.error(d.title, { description: `${d.message} ${d.fix}` });
+    }
     qc.invalidateQueries({ queryKey: ["tasks"] });
     qc.invalidateQueries({ queryKey: ["dash-tasks"] });
   }
 
   async function remove(id: string) {
     if (!confirm("Delete this task?")) return;
-    await supabase.from("tasks").delete().eq("id", id);
+    const { error } = await supabase.from("tasks").delete().eq("id", id);
+    if (error) {
+      const d = describeError(error, "Delete task");
+      toast.error(d.title, { description: `${d.message} ${d.fix}` });
+    }
     qc.invalidateQueries({ queryKey: ["tasks"] });
   }
 
@@ -84,24 +96,39 @@ function Tasks() {
     e.preventDefault();
     if (!title.trim()) return;
     setBusy(true);
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) {
-      setBusy(false);
-      return;
+    setCreateErr(null);
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) {
+        setCreateErr(
+          "You are not signed in — session may have expired. Sign out and sign in again, then retry.",
+        );
+        setBusy(false);
+        return;
+      }
+      const { error } = await supabase.from("tasks").insert({
+        owner_id: u.user.id,
+        title: title.trim(),
+        description: description.trim() || null,
+        due_at: dueAt ? new Date(dueAt).toISOString() : null,
+        priority,
+        business_id: businessId || null,
+      });
+      if (error) {
+        const d = describeError(error, "Create task");
+        setCreateErr(`${d.message} How to fix: ${d.fix}`);
+        setBusy(false);
+        return;
+      }
+      setTitle("");
+      setDescription("");
+      setDueAt("");
+      setPriority("normal");
+      setBusinessId("");
+    } catch (err) {
+      const d = describeError(err, "Create task");
+      setCreateErr(`${d.message} How to fix: ${d.fix}`);
     }
-    await supabase.from("tasks").insert({
-      owner_id: u.user.id,
-      title: title.trim(),
-      description: description.trim() || null,
-      due_at: dueAt ? new Date(dueAt).toISOString() : null,
-      priority,
-      business_id: businessId || null,
-    });
-    setTitle("");
-    setDescription("");
-    setDueAt("");
-    setPriority("normal");
-    setBusinessId("");
     setBusy(false);
     qc.invalidateQueries({ queryKey: ["tasks"] });
     qc.invalidateQueries({ queryKey: ["dash-tasks"] });
@@ -118,6 +145,17 @@ function Tasks() {
           {showDone ? "Show open" : "Show completed"}
         </Button>
       </header>
+
+      {(tasks.isError || businesses.isError) && (
+        <ErrorBanner
+          error={(tasks.error ?? businesses.error) as Error}
+          context="Tasks"
+          onRetry={() => {
+            if (tasks.isError) void tasks.refetch();
+            if (businesses.isError) void businesses.refetch();
+          }}
+        />
+      )}
 
       <form onSubmit={create} className="rounded-xl border bg-card p-4">
         <div className="grid gap-3 sm:grid-cols-2">
@@ -166,16 +204,30 @@ function Tasks() {
           <Button type="submit" size="sm" disabled={busy}>
             {busy ? "Adding…" : "Add task"}
           </Button>
+          {createErr && <p className="mt-2 text-sm text-destructive">{createErr}</p>}
         </div>
       </form>
 
       <div className="divide-y rounded-xl border bg-card">
-        {tasks.isLoading ? (
+        {tasks.isError ? (
+          <div className="p-4">
+            <ErrorBanner
+              error={tasks.error}
+              context="Task list"
+              onRetry={() => void tasks.refetch()}
+            />
+          </div>
+        ) : tasks.isLoading ? (
           <p className="p-4 text-sm text-muted-foreground">Loading…</p>
         ) : tasks.data?.length === 0 ? (
-          <p className="p-4 text-sm text-muted-foreground">
-            {showDone ? "No completed tasks." : "No open tasks."}
-          </p>
+          <EmptyState
+            title={showDone ? "No completed tasks" : "No open tasks"}
+            why={
+              showDone
+                ? "Completed tasks will be listed here once you mark any as done."
+                : "Tasks are created manually above, or automatically from revenue leaks on the Leaks page (Plan delivery)."
+            }
+          />
         ) : (
           tasks.data?.map((t) => (
             <div key={t.id} className="flex items-center gap-3 px-4 py-3">

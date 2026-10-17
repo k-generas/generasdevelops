@@ -10,6 +10,8 @@ import { offerNamesForFloors, sortOffers, type Offer } from "@/lib/offers";
 import { useOffers } from "@/lib/offers.hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ErrorBanner } from "@/components/ErrorBanner";
+import { describeError } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -76,7 +78,8 @@ function Settings() {
       if (error) throw error;
       setSaved("Saved. New proposals cannot be priced below these floors.");
     } catch (e) {
-      setSaved(e instanceof Error ? e.message : "Save failed");
+      const d = describeError(e, "Save pricing floors");
+      setSaved(`${d.title}: ${d.message} How to fix: ${d.fix}`);
     }
     setBusy(false);
   }
@@ -153,7 +156,8 @@ function Settings() {
         `Saved (${inserted} added, ${updated} updated${removed.length ? `, ${removed.length} removed` : ""}).`,
       );
     } catch (e) {
-      setOfferMsg(e instanceof Error ? e.message : "Save failed");
+      const d = describeError(e, "Save offer catalog");
+      setOfferMsg(`${d.title}: ${d.message} How to fix: ${d.fix}`);
     }
     setOfferBusy(false);
   }
@@ -169,6 +173,18 @@ function Settings() {
           Controls that protect your work. Enforced on the server, not just here.
         </p>
       </header>
+
+      {(prefs.isError || sys.isError || offersQ.isError) && (
+        <ErrorBanner
+          error={(prefs.error ?? sys.error ?? offersQ.error) as Error}
+          context="Settings"
+          onRetry={() => {
+            if (prefs.isError) void prefs.refetch();
+            if (sys.isError) void sys.refetch();
+            if (offersQ.isError) void offersQ.refetch();
+          }}
+        />
+      )}
 
       <section className="rounded-xl border bg-card">
         <div className="flex flex-wrap items-center gap-3 border-b px-4 py-3">
@@ -328,6 +344,10 @@ function Settings() {
         <div className="divide-y">
           {sys.isPending ? (
             <p className="px-4 py-3 text-sm text-muted-foreground">Checking…</p>
+          ) : sys.isError ? (
+            <p className="px-4 py-3 text-sm text-destructive">
+              Could not check integrations — see the error banner above.
+            </p>
           ) : (
             <>
               <StatusRow

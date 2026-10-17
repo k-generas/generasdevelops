@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { parseDigestBusinesses } from "@/lib/monitoring";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 import type { Database } from "@/integrations/supabase/types";
 
 type DailyDigestRow = Database["public"]["Tables"]["daily_digests"]["Row"];
@@ -64,20 +65,26 @@ function UpdatesPage() {
         </p>
       </header>
 
+      {digests.isError && (
+        <ErrorBanner
+          error={digests.error}
+          context="Updates"
+          onRetry={() => void digests.refetch()}
+        />
+      )}
+
       {digests.isLoading ? (
         <p className="text-sm text-muted-foreground">Loading updates…</p>
-      ) : digests.data?.length === 0 ? (
-        <div className="space-y-3 rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-          <p>No daily scans yet.</p>
-          <p>
-            Turn on <span className="font-medium">Automatic daily scan</span> on the Radar page,
-            then run it once to see results here. Scheduling the repeating daily job is done from
-            the Lovable Cloud Jobs settings.
-          </p>
-          <Button size="sm" variant="outline" asChild>
-            <Link to="/radar">Open Radar</Link>
-          </Button>
-        </div>
+      ) : digests.isError ? null : digests.data?.length === 0 ? (
+        <EmptyState
+          title="No daily scans yet"
+          why="Turn on 'Automatic daily scan' on the Radar page, then run it once to see results here. Scheduling the repeating daily job is done from the Lovable Cloud Jobs settings."
+          action={
+            <Button size="sm" variant="outline" asChild>
+              <Link to="/radar">Open Radar</Link>
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-3">
           {digests.data?.map((d) => (

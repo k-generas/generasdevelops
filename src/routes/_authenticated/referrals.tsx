@@ -24,6 +24,8 @@ import {
   type ReferralRewardType,
   type ReferralStatus,
 } from "@/lib/referrals";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { describeError } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/referrals")({
   head: () => ({
@@ -124,7 +126,10 @@ function ReferralsPage() {
       setMessage("Referral saved.");
       void qc.invalidateQueries({ queryKey: ["referrals"] });
     },
-    onError: (e) => setMessage(e instanceof Error ? e.message : "Could not save referral."),
+    onError: (e) => {
+      const d = describeError(e, "Save referral");
+      setMessage(`${d.title}: ${d.message} How to fix: ${d.fix}`);
+    },
   });
 
   return (
@@ -140,6 +145,17 @@ function ReferralsPage() {
         <p className="rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
           {message}
         </p>
+      )}
+
+      {(refs.isError || candidates.isError) && (
+        <ErrorBanner
+          error={(refs.error ?? candidates.error) as Error}
+          context="Referrals"
+          onRetry={() => {
+            if (refs.isError) void refs.refetch();
+            if (candidates.isError) void candidates.refetch();
+          }}
+        />
       )}
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -160,13 +176,24 @@ function ReferralsPage() {
           </span>
         </div>
         <p className="text-xs text-muted-foreground">{PARTNERSHIP_DISCLAIMER}</p>
-        {candidates.isLoading ? (
+        {candidates.isError ? (
+          <ErrorBanner
+            error={candidates.error}
+            context="Partnership candidates"
+            onRetry={() => void candidates.refetch()}
+          />
+        ) : candidates.isLoading ? (
           <p className="text-sm text-muted-foreground">Looking for clusters…</p>
         ) : (candidates.data?.length ?? 0) === 0 ? (
-          <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-            No clusters yet. Clusters appear when you have recorded clients (active subscriptions or
-            won proposals) grouped in the same industry.
-          </p>
+          <EmptyState
+            title="No clusters yet"
+            why="Clusters appear when you have recorded clients (active subscriptions or won proposals) grouped in the same industry. Win a few proposals and add recurring subscriptions first."
+            action={
+              <Button asChild size="sm" variant="outline">
+                <Link to="/revenue">Open recurring revenue</Link>
+              </Button>
+            }
+          />
         ) : (
           <div className="space-y-2">
             {(candidates.data ?? []).map((c) => (
@@ -223,13 +250,24 @@ function ReferralsPage() {
           />
         )}
 
-        {refs.isLoading ? (
+        {refs.isError ? (
+          <ErrorBanner
+            error={refs.error}
+            context="Referral ledger"
+            onRetry={() => void refs.refetch()}
+          />
+        ) : refs.isLoading ? (
           <p className="text-sm text-muted-foreground">Loading referrals…</p>
         ) : rows.length === 0 ? (
-          <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-            No referrals recorded yet. Add an introduction you gave or received to track what came
-            of it.
-          </p>
+          <EmptyState
+            title="No referrals recorded yet"
+            why="Add an introduction you gave or received to track what came of it — this feeds your win rate and rewards owed."
+            action={
+              <Button size="sm" variant="outline" onClick={() => setDraft(emptyDraft())}>
+                Add referral
+              </Button>
+            }
+          />
         ) : (
           <div className="space-y-2">
             {rows.map((r) => (

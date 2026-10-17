@@ -4,6 +4,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { downloadCsv, rowsToCsv } from "@/lib/csv";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 
 export const STATUSES = [
   "DRAFT",
@@ -71,6 +72,9 @@ function Proposals() {
           </Button>
         </div>
       </div>
+      {list.isError && (
+        <ErrorBanner error={list.error} context="Proposals" onRetry={() => void list.refetch()} />
+      )}
       <div className="flex flex-wrap gap-2">
         {["ALL", ...STATUSES].map((s) => (
           <Button
@@ -84,6 +88,16 @@ function Proposals() {
         ))}
       </div>
       <div className="divide-y rounded-lg border bg-card">
+        {list.isLoading && <p className="p-4 text-sm text-muted-foreground">Loading proposals…</p>}
+        {list.isError && (
+          <div className="p-4">
+            <ErrorBanner
+              error={list.error}
+              context="Proposal list"
+              onRetry={() => void list.refetch()}
+            />
+          </div>
+        )}
         {list.data?.map((p) => (
           <Link
             key={p.id}
@@ -106,11 +120,31 @@ function Proposals() {
             <span className="rounded border px-2 py-0.5 font-mono text-[10px]">{p.status}</span>
           </Link>
         ))}
-        {list.data?.length === 0 && (
-          <p className="p-4 text-sm text-muted-foreground">
-            No proposals yet. Generate one from a business page.
-          </p>
-        )}
+        {list.isError ? null : list.isLoading ? null : list.data?.length === 0 ? (
+          <EmptyState
+            title={
+              status === "ALL"
+                ? "No proposals yet"
+                : `No ${status.toLowerCase().replace("_", " ")} proposals`
+            }
+            why={
+              status === "ALL"
+                ? "Generate one from a business page after running an investigation — the AI drafts it from collected evidence only."
+                : "Nothing currently has this status. Change the status filter above to see other proposals."
+            }
+            action={
+              status !== "ALL" ? (
+                <Button size="sm" variant="outline" onClick={() => setStatus("ALL")}>
+                  Show all
+                </Button>
+              ) : (
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/businesses">View leads</Link>
+                </Button>
+              )
+            }
+          />
+        ) : null}
       </div>
     </div>
   );

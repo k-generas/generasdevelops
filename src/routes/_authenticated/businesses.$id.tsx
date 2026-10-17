@@ -12,6 +12,8 @@ import type { IntelBusinessRow, IntelInvestigationRow } from "@/components/Busin
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { freshnessDays } from "@/lib/evidence";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { describeError } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/businesses/$id")({
   head: () => ({
@@ -110,8 +112,30 @@ function BusinessPage() {
     setBusy(false);
   }
 
-  if (biz.isLoading) return <p className="text-sm text-muted-foreground">Loading…</p>;
-  if (!biz.data) return <p>Not found.</p>;
+  if (biz.isLoading) return <p className="text-sm text-muted-foreground">Loading business…</p>;
+  if (biz.isError)
+    return (
+      <div className="space-y-3">
+        <ErrorBanner error={biz.error} context="Business" onRetry={() => void biz.refetch()} />
+        <Button asChild variant="outline" size="sm">
+          <Link to="/businesses">Back to leads</Link>
+        </Button>
+      </div>
+    );
+  if (!biz.data)
+    return (
+      <div className="space-y-3">
+        <EmptyState
+          title="Business not found"
+          why="This business record does not exist — it may have been deleted, or the link is wrong."
+          action={
+            <Button asChild size="sm" variant="outline">
+              <Link to="/businesses">Back to leads</Link>
+            </Button>
+          }
+        />
+      </div>
+    );
   const b = biz.data;
   const closedPermanent = b.business_status === "CLOSED_PERMANENTLY";
   const closedTemporary = b.business_status === "CLOSED_TEMPORARILY";
@@ -293,8 +317,18 @@ function BusinessPage() {
           </span>
         )}
       </div>
+      {inv.isError && (
+        <ErrorBanner
+          error={inv.error}
+          context="Investigation report"
+          onRetry={() => void inv.refetch()}
+        />
+      )}
       {err && (
-        <p className="rounded border border-destructive p-3 text-sm text-destructive">{err}</p>
+        <p className="rounded border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+          {describeError(err, "Investigation").title}: {err} —{" "}
+          {describeError(err, "Investigation").fix}
+        </p>
       )}
 
       {(b.activity_checked_at || recent.length > 0 || hours.weekday_descriptions) && (

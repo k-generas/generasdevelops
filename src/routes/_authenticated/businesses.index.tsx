@@ -22,6 +22,7 @@ import {
   type Province,
 } from "@/lib/rwanda";
 import { matchesBusinessSearch } from "@/lib/business-search";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 
 export const Route = createFileRoute("/_authenticated/businesses/")({
   head: () => ({
@@ -212,6 +213,14 @@ function Businesses() {
         </div>
       </div>
 
+      {businesses.isError && (
+        <ErrorBanner
+          error={businesses.error}
+          context="Loading leads"
+          onRetry={() => void businesses.refetch()}
+        />
+      )}
+
       {note && (
         <p
           className={`rounded border p-3 text-sm ${
@@ -224,21 +233,47 @@ function Businesses() {
         </p>
       )}
 
-      {businesses.isLoading ? (
+      {businesses.isError ? (
+        <p className="text-sm text-muted-foreground">
+          The lead list could not be loaded — see the error above for the cause and how to fix it.
+        </p>
+      ) : businesses.isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : rows.length === 0 ? (
-        <div className="rounded-xl border bg-card p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            {businesses.data?.length
-              ? "No businesses match these filters."
-              : "No businesses yet. Run a discovery to find real leads."}
-          </p>
-          {!businesses.data?.length && (
-            <Link to="/discover" className="mt-2 inline-block text-sm text-primary underline">
-              Go to Discover
-            </Link>
-          )}
-        </div>
+        <EmptyState
+          title={
+            businesses.data?.length ? "No businesses match these filters" : "No businesses yet"
+          }
+          why={
+            businesses.data?.length
+              ? "You have saved leads, but the current website/province/industry/search filters exclude all of them. Reset the filters above to see your list."
+              : "Nothing has been discovered yet. Run a discovery search on the Discover page — only real Google Maps results are stored."
+          }
+          action={
+            businesses.data?.length ? (
+              <div className="flex justify-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setWebsite("all");
+                    setProvince("ALL");
+                    setIndustry("ALL");
+                    setQ("");
+                  }}
+                >
+                  Reset filters
+                </Button>
+              </div>
+            ) : (
+              <div className="flex justify-center">
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/discover">Go to Discover</Link>
+                </Button>
+              </div>
+            )
+          }
+        />
       ) : (
         <div className="overflow-hidden rounded-xl border bg-card">
           <div className="divide-y">

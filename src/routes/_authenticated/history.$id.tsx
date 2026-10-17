@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 
 export const Route = createFileRoute("/_authenticated/history/$id")({
   head: () => ({
@@ -76,10 +77,7 @@ function RunPage() {
       </Link>
       {run.isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
       {run.isError && (
-        <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          Could not load this search:{" "}
-          {run.error instanceof Error ? run.error.message : "unknown error"}
-        </p>
+        <ErrorBanner error={run.error} context="Search record" onRetry={() => void run.refetch()} />
       )}
       {r && (
         <div>
@@ -97,10 +95,13 @@ function RunPage() {
       <div className="divide-y rounded-lg border bg-card">
         {rows.isLoading && <p className="p-4 text-sm text-muted-foreground">Loading results…</p>}
         {rows.isError && (
-          <p className="p-4 text-sm text-destructive">
-            Could not load results:{" "}
-            {rows.error instanceof Error ? rows.error.message : "unknown error"}
-          </p>
+          <div className="p-4">
+            <ErrorBanner
+              error={rows.error}
+              context="Search results"
+              onRetry={() => void rows.refetch()}
+            />
+          </div>
         )}
         {rows.data?.map((b) => (
           <Link
@@ -116,10 +117,10 @@ function RunPage() {
           </Link>
         ))}
         {rows.data?.length === 0 && (
-          <p className="p-4 text-sm text-muted-foreground">
-            No linked results. This search may predate result-linking, or its businesses were
-            deleted.
-          </p>
+          <EmptyState
+            title="No linked results"
+            why="This search may predate result-linking, or its businesses were deleted. Use Rerun on the Search History page to run it again with fresh results."
+          />
         )}
       </div>
     </div>

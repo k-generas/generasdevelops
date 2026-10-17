@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { nextInvoiceNumber } from "@/lib/invoices";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { describeError } from "@/lib/errors";
 
 const STATUSES = [
   "DRAFT",
@@ -119,7 +121,9 @@ function Editor() {
         .from("proposals")
         .update({ body: v, updated_at: new Date().toISOString() })
         .eq("id", id);
-      setSaved(error ? `save failed: ${error.message}` : "saved");
+      setSaved(
+        error ? `save failed — retry by editing: ${describeError(error, "Save").message}` : "saved",
+      );
     }, 800);
   }
 
@@ -205,10 +209,8 @@ function Editor() {
       await log(`Invoice ${number} created`, "invoice_created");
       navigate({ to: "/invoices" });
     } catch (e) {
-      window.alert(
-        (e instanceof Error ? e.message : "Could not create invoice.") +
-          "\n\nIf this keeps failing, apply migration 0005_invoices.sql.",
-      );
+      const d = describeError(e, "Create invoice");
+      window.alert(`${d.title}\n\n${d.message}\n\nHow to fix: ${d.fix}`);
     }
     setInvBusy(false);
   }
@@ -217,9 +219,11 @@ function Editor() {
   if (prop.error)
     return (
       <div className="space-y-2">
-        <p className="text-sm text-destructive">
-          Couldn’t load this proposal: {(prop.error as Error).message}
-        </p>
+        <ErrorBanner
+          error={prop.error}
+          context="Proposal editor"
+          onRetry={() => void prop.refetch()}
+        />
         <Link to="/proposals" className="text-sm text-primary underline">
           Back to proposals
         </Link>
@@ -228,10 +232,15 @@ function Editor() {
   if (!p)
     return (
       <div className="space-y-2">
-        <p className="text-sm text-muted-foreground">This proposal wasn’t found.</p>
-        <Link to="/proposals" className="text-sm text-primary underline">
-          Back to proposals
-        </Link>
+        <EmptyState
+          title="Proposal not found"
+          why="This proposal record does not exist — it may have been deleted, or the link is wrong."
+          action={
+            <Button asChild size="sm" variant="outline">
+              <Link to="/proposals">Back to proposals</Link>
+            </Button>
+          }
+        />
       </div>
     );
   const why = (p.why ?? []) as unknown as { statement: string; kind: string; evidence: string }[];
@@ -434,6 +443,17 @@ function Editor() {
           </div>
         </aside>
       </div>
+
+      {(versions.isError || outreach.isError) && (
+        <ErrorBanner
+          error={(versions.error ?? outreach.error) as Error}
+          context="Proposal details"
+          onRetry={() => {
+            if (versions.isError) void versions.refetch();
+            if (outreach.isError) void outreach.refetch();
+          }}
+        />
+      )}
     </div>
   );
 }

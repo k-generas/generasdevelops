@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Check, Circle, Receipt, TriangleAlert, Trash2 } from "lucide-react";
@@ -17,6 +17,8 @@ import {
 } from "@/lib/orders";
 import { downloadCsv, rowsToCsv } from "@/lib/csv";
 import { formatMoney } from "@/lib/invoices";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { describeError } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/orders")({
   head: () => ({ meta: [{ title: "Orders — GARE" }] }),
@@ -132,13 +134,14 @@ function Orders() {
       setMsg(`Created ${number}.`);
       await orders.refetch();
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Could not create order.");
+      const d = describeError(e, "Create order");
+      setMsg(`${d.title}: ${d.message} How to fix: ${d.fix}`);
     }
     setBusy(false);
   }
 
   async function setStatus(o: OrderRow, status: string) {
-    await supabase
+    const { error } = await supabase
       .from("orders")
       .update({
         status,
@@ -146,6 +149,10 @@ function Orders() {
         updated_at: new Date().toISOString(),
       })
       .eq("id", o.id!);
+    if (error) {
+      const d = describeError(error, "Update order");
+      setMsg(`${d.title}: ${d.message} How to fix: ${d.fix}`);
+    }
     if (status === "FULFILLED" && o.businesses) {
       await supabase.from("business_activity_events").insert({
         business_id: o.business_id,
@@ -168,7 +175,11 @@ function Orders() {
 
   async function remove(o: OrderRow) {
     if (!window.confirm(`Delete ${o.number}?`)) return;
-    await supabase.from("orders").delete().eq("id", o.id!);
+    const { error } = await supabase.from("orders").delete().eq("id", o.id!);
+    if (error) {
+      const d = describeError(error, "Delete order");
+      setMsg(`${d.title}: ${d.message} How to fix: ${d.fix}`);
+    }
     await orders.refetch();
   }
 
@@ -206,6 +217,18 @@ function Orders() {
           </Button>
         </div>
       </div>
+
+      {(orders.isError || proposals.isError || invoices.isError) && (
+        <ErrorBanner
+          error={(orders.error ?? proposals.error ?? invoices.error) as Error}
+          context="Orders"
+          onRetry={() => {
+            if (orders.isError) void orders.refetch();
+            if (proposals.isError) void proposals.refetch();
+            if (invoices.isError) void invoices.refetch();
+          }}
+        />
+      )}
 
       {!orders.isLoading && !persisted && (
         <div className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
@@ -308,75 +331,101 @@ function Orders() {
       </div>
 
       <div className="space-y-3">
-        {orders.isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {!orders.isLoading && filtered.length === 0 && (
-          <p className="text-sm text-muted-foreground">No orders yet.</p>
-        )}
-        {filtered.map((o) => {
-          const c = toChecklist(o.checklist);
-          const p = checklistProgress(c);
-          return (
-            <div key={o.id ?? o.number} className="space-y-3 rounded-lg border bg-card p-4">
-              <div className="flex flex-wrap items-start gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium">
-                    {o.number}
-                    {o.businesses?.name ? ` · ${o.businesses.name}` : ""}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatMoney(Number(o.amount) || 0, o.currency)} · {o.status}
-                    {o.due_at ? ` · due ${new Date(o.due_at).toLocaleDateString()}` : ""}
-                    {orderIsLate(o) ? " · LATE" : ""}
-                    {o.invoices?.number ? ` · inv ${o.invoices.number}` : ""}
-                  </p>
-                </div>
-                <select
-                  className="rounded border bg-background px-2 py-1 text-sm"
-                  value={o.status}
-                  onChange={(e) => setStatus(o, e.target.value)}
-                >
-                  {ORDER_STATUSES.map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-destructive"
-                  onClick={() => remove(o)}
-                  title="Delete"
-                >
-                  <Trash2 className="h-4 w-4" />
+        {orders.isError ? (
+          <ErrorBanner
+            error={orders.error}
+            context="Order list"
+            onRetry={() => void orders.refetch()}
+          />
+        ) : orders.isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            title={filter === "ALL" ? "No orders yet" : `No ${filter.toLowerCase()} orders`}
+            why={
+              filter === "ALL"
+                ? "Create an order from an accepted proposal above — it tracks the delivery checklist and due date."
+                : "Nothing currently has this status. Change the status filter above to see other orders."
+            }
+            action={
+              filter !== "ALL" ? (
+                <Button size="sm" variant="outline" onClick={() => setFilter("ALL")}>
+                  Show all
                 </Button>
-              </div>
+              ) : (
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/proposals">Open proposals</Link>
+                </Button>
+              )
+            }
+          />
+        ) : (
+          filtered.map((o) => {
+            const c = toChecklist(o.checklist);
+            const p = checklistProgress(c);
+            return (
+              <div key={o.id ?? o.number} className="space-y-3 rounded-lg border bg-card p-4">
+                <div className="flex flex-wrap items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium">
+                      {o.number}
+                      {o.businesses?.name ? ` · ${o.businesses.name}` : ""}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatMoney(Number(o.amount) || 0, o.currency)} · {o.status}
+                      {o.due_at ? ` · due ${new Date(o.due_at).toLocaleDateString()}` : ""}
+                      {orderIsLate(o) ? " · LATE" : ""}
+                      {o.invoices?.number ? ` · inv ${o.invoices.number}` : ""}
+                    </p>
+                  </div>
+                  <select
+                    className="rounded border bg-background px-2 py-1 text-sm"
+                    value={o.status}
+                    onChange={(e) => setStatus(o, e.target.value)}
+                  >
+                    {ORDER_STATUSES.map((s) => (
+                      <option key={s}>{s}</option>
+                    ))}
+                  </select>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive"
+                    onClick={() => remove(o)}
+                    title="Delete"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
 
-              <div className="text-xs text-muted-foreground">
-                Checklist: {p.done}/{p.total} complete
+                <div className="text-xs text-muted-foreground">
+                  Checklist: {p.done}/{p.total} complete
+                </div>
+                <div className="space-y-1">
+                  {c.map((it, idx) => (
+                    <label key={idx} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={it.done}
+                        onChange={(e) => {
+                          const nc = c.slice();
+                          nc[idx] = { label: it.label, done: e.target.checked };
+                          updateChecklist(o, nc);
+                        }}
+                      />
+                      <span className={it.done ? "text-muted-foreground line-through" : ""}>
+                        {it.label}
+                      </span>
+                    </label>
+                  ))}
+                  {c.length === 0 && (
+                    <p className="text-xs text-muted-foreground">No checklist items.</p>
+                  )}
+                </div>
               </div>
-              <div className="space-y-1">
-                {c.map((it, idx) => (
-                  <label key={idx} className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={it.done}
-                      onChange={(e) => {
-                        const nc = c.slice();
-                        nc[idx] = { label: it.label, done: e.target.checked };
-                        updateChecklist(o, nc);
-                      }}
-                    />
-                    <span className={it.done ? "text-muted-foreground line-through" : ""}>
-                      {it.label}
-                    </span>
-                  </label>
-                ))}
-                {c.length === 0 && (
-                  <p className="text-xs text-muted-foreground">No checklist items.</p>
-                )}
-              </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
     </div>
   );

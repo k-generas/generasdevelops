@@ -21,6 +21,7 @@ import {
   type IndustryKey,
   type Province,
 } from "@/lib/rwanda";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 
 type LocationLike = {
   address: string | null;
@@ -210,6 +211,14 @@ function RwandaIntel() {
         </p>
       </div>
 
+      {companies.isError && (
+        <ErrorBanner
+          error={companies.error}
+          context="Rwanda companies"
+          onRetry={() => void companies.refetch()}
+        />
+      )}
+
       <section className="rounded-lg border bg-card p-6">
         <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">Scan Rwanda</p>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -357,14 +366,23 @@ function RwandaIntel() {
           </span>
         </div>
 
-        {companies.isLoading ? (
+        {companies.isError ? (
+          <ErrorBanner
+            error={companies.error}
+            context="Companies"
+            onRetry={() => void companies.refetch()}
+          />
+        ) : companies.isLoading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : rows.length === 0 ? (
-          <div className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">
-            {companies.data?.length
-              ? "No companies match these filters."
-              : "No companies yet. Run a Rwanda scan above."}
-          </div>
+          <EmptyState
+            title={companies.data?.length ? "No companies match these filters" : "No companies yet"}
+            why={
+              companies.data?.length
+                ? "You have saved companies, but the current filters exclude all of them. Change the province, industry, website or status filters above."
+                : "Nothing has been scanned yet. Use the scan form above to search Google Maps by industry and area — results are de-duplicated and bounded to a maximum number of paid queries."
+            }
+          />
         ) : (
           <div className="overflow-x-auto rounded-xl border bg-card">
             <table className="w-full min-w-[900px] text-sm">

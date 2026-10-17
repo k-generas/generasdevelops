@@ -19,6 +19,7 @@ import { downloadCsv, rowsToCsv } from "@/lib/csv";
 import { useOffers } from "@/lib/offers.hooks";
 import { ALL_DISTRICTS, provinceOfDistrict, type IndustryKey } from "@/lib/rwanda";
 import { coverageReport } from "@/lib/source-registry";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 import type { IntelFindings } from "@/lib/business-intel";
 import {
   RADAR_CATEGORIES,
@@ -549,6 +550,18 @@ function RadarPage() {
         <p className="text-xs text-muted-foreground">{monitoring.note}</p>
       </section>
 
+      {(businesses.isError || investigations.isError || pipeline.isError) && (
+        <ErrorBanner
+          error={(businesses.error ?? investigations.error ?? pipeline.error) as Error}
+          context="Radar"
+          onRetry={() => {
+            if (businesses.isError) void businesses.refetch();
+            if (investigations.isError) void investigations.refetch();
+            if (pipeline.isError) void pipeline.refetch();
+          }}
+        />
+      )}
+
       {note && (
         <p
           className={`rounded-md border p-3 text-sm ${note.ok ? "border-emerald-600/40 text-emerald-500" : "border-destructive/50 text-destructive"}`}
@@ -634,14 +647,24 @@ function RadarPage() {
           Service filter: {serviceLabel(settings.service)} · {monitoring.label} — {monitoring.note}
         </p>
 
-        {businesses.isLoading ? (
+        {businesses.isError ? (
+          <ErrorBanner
+            error={businesses.error}
+            context="Opportunities"
+            onRetry={() => void businesses.refetch()}
+          />
+        ) : businesses.isLoading ? (
           <p className="text-sm text-muted-foreground">Loading businesses…</p>
         ) : shown.length === 0 ? (
-          <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-            No opportunities match these filters yet. Try a wider radius, a different industry
-            focus, or run a radar scan for this district. A lead only appears when there is an
-            observable gap in the evidence — never just because it is nearby.
-          </p>
+          <EmptyState
+            title="No opportunities match these filters"
+            why="A lead only appears when there is an observable gap in the evidence we hold — never just because it is nearby. Try a wider radius, a different industry focus, or run a radar scan for this district to gather evidence first."
+            action={
+              <Button size="sm" variant="outline" disabled={scanBusy} onClick={runScan}>
+                {scanBusy ? "Scanning…" : "Run radar scan now"}
+              </Button>
+            }
+          />
         ) : (
           shown.map((o) => (
             <OpportunityCard

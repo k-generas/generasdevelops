@@ -23,6 +23,7 @@ import {
 import { createKitTasks } from "@/lib/offer-kit.functions";
 import { useOffers } from "@/lib/offers.hooks";
 import { REVENUE_LEAK_RULE, type LeakStatus } from "@/lib/revenue-leaks";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 import type { Effort } from "@/lib/service-match";
 
 export const Route = createFileRoute("/_authenticated/leaks")({
@@ -139,6 +140,21 @@ function LeaksPage() {
         </p>
       </header>
 
+      {leaks.isError && (
+        <ErrorBanner
+          error={leaks.error}
+          context="Revenue leaks"
+          onRetry={() => void leaks.refetch()}
+        />
+      )}
+      {defaults.isError && (
+        <ErrorBanner
+          error={defaults.error}
+          context="Profit assumptions"
+          onRetry={() => void defaults.refetch()}
+        />
+      )}
+
       <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
         <span>{summary.open} open</span>
         <span>· {summary.actionable} actionable</span>
@@ -206,13 +222,20 @@ function LeaksPage() {
       {leaks.isLoading ? (
         <p className="text-sm text-muted-foreground">Loading leaks…</p>
       ) : rows.length === 0 ? (
-        <div className="space-y-2 rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-          <p>No leaks match this filter.</p>
-          <p>
-            Leaks are derived from saved businesses that have been investigated. Run a scan on the
-            Radar page or investigate leads, then refresh here.
-          </p>
-        </div>
+        <EmptyState
+          title="No leaks match this filter"
+          why="Leaks are derived from saved businesses that have been investigated. Run a scan on the Radar page or investigate leads on the Businesses page, then press 'Refresh leaks' above."
+          action={
+            <div className="flex justify-center gap-2">
+              <Button asChild size="sm" variant="outline">
+                <Link to="/radar">Open Radar</Link>
+              </Button>
+              <Button asChild size="sm" variant="outline">
+                <Link to="/businesses">Investigate leads</Link>
+              </Button>
+            </div>
+          }
+        />
       ) : (
         <div className="space-y-3">
           {rows.map((leak) => (

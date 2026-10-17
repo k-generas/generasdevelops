@@ -27,6 +27,8 @@ import {
   type Subscription,
   type SubscriptionStatus,
 } from "@/lib/recurring";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { describeError } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/revenue")({
   head: () => ({
@@ -136,7 +138,10 @@ function RevenuePage() {
       setMessage("Subscription saved.");
       void qc.invalidateQueries({ queryKey: ["subscriptions"] });
     },
-    onError: (e) => setMessage(e instanceof Error ? e.message : "Could not save subscription."),
+    onError: (e) => {
+      const d = describeError(e, "Save subscription");
+      setMessage(`${d.title}: ${d.message} How to fix: ${d.fix}`);
+    },
   });
 
   return (
@@ -152,6 +157,17 @@ function RevenuePage() {
         <p className="rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
           {message}
         </p>
+      )}
+
+      {(subs.isError || leaks.isError) && (
+        <ErrorBanner
+          error={(subs.error ?? leaks.error) as Error}
+          context="Recurring revenue"
+          onRetry={() => {
+            if (subs.isError) void subs.refetch();
+            if (leaks.isError) void leaks.refetch();
+          }}
+        />
       )}
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -273,12 +289,24 @@ function RevenuePage() {
           />
         )}
 
-        {subs.isLoading ? (
+        {subs.isError ? (
+          <ErrorBanner
+            error={subs.error}
+            context="Subscriptions"
+            onRetry={() => void subs.refetch()}
+          />
+        ) : subs.isLoading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : rows.length === 0 ? (
-          <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-            No subscriptions recorded yet. Add a retainer or care plan to start tracking MRR.
-          </p>
+          <EmptyState
+            title="No subscriptions recorded yet"
+            why="Add a retainer or care plan to start tracking MRR. Subscriptions are saved manually or seeded from recurring leaks on the Radar page."
+            action={
+              <Button size="sm" variant="outline" onClick={() => setDraft(emptyDraft())}>
+                Add subscription
+              </Button>
+            }
+          />
         ) : (
           <div className="space-y-2">
             {rows.map((s) => (

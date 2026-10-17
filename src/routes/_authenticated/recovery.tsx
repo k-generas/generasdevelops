@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { createRecoveryTask, getRecoveryCandidates } from "@/lib/recovery.functions";
 import { RECOVERY_DISCLAIMER, type RecoveryCandidate, type RecoveryReason } from "@/lib/recovery";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { describeError } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/recovery")({
   head: () => ({
@@ -56,7 +58,10 @@ function RecoveryPage() {
       setMessage(res.created ? "Follow-up task created." : "A follow-up task already exists.");
       void qc.invalidateQueries({ queryKey: ["tasks"] });
     },
-    onError: (e) => setMessage(e instanceof Error ? e.message : "Could not create task."),
+    onError: (e) => {
+      const d = describeError(e, "Create follow-up task");
+      setMessage(`${d.title}: ${d.message} How to fix: ${d.fix}`);
+    },
   });
 
   const byReason = useMemo(() => {
@@ -80,19 +85,38 @@ function RecoveryPage() {
         </p>
       )}
 
+      {candidates.isError && (
+        <ErrorBanner
+          error={candidates.error}
+          context="Recovery candidates"
+          onRetry={() => void candidates.refetch()}
+        />
+      )}
+
       <section className="flex flex-wrap gap-3 text-xs text-muted-foreground">
         <span>{byReason.no_response} no response</span>
         <span>· {byReason.soft_no} soft no</span>
         <span>· {byReason.lost} lost</span>
       </section>
 
-      {candidates.isLoading ? (
+      {candidates.isError ? (
+        <ErrorBanner
+          error={candidates.error}
+          context="Recovery"
+          onRetry={() => void candidates.refetch()}
+        />
+      ) : candidates.isLoading ? (
         <p className="text-sm text-muted-foreground">Checking proposals…</p>
       ) : (candidates.data?.length ?? 0) === 0 ? (
-        <p className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
-          Nothing to recover. Candidates appear when a sent proposal goes quiet for two weeks, or a
-          proposal is rejected.
-        </p>
+        <EmptyState
+          title="Nothing to recover"
+          why="Candidates appear when a sent proposal goes quiet for two weeks, or a proposal is rejected. Send a few proposals from the Proposals page first — set their status to SENT when you actually reach out."
+          action={
+            <Button asChild size="sm" variant="outline">
+              <Link to="/proposals">Open proposals</Link>
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-2">
           {(candidates.data ?? []).map((c) => (

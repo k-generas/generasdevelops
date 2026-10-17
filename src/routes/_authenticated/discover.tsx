@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { scanHealth, type Source } from "@/lib/sources";
+import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 
 export const Route = createFileRoute("/_authenticated/discover")({
   head: () => ({
@@ -29,6 +30,7 @@ function Discover() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "no_site" | "investigated" | "closed">("all");
+  const [error, setError] = useState<string | null>(null);
 
   const businesses = useQuery({
     queryKey: ["businesses"],
@@ -59,11 +61,20 @@ function Discover() {
     e.preventDefault();
     setBusy(true);
     setResult(null);
+    setError(null);
     try {
       const r = await discover({ data: { query, location, maxResults: 20 } });
       setResult(`Found ${r.found} · ${r.added} new · ${r.duplicates} already known`);
+      if (r.found === 0) {
+        setError(
+          "The search returned no results. Try a broader query (e.g. 'restaurants' instead of a specific name), a different location, or check the source health below.",
+        );
+      }
     } catch (err) {
-      setResult(err instanceof Error ? err.message : "Discovery failed");
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(
+        `${msg} — Check Settings → Integrations for a valid Maps/Places key. Each run is a paid Google request, so also verify quota/billing. Then try again.`,
+      );
     }
     setBusy(false);
     qc.invalidateQueries({ queryKey: ["businesses"] });
@@ -108,6 +119,16 @@ function Discover() {
 
   return (
     <div className="space-y-8">
+      {(businesses.isError || runs.isError) && (
+        <ErrorBanner
+          error={(businesses.error ?? runs.error) as Error}
+          context="Discover"
+          onRetry={() => {
+            if (businesses.isError) void businesses.refetch();
+            if (runs.isError) void runs.refetch();
+          }}
+        />
+      )}
       <section className="grid gap-4 sm:grid-cols-5">
         <Stat label="Businesses" value={total} />
         <Stat
@@ -149,6 +170,11 @@ function Discover() {
           search deliberately.
         </p>
         {result && <p className="mt-3 font-mono text-sm">{result}</p>}
+        {error && (
+          <p className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 font-mono text-sm text-destructive">
+            {error}
+          </p>
+        )}
         {!!runs.data?.length && (
           <div className="mt-4 flex flex-wrap gap-2">
             {runs.data.map((r) => (
@@ -211,12 +237,30 @@ function Discover() {
             </Button>
           ))}
         </div>
-        {businesses.isLoading ? (
+        {businesses.isError ? (
+          <ErrorBanner
+            error={businesses.error}
+            context="Pipeline"
+            onRetry={() => void businesses.refetch()}
+          />
+        ) : businesses.isLoading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : list.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-            No businesses yet. Run a discovery above — only real Google Maps results are stored.
-          </div>
+          <EmptyState
+            title="No businesses in this view"
+            why={
+              total === 0
+                ? "No businesses have been discovered yet. Run a search above — only real Google Maps results are stored."
+                : "You have businesses, but none match the current filter. Switch the filter back to All to see everything."
+            }
+            action={
+              total > 0 ? (
+                <Button size="sm" variant="outline" onClick={() => setFilter("all")}>
+                  Show all
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           <div className="divide-y rounded-lg border bg-card">
             {list.map((b) => (
