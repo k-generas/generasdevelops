@@ -9,6 +9,7 @@ export type MigrationDiagnostics = {
   isOwner: boolean;
   email: string | null;
   dbEnvKeysPresent: string[];
+  envKeys: string[];
   hasConnectionString: boolean;
   profileTableExists: boolean;
   accessCodesTableExists: boolean;
@@ -43,6 +44,7 @@ export const getMigrationDiagnostics = createServerFn({ method: "GET" })
       isOwner: email ? OWNER_EMAILS.includes(email.toLowerCase()) : false,
       email,
       dbEnvKeysPresent,
+      envKeys: migrate.allEnvKeys(),
       hasConnectionString: dbEnvKeysPresent.length > 0,
       profileTableExists,
       accessCodesTableExists,

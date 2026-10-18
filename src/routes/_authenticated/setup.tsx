@@ -108,6 +108,26 @@ function SetupPage() {
         <Row label="access_codes table" ok={d.accessCodesTableExists} />
       </div>
 
+      <div className="rounded-lg border bg-card p-4">
+        <p className="text-xs font-medium text-muted-foreground">
+          Server environment variables ({d.envKeys.length})
+        </p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {d.envKeys.length ? (
+            d.envKeys.map((key) => (
+              <span
+                key={key}
+                className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground"
+              >
+                {key}
+              </span>
+            ))
+          ) : (
+            <span className="text-xs text-muted-foreground">none visible</span>
+          )}
+        </div>
+      </div>
+
       {!d.isOwner && (
         <div className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm">
           <ShieldAlert className="mt-0.5 h-4 w-4 text-destructive" />

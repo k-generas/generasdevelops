@@ -20,6 +20,16 @@ export function presentDbEnvKeys(): string[] {
   return DB_URL_ENV_KEYS.filter((key) => Boolean(process.env[key]?.trim()));
 }
 
+// Names only (never values) so the setup page can show what the Cloud runtime
+// actually exposes. Helps find a Postgres URL hidden under a different name.
+export function allEnvKeys(): string[] {
+  try {
+    return Object.keys(process.env).sort();
+  } catch {
+    return [];
+  }
+}
+
 export function resolveConnectionString(override?: string): string | null {
   const trimmed = override?.trim();
   if (trimmed) return trimmed;
