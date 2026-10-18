@@ -514,22 +514,21 @@
 
 /* Page background: green lifts off the top edge and settles into warm grey. */
 .bg-wash {
-  background-color: #f3f6f4;
+  background-color: var(--background);
   background-image: radial-gradient(
     ellipse at top,
-    #dff3e8 0%,
-    #f3f6f4 42%,
-    #e9eeeb 100%
+    color-mix(in oklab, var(--primary) 12%, transparent) 0%,
+    color-mix(in oklab, var(--primary) 6%, transparent) 40%,
+    transparent 100%
   );
 }
 /* Quieter variant for dense pages (tables, reports). */
 .bg-wash-soft {
-  background-color: #f7f8fa;
+  background-color: var(--background);
   background-image: radial-gradient(
     ellipse at top,
-    #e8f5ee 0%,
-    #f3f6f4 45%,
-    #eef1f0 100%
+    oklch(0.92 0.035 152.8 / 0.28) 0%,
+    transparent 62%
   );
 }
 /* A green sheen fading down from the top of a panel or header. */
@@ -674,3 +673,7 @@
 }
 
 
+
+.dark .bg-wash { background-color: var(--background); background-image: radial-gradient(ellipse at top, oklch(0.42 0.095 158 / 0.38) 0%, transparent 65%); }
+.dark .bg-wash-soft { background-color: var(--background); background-image: radial-gradient(ellipse at top, oklch(0.34 0.085 160 / 0.26) 0%, transparent 70%); }
+.dark .bg-sheen { background-image: linear-gradient(180deg, rgb(74 222 128 / 0.1), transparent); }
