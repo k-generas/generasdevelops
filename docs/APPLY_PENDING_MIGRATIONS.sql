@@ -1,5 +1,5 @@
 -- GARE - apply ALL pending migrations in one pass
--- Generated from drizzle/migrations/0011..0017. Every statement is idempotent-safe
+-- Generated from drizzle/migrations/0011..0019. Every statement is idempotent-safe
 -- (CREATE TABLE IF NOT EXISTS / ADD COLUMN IF NOT EXISTS / DROP POLICY IF EXISTS),
 -- so it is safe to run even if some of these already landed.
 --
