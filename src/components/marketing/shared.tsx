@@ -21,18 +21,12 @@ export function Wordmark({
   const dark = tone === "forest";
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
-      <span
+      <img
+        src="/logo.png"
+        alt=""
         aria-hidden="true"
-        className={cn(
-          "grid place-items-center rounded-[7px] border font-mono font-bold",
-          dark
-            ? "border-mint/40 bg-mint/15 text-mint"
-            : "border-primary/40 bg-primary/10 text-primary",
-          size === "sm" ? "h-6 w-6 text-[13px]" : "h-7 w-7 text-[15px]",
-        )}
-      >
-        G
-      </span>
+        className={cn("shrink-0 rounded-[7px] object-cover", size === "sm" ? "h-6 w-6" : "h-7 w-7")}
+      />
       <span
         className={cn(
           "font-mono font-semibold tracking-[0.22em]",

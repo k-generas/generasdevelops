@@ -69,6 +69,7 @@ function AuthPage() {
       </Link>
       <form onSubmit={submit} className="w-full max-w-sm space-y-5 rounded-lg border bg-card p-8">
         <div>
+          <img src="/logo.png" alt="GARE" className="mb-4 h-12 w-12 rounded-xl object-cover" />
           <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
             GARE // early access
           </p>

@@ -120,11 +120,7 @@ function NavBadge({ count }: { count: number }) {
 }
 
 function BrandMark() {
-  return (
-    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
-      G
-    </span>
-  );
+  return <img src="/logo.png" alt="GARE" className="h-8 w-8 shrink-0 rounded-lg object-cover" />;
 }
 
 function Shell() {
