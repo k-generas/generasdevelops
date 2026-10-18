@@ -44,7 +44,7 @@ export function OpportunityClusters({
               style={{ width: `${Math.round((c.count / max) * 100)}%` }}
             />
           </div>
-          <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+          <p className="mt-1 font-mono text-xs text-muted-foreground">
             avg priority {(c.avgPriority * 100).toFixed(0)}%
           </p>
         </button>

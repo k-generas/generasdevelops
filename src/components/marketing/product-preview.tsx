@@ -52,10 +52,8 @@ export function ProductPreview({ tone = "default" }: { tone?: "default" | "fores
             <span className="h-2.5 w-2.5 rounded-full bg-border" />
             <span className="h-2.5 w-2.5 rounded-full bg-border" />
           </span>
-          <span className="truncate font-mono text-[11px] text-muted-foreground">
-            Discover — GARE
-          </span>
-          <Badge variant="outline" className="ml-auto shrink-0 font-mono text-[10px]">
+          <span className="truncate font-mono text-xs text-muted-foreground">Discover — GARE</span>
+          <Badge variant="outline" className="ml-auto shrink-0 font-mono text-xs">
             Interface preview
           </Badge>
         </div>
@@ -79,7 +77,7 @@ export function ProductPreview({ tone = "default" }: { tone?: "default" | "fores
               <dt className="font-mono text-lg font-semibold leading-none text-primary">
                 {l.value}
               </dt>
-              <dd className="mt-1.5 text-[11px] leading-snug text-muted-foreground">{l.label}</dd>
+              <dd className="mt-1.5 text-xs leading-snug text-muted-foreground">{l.label}</dd>
             </div>
           ))}
         </dl>
@@ -91,31 +89,31 @@ export function ProductPreview({ tone = "default" }: { tone?: "default" | "fores
               <tr className="border-b bg-muted/30">
                 <th
                   scope="col"
-                  className="px-4 py-2 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground sm:px-5"
+                  className="px-4 py-2 font-mono text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground sm:px-5"
                 >
                   Business
                 </th>
                 <th
                   scope="col"
-                  className="hidden px-3 py-2 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground sm:table-cell"
+                  className="hidden px-3 py-2 font-mono text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground sm:table-cell"
                 >
                   Area
                 </th>
                 <th
                   scope="col"
-                  className="px-3 py-2 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground"
+                  className="px-3 py-2 font-mono text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground"
                 >
                   Evidence
                 </th>
                 <th
                   scope="col"
-                  className="hidden px-3 py-2 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground md:table-cell"
+                  className="hidden px-3 py-2 font-mono text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground md:table-cell"
                 >
                   Status
                 </th>
                 <th
                   scope="col"
-                  className="px-3 py-2 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground sm:px-5"
+                  className="px-3 py-2 font-mono text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground sm:px-5"
                 >
                   <span className="sr-only">Next step</span>
                 </th>
@@ -124,18 +122,18 @@ export function ProductPreview({ tone = "default" }: { tone?: "default" | "fores
             <tbody>
               {SAMPLE_ROWS.map((r) => (
                 <tr key={r.name} className="border-b last:border-0">
-                  <td className="px-4 py-3 text-[13px] font-medium sm:px-5">{r.name}</td>
-                  <td className="hidden px-3 py-3 text-[13px] text-muted-foreground sm:table-cell">
+                  <td className="px-4 py-3 text-sm font-medium sm:px-5">{r.name}</td>
+                  <td className="hidden px-3 py-3 text-sm text-muted-foreground sm:table-cell">
                     {r.area}
                   </td>
-                  <td className="px-3 py-3 text-[13px] text-muted-foreground">{r.signal}</td>
+                  <td className="px-3 py-3 text-sm text-muted-foreground">{r.signal}</td>
                   <td className="hidden px-3 py-3 md:table-cell">
-                    <Badge variant="secondary" className="font-mono text-[10px]">
+                    <Badge variant="secondary" className="font-mono text-xs">
                       {r.status}
                     </Badge>
                   </td>
                   <td className="px-3 py-3 text-right sm:px-5">
-                    <span className="whitespace-nowrap font-mono text-[11px] text-primary">
+                    <span className="whitespace-nowrap font-mono text-xs text-primary">
                       {r.action} →
                     </span>
                   </td>
@@ -149,8 +147,8 @@ export function ProductPreview({ tone = "default" }: { tone?: "default" | "fores
       <figcaption
         className={
           tone === "forest"
-            ? "mt-3 text-[11px] leading-relaxed text-white/55"
-            : "mt-3 text-[11px] leading-relaxed text-muted-foreground"
+            ? "mt-3 text-xs leading-relaxed text-white/55"
+            : "mt-3 text-xs leading-relaxed text-muted-foreground"
         }
       >
         Interface preview built from GARE's components. Stat limits are enforced values; table rows

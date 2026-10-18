@@ -199,7 +199,7 @@ export function BusinessWorkspace({ businessId }: { businessId: string }) {
               <span className="text-xs text-muted-foreground">
                 {p.channel} · {new Date(p.created_at).toLocaleDateString()}
               </span>
-              <span className="rounded border px-1.5 font-mono text-[10px]">{p.status}</span>
+              <span className="rounded border px-1.5 font-mono text-xs">{p.status}</span>
             </Link>
           ))}
           {proposals.data?.length === 0 && (
@@ -252,7 +252,7 @@ export function BusinessWorkspace({ businessId }: { businessId: string }) {
           {notes.data?.map((n) => (
             <p key={n.id} className="mt-2 border-l-2 border-primary pl-2">
               {n.body}
-              <span className="block text-[10px] text-muted-foreground">
+              <span className="block text-xs text-muted-foreground">
                 {new Date(n.created_at).toLocaleString()}
               </span>
             </p>
@@ -263,7 +263,7 @@ export function BusinessWorkspace({ businessId }: { businessId: string }) {
           {events.data?.map((ev) => (
             <div key={ev.id} className="border-l py-1 pl-3">
               <p>{ev.summary}</p>
-              <p className="font-mono text-[10px] text-muted-foreground">
+              <p className="font-mono text-xs text-muted-foreground">
                 {new Date(ev.created_at).toLocaleString()}
               </p>
             </div>

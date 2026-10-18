@@ -174,7 +174,7 @@ function DigestCard({ d, unread }: { d: DailyDigestRow; unread: boolean }) {
           <Link to="/radar">Open Radar</Link>
         </Button>
         {d.scan_id && (
-          <span className="self-center font-mono text-[11px] text-muted-foreground">
+          <span className="self-center font-mono text-xs text-muted-foreground">
             scan {d.scan_id.slice(0, 8)}
           </span>
         )}

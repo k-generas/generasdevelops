@@ -261,7 +261,7 @@ export function BusinessIntelModal({
                     )}
                   </div>
                   <div className="rounded border border-primary/50 p-4">
-                    <p className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                    <p className="font-mono text-xs uppercase tracking-widest text-primary">
                       Recommended offer (AI)
                     </p>
                     <p className="mt-1 text-lg font-semibold">{report.recommended_offer}</p>
@@ -281,7 +281,7 @@ export function BusinessIntelModal({
                     <Row k="Delivery effort" v={report.delivery_effort} />
                   </div>
                   <div>
-                    <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                    <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
                       Next action
                     </p>
                     <p className="mt-1">{report.next_action}</p>

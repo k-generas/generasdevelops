@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { canValidate, defaultPlan, readPlan, type ValidationPlan } from "@/lib/validation";
 
-const lbl = "mb-1 block text-[11px] uppercase tracking-widest text-muted-foreground";
+const lbl = "mb-1 block text-xs uppercase tracking-widest text-muted-foreground";
 
 export function ValidationPlanner({
   businessId,

@@ -90,7 +90,7 @@ export function Hero() {
             </div>
           </Reveal>
           <Reveal delay={280}>
-            <p className="mt-8 flex max-w-xl items-start gap-2.5 text-[13px] leading-relaxed text-forest-foreground/70">
+            <p className="mt-8 flex max-w-xl items-start gap-2.5 text-sm leading-relaxed text-forest-foreground/70">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-mint" aria-hidden="true" />
               <span>
                 Every record keeps its source and freshness. Confidence levels separate verified
@@ -220,7 +220,7 @@ function StatusBadge({
     <Badge
       variant="outline"
       className={cn(
-        "shrink-0 font-mono text-[10px]",
+        "shrink-0 font-mono text-xs",
         live
           ? tone === "forest"
             ? "border-mint/40 bg-mint/15 text-mint"
@@ -270,14 +270,14 @@ export function ProductShowcase() {
               </p>
               <ul className="mt-5 space-y-2.5 border-t border-white/10 pt-5">
                 {current.points.map((p) => (
-                  <li key={p} className="flex items-start gap-2.5 text-[13px] leading-relaxed">
+                  <li key={p} className="flex items-start gap-2.5 text-sm leading-relaxed">
                     <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-mint" aria-hidden="true" />
                     <span className="text-forest-foreground/85">{p}</span>
                   </li>
                 ))}
               </ul>
               {current.note && (
-                <p className="mt-5 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-[12px] leading-relaxed text-forest-foreground/70">
+                <p className="mt-5 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-xs leading-relaxed text-forest-foreground/70">
                   {current.note}
                 </p>
               )}
@@ -320,7 +320,7 @@ export function ProductShowcase() {
                           <span className="text-sm font-semibold tracking-tight">{c.title}</span>
                           <StatusBadge status={c.status} />
                         </span>
-                        <span className="mt-1 block text-[12px] leading-snug text-muted-foreground">
+                        <span className="mt-1 block text-xs leading-snug text-muted-foreground">
                           {c.summary}
                         </span>
                       </span>
@@ -451,13 +451,10 @@ export function HowItWorks() {
                   active && active !== t ? "opacity-40" : "opacity-100",
                 )}
               >
-                <Badge
-                  variant="outline"
-                  className={cn("font-mono text-[10px]", TAG_CLASSES_FOREST[t])}
-                >
+                <Badge variant="outline" className={cn("font-mono text-xs", TAG_CLASSES_FOREST[t])}>
                   {TAG_LABELS[t]}
                 </Badge>
-                <span className="max-w-[15rem] text-[11px] leading-snug text-forest-foreground/65">
+                <span className="max-w-[15rem] text-xs leading-snug text-forest-foreground/65">
                   {TAG_NOTES[t]}
                 </span>
               </button>
@@ -482,15 +479,13 @@ export function HowItWorks() {
                     <span className="font-mono text-xs text-mint">{s.n}</span>
                     <Badge
                       variant="outline"
-                      className={cn("font-mono text-[10px]", TAG_CLASSES_FOREST[s.tag])}
+                      className={cn("font-mono text-xs", TAG_CLASSES_FOREST[s.tag])}
                     >
                       {TAG_LABELS[s.tag]}
                     </Badge>
                   </div>
                   <h3 className="mt-3 text-base font-semibold tracking-tight">{s.title}</h3>
-                  <p className="mt-2 text-[13px] leading-relaxed text-forest-foreground/70">
-                    {s.body}
-                  </p>
+                  <p className="mt-2 text-sm leading-relaxed text-forest-foreground/70">{s.body}</p>
                 </div>
               </Reveal>
             </li>
@@ -543,10 +538,10 @@ export function UseCases() {
               <span className="grid h-10 w-10 place-items-center rounded-xl bg-forest text-mint">
                 {a.icon}
               </span>
-              <h3 className="mt-4 text-[15px] font-semibold leading-snug tracking-tight">
+              <h3 className="mt-4 text-base font-semibold leading-snug tracking-tight">
                 {a.title}
               </h3>
-              <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{a.body}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{a.body}</p>
             </article>
           </Reveal>
         ))}
@@ -603,7 +598,7 @@ export function Features() {
               </span>
               <h3 className="mt-4 text-lg font-semibold tracking-tight">{s.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
-              <p className="mt-4 rounded-lg border border-dashed px-3 py-2.5 text-[12px] leading-relaxed text-muted-foreground">
+              <p className="mt-4 rounded-lg border border-dashed px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
                 {s.note}
               </p>
             </article>
@@ -620,7 +615,7 @@ export function Features() {
           <ul className="mt-4 flex flex-wrap gap-2">
             {ALSO_INCLUDED.map((f) => (
               <li key={f}>
-                <Badge variant="secondary" className="font-normal text-[12px]">
+                <Badge variant="secondary" className="font-normal text-xs">
                   {f}
                 </Badge>
               </li>
@@ -687,9 +682,7 @@ export function Trust() {
               </span>
               <div>
                 <h3 className="text-sm font-semibold tracking-tight">{t.title}</h3>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-forest-foreground/65">
-                  {t.body}
-                </p>
+                <p className="mt-1.5 text-sm leading-relaxed text-forest-foreground/65">{t.body}</p>
               </div>
             </div>
           </Reveal>
@@ -738,7 +731,7 @@ export function EarlyAccess() {
                 <Link to="/auth">Sign in</Link>
               </Button>
             </div>
-            <p className="mt-5 max-w-xl text-[12px] leading-relaxed text-muted-foreground">
+            <p className="mt-5 max-w-xl text-xs leading-relaxed text-muted-foreground">
               Creating an account means we may email you about your account and about early access.
               Nothing else, no mailing list, and your address is never shared. You can delete your
               workspace — and its data — whenever you like.
@@ -755,20 +748,20 @@ export function EarlyAccess() {
                   <FileText className="h-4 w-4 text-mint" aria-hidden="true" />
                   <h3 className="text-sm font-semibold">What you get</h3>
                 </div>
-                <Badge className="border-transparent bg-mint font-mono text-[10px] uppercase tracking-wide text-mint-foreground">
+                <Badge className="border-transparent bg-mint font-mono text-xs uppercase tracking-wide text-mint-foreground">
                   No card
                 </Badge>
               </div>
               <ul className="mt-4 space-y-3">
                 {EARLY_ACCESS_POINTS.map((p) => (
-                  <li key={p} className="flex items-start gap-2.5 text-[13px] leading-relaxed">
+                  <li key={p} className="flex items-start gap-2.5 text-sm leading-relaxed">
                     <Check className="mt-0.5 h-4 w-4 shrink-0 text-mint" aria-hidden="true" />
                     <span className="text-forest-foreground/85">{p}</span>
                   </li>
                 ))}
               </ul>
               <div className="mt-5 rounded-lg border border-white/12 bg-white/5 p-4">
-                <p className="text-[13px] leading-relaxed text-forest-foreground/75">
+                <p className="text-sm leading-relaxed text-forest-foreground/75">
                   <span className="font-semibold text-forest-foreground">Pricing:</span> not
                   published yet. Early access accounts are told the plan and price before any
                   subscription is activated, and can decline it.
@@ -846,10 +839,10 @@ export function Faq() {
                 value={`faq-${i}`}
                 className="mb-2 rounded-xl border bg-card px-4 last:border-b"
               >
-                <AccordionTrigger className="text-left text-[15px] hover:no-underline">
+                <AccordionTrigger className="text-left text-base hover:no-underline">
                   {item.q}
                 </AccordionTrigger>
-                <AccordionContent className="text-[13px] leading-relaxed text-muted-foreground">
+                <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
                   {item.a}
                 </AccordionContent>
               </AccordionItem>

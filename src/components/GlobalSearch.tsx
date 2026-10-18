@@ -175,7 +175,7 @@ export function GlobalSearch() {
                 onMouseDown={() => pick(h)}
                 className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${i === active ? "bg-muted" : ""}`}
               >
-                <span className="w-16 shrink-0 font-mono text-[10px] uppercase text-primary">
+                <span className="w-20 shrink-0 truncate font-mono text-xs uppercase text-primary">
                   {h.kind}
                 </span>
                 <span className="min-w-0 flex-1 truncate">{h.label}</span>

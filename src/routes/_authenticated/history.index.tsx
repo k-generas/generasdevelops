@@ -84,7 +84,7 @@ function History() {
                 >
                   {r.title ?? r.query}
                 </Link>
-                <p className="font-mono text-[11px] text-muted-foreground">
+                <p className="font-mono text-xs text-muted-foreground">
                   {new Date(r.created_at).toLocaleString()} · {r.status} · {r.results_count} found ·{" "}
                   {r.new_count} new{r.error ? ` · ${r.error.slice(0, 80)}` : ""}
                 </p>

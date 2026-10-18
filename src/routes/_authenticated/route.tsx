@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   ListChecks,
   LogOut,
+  Menu,
   Package,
   Radar,
   Receipt,
@@ -39,6 +40,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -116,7 +118,7 @@ const MOBILE_NAV = NAV.filter(
 
 function NavBadge({ count }: { count: number }) {
   return (
-    <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+    <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground">
       {count > 99 ? "99+" : count}
     </span>
   );
@@ -129,6 +131,7 @@ function BrandMark() {
 function Shell() {
   const navigate = useNavigate();
   const [email, setEmail] = useState<string>("");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const access = useAccessInfo();
   const accessStatus = access.data?.status;
@@ -168,7 +171,7 @@ function Shell() {
   const initial = (email[0] ?? "G").toUpperCase();
 
   if (access.isPending) {
-    return <div className="min-h-screen bg-background" />;
+    return <div className="min-h-dvh bg-background" />;
   }
 
   if (access.data && accessStatus !== "approved") {
@@ -182,14 +185,14 @@ function Shell() {
     : NAV;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col overflow-hidden border-r bg-sidebar lg:flex">
         <Link to="/dashboard" className="flex h-16 shrink-0 items-center gap-3 px-5">
           <BrandMark />
           <span className="leading-tight">
             <span className="block text-sm font-semibold text-sidebar-foreground">GARE</span>
-            <span className="block text-[11px] text-muted-foreground">Revenue Engine</span>
+            <span className="block text-xs text-muted-foreground">Revenue Engine</span>
           </span>
         </Link>
         <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain scroll-smooth px-3 py-2">
@@ -227,9 +230,73 @@ function Shell() {
       </aside>
 
       {/* Content column */}
-      <div className="min-h-screen bg-background lg:pl-64">
+      <div className="min-h-dvh bg-background lg:pl-64">
         <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
-          <div className="flex h-14 items-center gap-3 px-4 lg:px-8">
+          <div className="flex h-14 items-center gap-2 px-3 sm:gap-3 sm:px-4 lg:px-8">
+            {/* Mobile/tablet menu — every page is reachable from here */}
+            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+              <SheetTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Open menu"
+                  className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="left" className="flex w-72 flex-col gap-0 p-0 pr-6">
+                <SheetTitle className="sr-only">Menu</SheetTitle>
+                <div className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-3"
+                  >
+                    <BrandMark />
+                    <span className="leading-tight">
+                      <span className="block text-sm font-semibold">GARE</span>
+                      <span className="block text-xs text-muted-foreground">Revenue Engine</span>
+                    </span>
+                  </Link>
+                </div>
+                <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 py-3">
+                  {navItems.map((n) => (
+                    <Link
+                      key={n.to}
+                      to={n.to}
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted data-[status=active]:bg-primary/10 data-[status=active]:font-semibold data-[status=active]:text-primary"
+                    >
+                      <n.icon className="h-4 w-4" />
+                      <span className="flex-1">{n.label}</span>
+                      {n.to === "/updates" && unreadCount > 0 && <NavBadge count={unreadCount} />}
+                    </Link>
+                  ))}
+                </nav>
+                <div className="shrink-0 border-t p-3">
+                  <div className="flex items-center gap-3 rounded-lg px-2 py-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-secondary text-xs font-semibold text-secondary-foreground">
+                        {initial}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                      {email || "Signed in"}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        void signOut();
+                      }}
+                      title="Sign out"
+                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
+                    >
+                      <LogOut className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
             <Link to="/dashboard" className="lg:hidden">
               <BrandMark />
             </Link>
@@ -250,7 +317,7 @@ function Shell() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-60">
                   <DropdownMenuLabel>
-                    <span className="block text-[11px] font-normal text-muted-foreground">
+                    <span className="block text-xs font-normal text-muted-foreground">
                       Signed in as
                     </span>
                     <span className="block text-sm">{email || "Owner"}</span>
@@ -275,7 +342,7 @@ function Shell() {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-5xl px-4 pb-28 pt-6 lg:px-8 lg:pb-12">
+        <main className="mx-auto w-full max-w-5xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-12">
           <Outlet />
         </main>
       </div>
@@ -287,17 +354,17 @@ function Shell() {
             <Link
               key={n.to}
               to={n.to}
-              className="flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium text-muted-foreground transition-colors data-[status=active]:text-primary"
+              className="flex flex-col items-center gap-1 py-2.5 text-xs font-medium text-muted-foreground transition-colors data-[status=active]:text-primary"
             >
               <span className="relative">
                 <n.icon className="h-5 w-5" />
                 {n.to === "/updates" && unreadCount > 0 && (
-                  <span className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] font-semibold text-primary-foreground">
+                  <span className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-xs leading-none font-semibold text-primary-foreground">
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
               </span>
-              {n.label}
+              <span className="w-full truncate">{n.label}</span>
             </Link>
           ))}
         </div>

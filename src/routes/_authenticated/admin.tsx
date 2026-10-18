@@ -58,12 +58,12 @@ function StatusPill({ status, admin }: { status: AccessStatus; admin?: boolean }
   return (
     <span className="inline-flex items-center gap-1">
       <span
-        className={`rounded-full border px-2 py-0.5 text-[10px] font-medium capitalize ${STATUS_STYLES[status]}`}
+        className={`rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${STATUS_STYLES[status]}`}
       >
         {status}
       </span>
       {admin && (
-        <span className="rounded-full border border-primary/40 px-2 py-0.5 text-[10px] font-medium text-primary">
+        <span className="rounded-full border border-primary/40 px-2 py-0.5 text-xs font-medium text-primary">
           admin
         </span>
       )}
@@ -448,7 +448,7 @@ function LoginActivityTab() {
               <TableCell className="text-xs">{r.event_type}</TableCell>
               <TableCell>
                 <span
-                  className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+                  className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
                     r.success
                       ? "border-emerald-500/40 text-emerald-700 dark:text-emerald-400"
                       : "border-destructive/40 text-destructive"
@@ -551,7 +551,7 @@ function AdminPage() {
       </header>
 
       <Tabs defaultValue="overview">
-        <TabsList>
+        <TabsList className="h-auto flex-wrap justify-start gap-1 sm:h-9 sm:justify-center">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="codes">Access codes</TabsTrigger>

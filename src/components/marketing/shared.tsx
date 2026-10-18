@@ -31,7 +31,7 @@ export function Wordmark({
         className={cn(
           "font-mono font-semibold tracking-[0.22em]",
           dark && "text-forest-foreground",
-          size === "sm" ? "text-[13px]" : "text-sm",
+          size === "sm" ? "text-xs" : "text-sm",
         )}
       >
         GARE
@@ -52,7 +52,7 @@ export function Eyebrow({
   return (
     <p
       className={cn(
-        "font-mono text-[11px] uppercase tracking-[0.28em]",
+        "font-mono text-xs uppercase tracking-[0.28em]",
         tone === "forest" ? "text-mint" : "text-primary",
         className,
       )}

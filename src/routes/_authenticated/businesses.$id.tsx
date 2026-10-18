@@ -290,7 +290,7 @@ function BusinessPage() {
           </div>
         </div>
         <div className="text-right">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
             Opportunity score
           </p>
           <p className="font-mono text-5xl font-semibold text-accent">{b.score ?? "—"}</p>
@@ -429,14 +429,14 @@ function BusinessPage() {
                   )}
                 </div>
                 <div className="rounded border border-primary/50 p-4">
-                  <p className="font-mono text-[10px] uppercase tracking-widest text-primary">
+                  <p className="font-mono text-xs uppercase tracking-widest text-primary">
                     Recommended offer
                   </p>
                   <p className="mt-1 text-lg font-semibold">{report.recommended_offer}</p>
                   <p className="mt-1 text-sm text-muted-foreground">{report.offer_reasoning}</p>
                 </div>
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                  <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
                     Next action
                   </p>
                   <p className="mt-1">{report.next_action}</p>
@@ -464,7 +464,7 @@ function BusinessPage() {
                     </span>
                   </div>
                 ))}
-                <p className="pt-2 text-[11px] text-muted-foreground">
+                <p className="pt-2 text-xs text-muted-foreground">
                   Low visibility + good reviews = strongest opportunity.
                 </p>
               </div>
@@ -508,7 +508,7 @@ function BusinessPage() {
               />
               <Row k="Conversion" v={report?.conversion_probability} />
               <Row k="Delivery effort" v={report?.delivery_effort} />
-              <p className="pt-2 text-[11px] text-muted-foreground">
+              <p className="pt-2 text-xs text-muted-foreground">
                 Estimates are AI judgement, not revenue.
               </p>
             </div>

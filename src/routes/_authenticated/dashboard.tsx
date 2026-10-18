@@ -258,7 +258,7 @@ function Dashboard() {
                     </p>
                   </div>
                   {!b.website && (
-                    <span className="shrink-0 rounded-full border border-accent/40 px-2 py-0.5 text-[11px] font-medium text-accent">
+                    <span className="shrink-0 rounded-full border border-accent/40 px-2 py-0.5 text-xs font-medium text-accent">
                       no site
                     </span>
                   )}
@@ -312,7 +312,7 @@ function Dashboard() {
             <p className="mt-1 text-2xl font-semibold">
               {outcome.winRate == null ? "—" : `${outcome.winRate}%`}
             </p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               {outcome.decided === 0
                 ? "No decided proposals yet"
                 : `${outcome.won} won · ${outcome.lost} lost`}
@@ -325,7 +325,7 @@ function Dashboard() {
             <p className="mt-1 text-2xl font-semibold text-accent">
               {acceptedValue > 0 ? `${currency} ${acceptedValue.toLocaleString()}` : "—"}
             </p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               From {accepted.length} accepted proposal{accepted.length === 1 ? "" : "s"}
             </p>
           </div>
@@ -371,7 +371,7 @@ function Dashboard() {
                     <p className="text-sm font-medium">{p.title ?? p.mode}</p>
                     <p className="text-xs text-muted-foreground">{p.businesses?.name ?? "—"}</p>
                   </div>
-                  <span className="shrink-0 rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">
+                  <span className="shrink-0 rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
                     {p.status}
                   </span>
                 </Link>
@@ -437,7 +437,7 @@ function Kpi({
         </span>
       </div>
       <p className="mt-2 text-2xl font-semibold tracking-tight">{value}</p>
-      {hint && <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p>}
+      {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }
@@ -446,7 +446,7 @@ function MiniStat({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-lg bg-muted/50 p-3">
       <p className="text-lg font-semibold">{value}</p>
-      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   );
 }

@@ -138,7 +138,7 @@ export function OutreachMessages({
 
       {byChannel.map((group) => (
         <div key={group.channel} className="space-y-2">
-          <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
             {group.channel}
           </p>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -146,7 +146,7 @@ export function OutreachMessages({
               <div key={m.id} className="flex flex-col gap-2 rounded border p-3">
                 <div className="flex items-start gap-2">
                   <p className="min-w-0 flex-1 text-sm font-medium">{m.title ?? m.channel}</p>
-                  <Badge variant="outline" className="text-[10px]">
+                  <Badge variant="outline" className="text-xs">
                     {m.status}
                   </Badge>
                 </div>

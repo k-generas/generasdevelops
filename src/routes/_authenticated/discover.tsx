@@ -180,7 +180,7 @@ function Discover() {
             {runs.data.map((r) => (
               <span
                 key={r.id}
-                className="rounded border px-2 py-1 font-mono text-[11px] text-muted-foreground"
+                className="rounded border px-2 py-1 font-mono text-xs text-muted-foreground"
               >
                 {r.query}
                 {r.location ? ` @ ${r.location}` : ""} ·{" "}
@@ -216,9 +216,12 @@ function Discover() {
       </section>
 
       <section>
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
           <p className="mr-auto font-mono text-xs uppercase tracking-[0.3em] text-primary">
             02 · Pipeline
+            <span className="ml-2 text-muted-foreground normal-case tracking-normal">
+              {list.length} shown
+            </span>
           </p>
           {(["all", "no_site", "investigated", "closed"] as const).map((f) => (
             <Button
@@ -262,46 +265,52 @@ function Discover() {
             }
           />
         ) : (
-          <div className="divide-y rounded-lg border bg-card">
-            {list.map((b) => (
-              <Link
-                key={b.id}
-                to="/businesses/$id"
-                params={{ id: b.id }}
-                className="flex items-center gap-4 px-4 py-3 hover:bg-muted"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium">{b.name}</p>
-                  <p className="text-xs text-muted-foreground">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {list.map((b) => {
+              const closedPermanently = b.business_status === "CLOSED_PERMANENTLY";
+              const closedTemporarily = b.business_status === "CLOSED_TEMPORARILY";
+              const hasMeta =
+                !b.website || closedPermanently || closedTemporarily || b.rating != null;
+              return (
+                <Link
+                  key={b.id}
+                  to="/businesses/$id"
+                  params={{ id: b.id }}
+                  className="flex flex-col gap-1.5 rounded-lg border bg-card p-3 transition-colors hover:bg-muted"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="min-w-0 flex-1 truncate font-medium">{b.name}</p>
+                    <span className="shrink-0 font-mono text-base font-semibold text-accent">
+                      {b.score ?? "—"}
+                    </span>
+                  </div>
+                  <p className="truncate text-xs text-muted-foreground">
                     {[b.category, b.address].filter(Boolean).join(" · ")}
                   </p>
-                </div>
-                {!b.website &&
-                  (b.website_checked_at ? (
-                    <Badge variant="outline" className="border-primary text-primary">
-                      no website (double-checked)
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-muted-foreground">
-                      no website · unchecked
-                    </Badge>
-                  ))}
-                {b.business_status === "CLOSED_PERMANENTLY" && (
-                  <Badge variant="destructive">closed</Badge>
-                )}
-                {b.business_status === "CLOSED_TEMPORARILY" && (
-                  <Badge variant="destructive">temp. closed</Badge>
-                )}
-                {b.rating != null && (
-                  <span className="font-mono text-xs text-muted-foreground">
-                    ★ {b.rating} ({b.review_count ?? 0})
-                  </span>
-                )}
-                <span className="w-12 text-right font-mono text-lg font-semibold text-accent">
-                  {b.score ?? "—"}
-                </span>
-              </Link>
-            ))}
+                  {hasMeta && (
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                      {!b.website &&
+                        (b.website_checked_at ? (
+                          <Badge variant="outline" className="border-primary text-primary">
+                            no website · checked
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-muted-foreground">
+                            no website · unchecked
+                          </Badge>
+                        ))}
+                      {closedPermanently && <Badge variant="destructive">closed</Badge>}
+                      {closedTemporarily && <Badge variant="destructive">temp. closed</Badge>}
+                      {b.rating != null && (
+                        <span className="font-mono text-xs text-muted-foreground">
+                          ★ {b.rating} ({b.review_count ?? 0})
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
           </div>
         )}
       </section>
@@ -312,11 +321,9 @@ function Discover() {
 function Stat({ label, value, hint }: { label: string; value: number | string; hint?: string }) {
   return (
     <div className="rounded-lg border bg-card p-4">
-      <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-        {label}
-      </p>
+      <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">{label}</p>
       <p className="mt-1 text-3xl font-bold">{value}</p>
-      {hint && <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>}
+      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }

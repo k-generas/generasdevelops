@@ -175,7 +175,7 @@ function Businesses() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search saved leads…"
-            className="w-44"
+            className="w-52"
           />
           <select
             value={province}
@@ -275,46 +275,53 @@ function Businesses() {
           }
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border bg-card">
-          <div className="divide-y">
-            {rows.map((b) => {
-              const loc = locationOf(b);
-              const ind =
-                (b.industry as IndustryKey | null) ??
-                classifyIndustry(`${b.category ?? ""} ${b.name ?? ""}`);
-              return (
-                <div
-                  key={b.id}
-                  className="flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40"
-                >
-                  <Link to="/businesses/$id" params={{ id: b.id }} className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{b.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {[
-                        ind ? industryLabel(ind) : b.category,
-                        loc.district ?? loc.province,
-                        b.address,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ") || "—"}
-                    </p>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {rows.map((b) => {
+            const loc = locationOf(b);
+            const ind =
+              (b.industry as IndustryKey | null) ??
+              classifyIndustry(`${b.category ?? ""} ${b.name ?? ""}`);
+            const investigatedFlag = investigated.data?.has(b.id) ?? false;
+            const closedFlag = b.business_status === "CLOSED_PERMANENTLY";
+            const hasBadges = !b.website || investigatedFlag || closedFlag;
+            return (
+              <div
+                key={b.id}
+                className="flex flex-col gap-2 rounded-lg border bg-card p-3 transition-colors hover:bg-muted/40"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <Link
+                    to="/businesses/$id"
+                    params={{ id: b.id }}
+                    className="min-w-0 flex-1 truncate font-medium"
+                  >
+                    {b.name}
                   </Link>
-                  {!b.website && (
-                    <Badge variant="outline" className="border-accent/40 text-accent">
-                      no site
-                    </Badge>
-                  )}
-                  {investigated.data?.has(b.id) && (
-                    <Badge variant="outline" className="text-muted-foreground">
-                      investigated
-                    </Badge>
-                  )}
-                  {b.business_status === "CLOSED_PERMANENTLY" && (
-                    <Badge variant="destructive">closed</Badge>
-                  )}
-                  <span className="w-9 shrink-0 text-right text-sm font-semibold text-primary">
+                  <span className="shrink-0 text-sm font-semibold text-primary">
                     {b.score ?? "—"}
                   </span>
+                </div>
+                <p className="truncate text-xs text-muted-foreground">
+                  {[ind ? industryLabel(ind) : b.category, loc.district ?? loc.province, b.address]
+                    .filter(Boolean)
+                    .join(" · ") || "—"}
+                </p>
+                {hasBadges && (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {!b.website && (
+                      <Badge variant="outline" className="border-accent/40 text-accent">
+                        no site
+                      </Badge>
+                    )}
+                    {investigatedFlag && (
+                      <Badge variant="outline" className="text-muted-foreground">
+                        investigated
+                      </Badge>
+                    )}
+                    {closedFlag && <Badge variant="destructive">closed</Badge>}
+                  </div>
+                )}
+                <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
                   <Button
                     size="sm"
                     variant="ghost"
@@ -334,9 +341,9 @@ function Businesses() {
                     {busyId === b.id ? "Investigating…" : "Run investigation"}
                   </Button>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       )}
 

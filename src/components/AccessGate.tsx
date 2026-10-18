@@ -76,7 +76,7 @@ function PendingScreen({
   }
 
   return (
-    <div className="grid min-h-screen place-items-center bg-background px-4 py-10">
+    <div className="grid min-h-dvh place-items-center bg-background px-4 py-10">
       <div className="w-full max-w-md rounded-lg border bg-card p-8">
         <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
           <KeyRound className="h-6 w-6" />
@@ -162,7 +162,7 @@ function PendingScreen({
 function AccessStatusScreen({ info, onSignOut }: { info: AccessInfo; onSignOut: () => void }) {
   const suspended = info.status === "suspended";
   return (
-    <div className="grid min-h-screen place-items-center bg-background px-4 py-10">
+    <div className="grid min-h-dvh place-items-center bg-background px-4 py-10">
       <div className="w-full max-w-md rounded-lg border bg-card p-8 text-center">
         <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-destructive/10 text-destructive">
           <ShieldX className="h-6 w-6" />

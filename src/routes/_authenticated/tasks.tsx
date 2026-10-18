@@ -242,12 +242,12 @@ function Tasks() {
                 )}
               </div>
               {t.priority !== "normal" && (
-                <span className="shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px]">
+                <span className="shrink-0 rounded-full border px-2 py-0.5 font-mono text-xs">
                   {t.priority}
                 </span>
               )}
               {!showDone && isOverdue(t) && (
-                <span className="shrink-0 rounded-full border border-destructive/40 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                <span className="shrink-0 rounded-full border border-destructive/40 px-2 py-0.5 text-xs font-medium text-destructive">
                   overdue
                 </span>
               )}

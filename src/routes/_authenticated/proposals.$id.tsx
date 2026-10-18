@@ -290,7 +290,7 @@ function Editor() {
             onChange={(e) => onEdit(e.target.value)}
           />
           <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-auto font-mono text-[11px] text-muted-foreground">{saved}</span>
+            <span className="mr-auto font-mono text-xs text-muted-foreground">{saved}</span>
             <Button
               size="sm"
               variant="outline"
@@ -341,7 +341,7 @@ function Editor() {
             ) : (
               why.map((w, i) => (
                 <div key={i} className="mb-3">
-                  <span className="font-mono text-[10px] uppercase text-accent">
+                  <span className="font-mono text-xs uppercase text-accent">
                     {String(w.kind ?? "").replace(/_/g, " ")}
                   </span>
                   <p>{w.statement}</p>
@@ -382,11 +382,11 @@ function Editor() {
                 const od = readOutreachDetails(e.details);
                 return (
                   <div key={e.id} className="border-l-2 border-primary pl-2">
-                    <span className="font-mono text-[10px] uppercase text-accent">
+                    <span className="font-mono text-xs uppercase text-accent">
                       {od.channel ?? e.event_type}
                     </span>
                     <p>{e.summary}</p>
-                    <p className="font-mono text-[10px] text-muted-foreground">
+                    <p className="font-mono text-xs text-muted-foreground">
                       {new Date(e.created_at).toLocaleString()}
                     </p>
                   </div>

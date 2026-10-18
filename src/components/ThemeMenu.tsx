@@ -39,7 +39,7 @@ export function ThemeMenu({ align = "end" }: { align?: "start" | "end" }) {
               type="button"
               onClick={() => setMode(m.value)}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-[11px] font-medium transition-colors",
+                "flex flex-col items-center gap-1 rounded-lg border px-2 py-2 text-xs font-medium transition-colors",
                 mode === m.value
                   ? "border-primary bg-secondary text-foreground"
                   : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",

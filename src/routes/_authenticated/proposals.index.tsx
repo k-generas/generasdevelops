@@ -117,7 +117,7 @@ function Proposals() {
                 {p.price} {p.currency}
               </span>
             )}
-            <span className="rounded border px-2 py-0.5 font-mono text-[10px]">{p.status}</span>
+            <span className="rounded border px-2 py-0.5 font-mono text-xs">{p.status}</span>
           </Link>
         ))}
         {list.isError ? null : list.isLoading ? null : list.data?.length === 0 ? (

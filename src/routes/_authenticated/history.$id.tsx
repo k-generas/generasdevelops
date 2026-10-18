@@ -111,7 +111,7 @@ function RunPage() {
             className="flex items-center gap-3 px-4 py-3 hover:bg-muted"
           >
             <span className="min-w-0 flex-1">{b.name}</span>
-            {b.was_new && <span className="font-mono text-[10px] text-accent">new</span>}
+            {b.was_new && <span className="font-mono text-xs text-accent">new</span>}
             <span className="font-mono text-xs text-muted-foreground">{b.status}</span>
             <span className="w-10 text-right font-mono text-accent">{b.score ?? "—"}</span>
           </Link>

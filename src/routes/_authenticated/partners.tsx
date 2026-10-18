@@ -481,11 +481,11 @@ function MatchRow({
       )}
       <div className="flex flex-wrap items-end gap-2 pt-1">
         <div className="w-28 space-y-1">
-          <Label className="text-[11px]">Delivery value</Label>
+          <Label className="text-xs">Delivery value</Label>
           <Input type="number" value={value} onChange={(e) => setValue(e.target.value)} />
         </div>
         <div className="w-28 space-y-1">
-          <Label className="text-[11px]">Your cut</Label>
+          <Label className="text-xs">Your cut</Label>
           <Input type="number" value={cut} onChange={(e) => setCut(e.target.value)} />
         </div>
         <Button

@@ -29,7 +29,7 @@ export function Navbar() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-4 md:pt-4">
       <div className="mx-auto w-full max-w-6xl overflow-hidden rounded-2xl border bg-background/90 shadow-lg shadow-black/5 backdrop-blur-xl supports-[backdrop-filter]:bg-background/75">
-        <div className="flex h-14 items-center gap-3 px-3 md:px-4">
+        <div className="flex h-14 items-center gap-2 px-3 md:gap-3 md:px-4">
           <Link to="/" aria-label="GARE home" className={`shrink-0 rounded-md ${FOCUS_RING}`}>
             <Wordmark />
           </Link>
@@ -46,13 +46,13 @@ export function Navbar() {
             ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex min-w-0 items-center gap-2">
             <ThemeMenu />
             <span aria-hidden="true" className="hidden h-6 w-px bg-border sm:block" />
             <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
               <Link to="/auth">Sign in</Link>
             </Button>
-            <Button asChild size="sm">
+            <Button asChild size="sm" className="min-w-0 truncate">
               <Link to="/auth" search={JOIN_SEARCH}>
                 Join Early Access
               </Link>

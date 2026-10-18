@@ -399,7 +399,7 @@ function StatusRow({ label, ok, hint }: { label: string; ok: boolean; hint: stri
         <XCircle className="h-4 w-4 text-destructive" />
       )}
       <span className="flex-1 text-sm">{label}</span>
-      <span className="font-mono text-[11px] text-muted-foreground">{hint}</span>
+      <span className="font-mono text-xs text-muted-foreground">{hint}</span>
     </div>
   );
 }
