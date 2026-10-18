@@ -100,6 +100,19 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
       throw new Error('Unauthorized: No user ID found in token');
     }
 
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('access_status')
+      .eq('id', data.claims.sub)
+      .maybeSingle();
+
+    if (!profileError) {
+      const accessStatus = profile?.access_status ?? 'pending';
+      if (accessStatus !== 'approved') {
+        throw new Error(`Access ${accessStatus}: this account has not been approved for GARE access`);
+      }
+    }
+
     return next({
       context: {
         supabase,

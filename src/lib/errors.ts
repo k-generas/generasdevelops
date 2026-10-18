@@ -55,6 +55,25 @@ export function describeError(error: unknown, context?: string): AppError {
     };
   }
 
+  // --- Access approval gate ---
+  if (
+    lower.includes("access pending") ||
+    lower.includes("access rejected") ||
+    lower.includes("access suspended") ||
+    lower.includes("not been approved")
+  ) {
+    const state = lower.includes("suspended")
+      ? "suspended"
+      : lower.includes("rejected")
+        ? "not approved"
+        : "awaiting administrator approval";
+    return {
+      title: "Access restricted",
+      message: `${context ? context + ": " : ""}your GARE access is ${state}.`,
+      fix: "Contact the administrator at generaskagiraneza@gmail.com to request approval, then try again.",
+    };
+  }
+
   // --- Missing table / column (missing migration) ---
   if (
     lower.includes("does not exist") ||

@@ -1555,6 +1555,57 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles: {
+        Row: {
+          access_status: Database["public"]["Enums"]["access_status"]
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          email: string
+          id: string
+          is_admin: boolean
+          last_login_at: string | null
+          login_count: number
+          notes: string | null
+          rejected_at: string | null
+          suspended_at: string | null
+          suspended_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_status?: Database["public"]["Enums"]["access_status"]
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          email: string
+          id: string
+          is_admin?: boolean
+          last_login_at?: string | null
+          login_count?: number
+          notes?: string | null
+          rejected_at?: string | null
+          suspended_at?: string | null
+          suspended_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_status?: Database["public"]["Enums"]["access_status"]
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          is_admin?: boolean
+          last_login_at?: string | null
+          login_count?: number
+          notes?: string | null
+          rejected_at?: string | null
+          suspended_at?: string | null
+          suspended_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1563,7 +1614,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      access_status: "pending" | "approved" | "rejected" | "suspended"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1690,6 +1741,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      access_status: ["pending", "approved", "rejected", "suspended"],
+    },
   },
 } as const

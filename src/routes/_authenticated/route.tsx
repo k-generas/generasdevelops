@@ -25,8 +25,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { AccessGate } from "@/components/AccessGate";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { ThemeMenu } from "@/components/ThemeMenu";
+import { useAccessInfo } from "@/lib/access";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -127,8 +129,13 @@ function Shell() {
   const navigate = useNavigate();
   const [email, setEmail] = useState<string>("");
 
+  const access = useAccessInfo();
+  const accessStatus = access.data?.status;
+  const approved = accessStatus === "approved";
+
   const unread = useQuery({
     queryKey: ["updates-unread"],
+    enabled: approved,
     queryFn: async () => {
       const { count } = await supabase
         .from("daily_digests")
@@ -140,8 +147,8 @@ function Shell() {
   const unreadCount = unread.data ?? 0;
 
   useEffect(() => {
-    void trackVisit();
-  }, []);
+    if (approved) void trackVisit();
+  }, [approved]);
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
   }, []);
@@ -152,6 +159,14 @@ function Shell() {
   }
 
   const initial = (email[0] ?? "G").toUpperCase();
+
+  if (access.isPending) {
+    return <div className="min-h-screen bg-background" />;
+  }
+
+  if (access.data && accessStatus !== "approved") {
+    return <AccessGate info={access.data} onSignOut={signOut} />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
