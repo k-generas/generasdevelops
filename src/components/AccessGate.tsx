@@ -1,15 +1,17 @@
 import { useState } from "react";
-import { Check, Clock, Copy, LogOut, Mail, MessageCircle, ShieldX } from "lucide-react";
+import { Check, Copy, KeyRound, Loader2, LogOut, Mail, MessageCircle, ShieldX } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { ADMIN_EMAIL, accessEmailText, whatsappAccessLink, type AccessInfo } from "@/lib/access";
+  ADMIN_EMAIL,
+  accessEmailText,
+  redeemAccessCode,
+  redeemErrorMessage,
+  whatsappAccessLink,
+  type AccessInfo,
+} from "@/lib/access";
 
 function SignOutFooter({ onSignOut }: { onSignOut: () => void }) {
   return (
@@ -26,8 +28,20 @@ function SignOutFooter({ onSignOut }: { onSignOut: () => void }) {
   );
 }
 
-function PendingApprovalModal({ info, onSignOut }: { info: AccessInfo; onSignOut: () => void }) {
+function PendingScreen({
+  info,
+  onSignOut,
+  onRedeemed,
+}: {
+  info: AccessInfo;
+  onSignOut: () => void;
+  onRedeemed: () => void;
+}) {
   const [copied, setCopied] = useState(false);
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   async function copyEmailRequest() {
     try {
@@ -44,63 +58,103 @@ function PendingApprovalModal({ info, onSignOut }: { info: AccessInfo; onSignOut
     }
   }
 
+  async function submitCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (!code.trim() || busy) return;
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+    const result = await redeemAccessCode(code);
+    if (result.ok) {
+      setSuccess("Access approved. Loading your workspace…");
+      toast.success("Access approved", { description: "Welcome to GARE." });
+      onRedeemed();
+    } else {
+      setError(redeemErrorMessage(result.error));
+    }
+    setBusy(false);
+  }
+
   return (
     <div className="grid min-h-screen place-items-center bg-background px-4 py-10">
-      <Dialog open onOpenChange={() => {}}>
-        <DialogContent
-          className="max-w-md [&>button]:hidden"
-          onEscapeKeyDown={(event) => event.preventDefault()}
-          onPointerDownOutside={(event) => event.preventDefault()}
-          onInteractOutside={(event) => event.preventDefault()}
-        >
-          <DialogHeader>
-            <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary sm:mx-0">
-              <Clock className="h-6 w-6" />
-            </span>
-            <DialogTitle>Your Account Is Pending Approval</DialogTitle>
-            <DialogDescription>
-              Your account has been created successfully, but access to GARE is currently
-              restricted. Please contact the administrator to request approval. You'll be able to
-              log in once your access is approved.
-            </DialogDescription>
-          </DialogHeader>
+      <div className="w-full max-w-md rounded-lg border bg-card p-8">
+        <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
+          <KeyRound className="h-6 w-6" />
+        </span>
+        <h1 className="mt-4 text-center text-xl font-bold">You&apos;re on the Early Access List</h1>
+        <p className="mt-2 text-center text-sm text-muted-foreground">
+          Your account has been created successfully. GARE is currently in private early access.
+          Contact the owner to request access. Once your account is approved, you can sign in and
+          explore the platform.
+        </p>
 
-          <div className="space-y-2">
-            <Button asChild className="w-full">
-              <a
-                href={whatsappAccessLink(info)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2"
-              >
-                <MessageCircle className="h-4 w-4" />
-                Request Access on WhatsApp
-              </a>
-            </Button>
-            <Button type="button" variant="outline" className="w-full" onClick={copyEmailRequest}>
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              {copied ? "Copied" : "Copy Email Request"}
+        <div className="mt-5 space-y-1 rounded-md border bg-muted/40 p-3 text-xs">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">Account</span>
+            <span className="truncate font-medium">{info.email || "—"}</span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted-foreground">Status</span>
+            <span className="font-medium capitalize">{info.status}</span>
+          </div>
+        </div>
+
+        <form onSubmit={submitCode} className="mt-5 space-y-2">
+          <Label htmlFor="access-code">Have an access code?</Label>
+          <div className="flex gap-2">
+            <Input
+              id="access-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="GARE-XXXX-XXXX-XXXX-XXXX"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <Button type="submit" disabled={busy || !code.trim()}>
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Redeem"}
             </Button>
           </div>
+          {error && <p className="text-xs text-destructive">{error}</p>}
+          {success && <p className="text-xs text-primary">{success}</p>}
+        </form>
 
-          <div className="rounded-md border bg-muted/40 p-3 text-xs">
-            <p className="text-muted-foreground">Administrator email</p>
+        <div className="mt-5 space-y-2">
+          <Button asChild className="w-full">
             <a
-              href={`mailto:${ADMIN_EMAIL}`}
-              className="mt-0.5 inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
+              href={whatsappAccessLink(info)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2"
             >
-              <Mail className="h-3.5 w-3.5" />
-              {ADMIN_EMAIL}
+              <MessageCircle className="h-4 w-4" />
+              Request access on WhatsApp
             </a>
-          </div>
+          </Button>
+          <Button type="button" variant="outline" className="w-full" onClick={copyEmailRequest}>
+            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            {copied ? "Copied" : "Copy email request"}
+          </Button>
+        </div>
 
-          <p className="text-xs text-muted-foreground">
-            Your account details are saved. You do not need to register again.
-          </p>
+        <div className="mt-4 rounded-md border bg-muted/40 p-3 text-xs">
+          <p className="text-muted-foreground">Owner email</p>
+          <a
+            href={`mailto:${ADMIN_EMAIL}`}
+            className="mt-0.5 inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
+          >
+            <Mail className="h-3.5 w-3.5" />
+            {ADMIN_EMAIL}
+          </a>
+        </div>
 
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          Your account details are saved. You do not need to register again.
+        </p>
+
+        <div className="mt-4">
           <SignOutFooter onSignOut={onSignOut} />
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
     </div>
   );
 }
@@ -114,7 +168,7 @@ function AccessStatusScreen({ info, onSignOut }: { info: AccessInfo; onSignOut: 
           <ShieldX className="h-6 w-6" />
         </span>
         <h1 className="mt-4 text-lg font-semibold">
-          {suspended ? "Your Access Is Suspended" : "Your Access Was Not Approved"}
+          {suspended ? "Your access is suspended" : "Your access was not approved"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {suspended
@@ -136,8 +190,20 @@ function AccessStatusScreen({ info, onSignOut }: { info: AccessInfo; onSignOut: 
   );
 }
 
-export function AccessGate({ info, onSignOut }: { info: AccessInfo; onSignOut: () => void }) {
-  if (info.status === "pending") return <PendingApprovalModal info={info} onSignOut={onSignOut} />;
+export function AccessGate({
+  info,
+  onSignOut,
+  onRedeemed,
+}: {
+  info: AccessInfo;
+  onSignOut: () => void;
+  onRedeemed?: () => void;
+}) {
+  if (info.status === "pending") {
+    return (
+      <PendingScreen info={info} onSignOut={onSignOut} onRedeemed={onRedeemed ?? (() => {})} />
+    );
+  }
   if (info.status === "rejected" || info.status === "suspended") {
     return <AccessStatusScreen info={info} onSignOut={onSignOut} />;
   }

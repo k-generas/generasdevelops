@@ -20,6 +20,7 @@ import {
   ClipboardList,
   Repeat,
   Settings as SettingsIcon,
+  ShieldCheck,
   Undo2,
   Users,
   type LucideIcon,
@@ -28,7 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AccessGate } from "@/components/AccessGate";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { ThemeMenu } from "@/components/ThemeMenu";
-import { useAccessInfo } from "@/lib/access";
+import { recordLoginEvent, useAccessInfo } from "@/lib/access";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -150,6 +151,12 @@ function Shell() {
     if (approved) void trackVisit();
   }, [approved]);
   useEffect(() => {
+    if (approved && sessionStorage.getItem("gare:login-recorded") !== "1") {
+      sessionStorage.setItem("gare:login-recorded", "1");
+      void recordLoginEvent("sign_in");
+    }
+  }, [approved]);
+  useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? ""));
   }, []);
 
@@ -165,8 +172,14 @@ function Shell() {
   }
 
   if (access.data && accessStatus !== "approved") {
-    return <AccessGate info={access.data} onSignOut={signOut} />;
+    return (
+      <AccessGate info={access.data} onSignOut={signOut} onRedeemed={() => void access.refetch()} />
+    );
   }
+
+  const navItems: NavItem[] = access.data?.isAdmin
+    ? [...NAV, { to: "/admin", label: "Admin", icon: ShieldCheck }]
+    : NAV;
 
   return (
     <div className="min-h-screen bg-background">
@@ -180,7 +193,7 @@ function Shell() {
           </span>
         </Link>
         <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain scroll-smooth px-3 py-2">
-          {NAV.map((n) => (
+          {navItems.map((n) => (
             <Link
               key={n.to}
               to={n.to}

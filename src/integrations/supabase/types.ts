@@ -1606,15 +1606,215 @@ export type Database = {
         }
         Relationships: []
       }
+      access_code_attempts: {
+        Row: {
+          id: string
+          user_id: string | null
+          success: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          success?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          success?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      access_codes: {
+        Row: {
+          id: string
+          code_hash: string
+          code_prefix: string | null
+          target_email: string | null
+          target_user_id: string | null
+          issued_by: string
+          expires_at: string
+          max_uses: number
+          used_count: number
+          status: Database["public"]["Enums"]["access_code_status"]
+          notes: string | null
+          redeemed_at: string | null
+          redeemed_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          code_hash: string
+          code_prefix?: string | null
+          target_email?: string | null
+          target_user_id?: string | null
+          issued_by: string
+          expires_at: string
+          max_uses?: number
+          used_count?: number
+          status?: Database["public"]["Enums"]["access_code_status"]
+          notes?: string | null
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          code_hash?: string
+          code_prefix?: string | null
+          target_email?: string | null
+          target_user_id?: string | null
+          issued_by?: string
+          expires_at?: string
+          max_uses?: number
+          used_count?: number
+          status?: Database["public"]["Enums"]["access_code_status"]
+          notes?: string | null
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          id: string
+          actor_id: string | null
+          actor_email: string | null
+          action: Database["public"]["Enums"]["audit_action"]
+          target_user_id: string | null
+          target_user_email: string | null
+          details: Json | null
+          metadata: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          actor_id?: string | null
+          actor_email?: string | null
+          action: Database["public"]["Enums"]["audit_action"]
+          target_user_id?: string | null
+          target_user_email?: string | null
+          details?: Json | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          actor_id?: string | null
+          actor_email?: string | null
+          action?: Database["public"]["Enums"]["audit_action"]
+          target_user_id?: string | null
+          target_user_email?: string | null
+          details?: Json | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      login_history: {
+        Row: {
+          id: string
+          user_id: string | null
+          email: string | null
+          event_type: string
+          success: boolean
+          failure_reason: string | null
+          ip_address: string | null
+          user_agent: string | null
+          correlation_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          email?: string | null
+          event_type: string
+          success: boolean
+          failure_reason?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          correlation_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          email?: string | null
+          event_type?: string
+          success?: boolean
+          failure_reason?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          correlation_id?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      record_login_event: {
+        Args: {
+          p_event_type: string
+          p_success: boolean
+          p_failure_reason?: string | null
+          p_user_agent?: string | null
+        }
+        Returns: undefined
+      }
+      redeem_access_code: {
+        Args: { p_code: string }
+        Returns: Json
+      }
+      admin_issue_access_code: {
+        Args: {
+          p_target_email?: string | null
+          p_max_uses?: number
+          p_expires_in_hours?: number
+        }
+        Returns: Json
+      }
+      admin_revoke_access_code: {
+        Args: { p_id: string }
+        Returns: Json
+      }
+      admin_set_access_status: {
+        Args: {
+          p_user_id: string
+          p_status: Database["public"]["Enums"]["access_status"]
+          p_note?: string | null
+        }
+        Returns: Json
+      }
     }
     Enums: {
       access_status: "pending" | "approved" | "rejected" | "suspended"
+      access_code_status: "active" | "used" | "expired" | "revoked"
+      audit_action:
+        | "user_registered"
+        | "user_approved"
+        | "user_rejected"
+        | "user_suspended"
+        | "user_restored"
+        | "code_issued"
+        | "code_revoked"
+        | "code_redeemed"
+        | "login_success"
+        | "login_failure"
+        | "logout"
+        | "role_changed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1743,6 +1943,21 @@ export const Constants = {
   public: {
     Enums: {
       access_status: ["pending", "approved", "rejected", "suspended"],
+      access_code_status: ["active", "used", "expired", "revoked"],
+      audit_action: [
+        "user_registered",
+        "user_approved",
+        "user_rejected",
+        "user_suspended",
+        "user_restored",
+        "code_issued",
+        "code_revoked",
+        "code_redeemed",
+        "login_success",
+        "login_failure",
+        "logout",
+        "role_changed",
+      ],
     },
   },
 } as const

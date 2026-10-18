@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { recordLoginEvent } from "@/lib/access";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,7 +46,10 @@ function AuthPage() {
     if (mode === "in") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setMsg(error.message);
-      else navigate({ to: "/dashboard" });
+      else {
+        void recordLoginEvent("sign_in");
+        navigate({ to: "/dashboard" });
+      }
     } else {
       const { data, error } = await supabase.auth.signUp({
         email,
