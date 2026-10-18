@@ -754,3 +754,30 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.admin_set_access_status(uuid, public.access_status, text) TO authenticated;
+
+-- ============================================================================
+-- 0019_grant_admin_emails.sql
+-- ============================================================================
+
+DO $$
+BEGIN
+  IF to_regclass('public.user_profiles') IS NULL THEN
+    RAISE NOTICE 'public.user_profiles does not exist yet - apply 0017/0018 first';
+    RETURN;
+  END IF;
+
+  INSERT INTO public.user_profiles (id, email, access_status, is_admin)
+  SELECT u.id, u.email, 'approved', true
+  FROM auth.users u
+  WHERE lower(u.email) IN ('generaskagiraneza9@gmail.com', 'generaskagiraneza@gmail.com')
+  ON CONFLICT (id) DO UPDATE
+    SET is_admin = true,
+        access_status = 'approved',
+        updated_at = now();
+
+  UPDATE public.user_profiles
+  SET is_admin = true,
+      access_status = 'approved',
+      updated_at = now()
+  WHERE lower(email) IN ('generaskagiraneza9@gmail.com', 'generaskagiraneza@gmail.com');
+END $$;
