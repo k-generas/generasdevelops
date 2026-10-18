@@ -87,10 +87,10 @@ export function OpportunityMap({
           map,
           center,
           radius: radiusKm * 1000,
-          strokeColor: "#edac00",
+          strokeColor: "#059669",
           strokeOpacity: 0.8,
           strokeWeight: 2,
-          fillColor: "#edac00",
+          fillColor: "#059669",
           fillOpacity: 0.08,
         });
         const bounds = new g.LatLngBounds();

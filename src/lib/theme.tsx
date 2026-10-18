@@ -3,6 +3,8 @@ import {
   ACCENT_VALUES,
   ACCENT_KEY,
   MODE_KEY,
+  DEFAULT_ACCENT,
+  DEFAULT_MODE,
   type Accent,
   type ThemeMode,
 } from "./theme-constants";
@@ -18,15 +20,15 @@ type ThemeState = {
 const ThemeContext = createContext<ThemeState | null>(null);
 
 function readMode(): ThemeMode {
-  if (typeof window === "undefined") return "dark";
+  if (typeof window === "undefined") return DEFAULT_MODE;
   const v = window.localStorage.getItem(MODE_KEY);
-  return v === "light" || v === "dark" || v === "system" ? v : "dark";
+  return v === "light" || v === "dark" || v === "system" ? v : DEFAULT_MODE;
 }
 
 function readAccent(): Accent {
-  if (typeof window === "undefined") return "gold";
+  if (typeof window === "undefined") return DEFAULT_ACCENT;
   const v = window.localStorage.getItem(ACCENT_KEY);
-  return ACCENT_VALUES.includes(v as Accent) ? (v as Accent) : "gold";
+  return ACCENT_VALUES.includes(v as Accent) ? (v as Accent) : DEFAULT_ACCENT;
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

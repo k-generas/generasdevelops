@@ -173,7 +173,7 @@ function Shell() {
             <Link
               key={n.to}
               to={n.to}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[status=active]:bg-sidebar-accent data-[status=active]:font-medium data-[status=active]:text-sidebar-accent-foreground"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[status=active]:bg-primary/10 data-[status=active]:font-semibold data-[status=active]:text-primary"
             >
               <n.icon className="h-4 w-4" />
               {n.label}
@@ -203,7 +203,7 @@ function Shell() {
       </aside>
 
       {/* Content column */}
-      <div className="lg:pl-64">
+      <div className="min-h-screen bg-wash-soft lg:pl-64">
         <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
           <div className="flex h-14 items-center gap-3 px-4 lg:px-8">
             <Link to="/dashboard" className="lg:hidden">

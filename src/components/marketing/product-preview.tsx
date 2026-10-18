@@ -41,10 +41,10 @@ const SAMPLE_ROWS = [
   },
 ];
 
-export function ProductPreview() {
+export function ProductPreview({ tone = "default" }: { tone?: "default" | "forest" }) {
   return (
     <figure className="m-0">
-      <div className="overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xl shadow-black/5">
+      <div className="overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-2xl shadow-black/25 ring-1 ring-white/10">
         {/* Window chrome */}
         <div className="flex items-center gap-3 border-b bg-muted/40 px-4 py-2.5">
           <span aria-hidden="true" className="flex gap-1.5">
@@ -146,7 +146,13 @@ export function ProductPreview() {
         </div>
       </div>
 
-      <figcaption className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
+      <figcaption
+        className={
+          tone === "forest"
+            ? "mt-3 text-[11px] leading-relaxed text-white/55"
+            : "mt-3 text-[11px] leading-relaxed text-muted-foreground"
+        }
+      >
         Interface preview built from GARE's components. Stat limits are enforced values; table rows
         are illustrative categories, not customer records.
       </figcaption>

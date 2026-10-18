@@ -7,10 +7,20 @@
 /*
  * Design system — Generas brand.
  *
+ * Dashboard palette: a white working surface over soft green-tinted greys
+ * (#ffffff / #f5f6f7 / #f3f6f4), green-600 as the single interactive colour
+ * with green-700 as its pressed edge, green-900 for full-bleed dark bands and
+ * green-400 as the bright signal on top of them. Borders sit on grey-200,
+ * body text on grey-900/700/500.
+ *
+ * Surfaces are deliberately flat: depth comes from a 3px bottom edge on
+ * controls and from soft green radial washes behind page content — not from
+ * gradients or glass.
+ *
  * Multiple themes:
  *   - Mode:   `.dark` class on <html> (light is the base). Supports system.
- *   - Accent: `[data-accent="..."]` on <html> — gold (default), orange, red,
- *             rose, pink, violet, indigo, blue, cyan, teal, emerald, lime.
+ *   - Accent: `[data-accent="..."]` on <html> — emerald (default), gold,
+ *             orange, red, rose, pink, violet, indigo, blue, cyan, teal, lime.
  *             Each accent defines light + dark values.
  *
  * All colors MUST use oklch format.
@@ -18,7 +28,7 @@
 
 @theme inline {
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-sans: "Inter", "Inter Fallback", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -59,108 +69,136 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  /* Brand scale extras (used for full-bleed forest bands and mint signals). */
+  --color-forest: var(--forest);
+  --color-forest-deep: var(--forest-deep);
+  --color-forest-foreground: var(--forest-foreground);
+  --color-mint: var(--mint);
+  --color-mint-foreground: var(--mint-foreground);
 }
 
 /* ============================================================
-   Light theme (base) — default accent: gold
+   Light theme (base) — default accent: emerald
    ============================================================ */
 :root {
   --radius: 0.625rem;
   color-scheme: light;
 
-  --background: oklch(0.984 0.003 247.858); /* slate-50 */
-  --foreground: oklch(0.208 0.042 265.755); /* slate-900 */
-  --card: oklch(1 0 0);
+  --background: oklch(1 0 89.88); /* #ffffff */
+  --foreground: oklch(0.21 0.032 264.66); /* #111827 */
+  --card: oklch(1 0 89.88);
   --card-foreground: var(--foreground);
-  --popover: oklch(1 0 0);
+  --popover: oklch(1 0 89.88);
   --popover-foreground: var(--foreground);
 
-  --primary: oklch(0.666 0.179 58.318); /* amber-600 */
-  --primary-foreground: oklch(0.98 0 0);
+  --primary: oklch(0.627 0.17 149.21); /* #16a34a — green-600 */
+  --primary-foreground: oklch(1 0 89.88);
 
-  --secondary: oklch(0.929 0.013 255.508); /* slate-200 */
-  --secondary-foreground: oklch(0.208 0.042 265.755);
+  --secondary: oklch(0.97 0.004 157.18); /* #f3f6f4 — green-tinted surface */
+  --secondary-foreground: oklch(0.373 0.031 259.73); /* #374151 */
 
-  --muted: oklch(0.968 0.007 247.896); /* slate-100 */
-  --muted-foreground: oklch(0.554 0.046 257.417); /* slate-500 */
+  --muted: oklch(0.973 0.002 247.84); /* #f5f6f7 */
+  --muted-foreground: oklch(0.551 0.023 264.36); /* #6b7280 */
 
-  --accent: oklch(0.696 0.17 162.48); /* emerald-500 */
-  --accent-foreground: oklch(0.985 0 0);
+  --accent: oklch(0.527 0.137 150.07); /* #15803d — readable green signal */
+  --accent-foreground: oklch(1 0 89.88);
 
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.98 0 0);
+  --destructive-foreground: oklch(1 0 89.88);
 
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.666 0.179 58.318);
+  --border: oklch(0.928 0.006 264.53); /* #e5e7eb */
+  --input: oklch(0.928 0.006 264.53);
+  --ring: oklch(0.627 0.17 149.21); /* #16a34a */
 
-  --chart-1: oklch(0.666 0.179 58.318);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.541 0.281 293.009);
-  --chart-5: oklch(0.554 0.046 257.417);
+  --chart-1: oklch(0.627 0.17 149.21); /* green-600 */
+  --chart-2: oklch(0.8 0.182 151.71); /* green-400 */
+  --chart-3: oklch(0.393 0.09 152.54); /* green-900 */
+  --chart-4: oklch(0.72 0.13 85); /* warm sand */
+  --chart-5: oklch(0.551 0.023 264.36); /* grey-500 */
 
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.372 0.044 257.287);
-  --sidebar-primary: oklch(0.666 0.179 58.318);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.666 0.179 58.318);
+  --sidebar: oklch(1 0 89.88);
+  --sidebar-foreground: oklch(0.373 0.031 259.73);
+  --sidebar-primary: oklch(0.627 0.17 149.21);
+  --sidebar-primary-foreground: oklch(1 0 89.88);
+  --sidebar-accent: oklch(0.97 0.004 157.18);
+  --sidebar-accent-foreground: oklch(0.21 0.032 264.66);
+  --sidebar-border: oklch(0.928 0.006 264.53);
+  --sidebar-ring: oklch(0.627 0.17 149.21);
+
+  /* Full-bleed dark bands (hero, how-it-works, footer) + mint signals. */
+  --forest: oklch(0.393 0.09 152.54); /* #14532d — green-900 */
+  --forest-deep: oklch(0.273 0.047 159.88); /* #0f2e1f */
+  --forest-foreground: oklch(0.982 0.018 155.83); /* #f0fdf4 */
+  --mint: oklch(0.8 0.182 151.71); /* #4ade80 — green-400 */
+  --mint-foreground: oklch(0.266 0.063 152.93); /* #052e16 */
 }
 
 /* ============================================================
-   Dark theme — default accent: gold (brand)
+   Dark theme — default accent: emerald
    ============================================================ */
 .dark {
   color-scheme: dark;
 
-  --background: oklch(0.208 0.042 265.755); /* #0f172a */
-  --foreground: oklch(0.929 0.013 255.508); /* #e2e8f0 */
-  --card: oklch(0.279 0.041 260.031); /* #1e293b */
-  --card-foreground: oklch(0.929 0.013 255.508);
-  --popover: oklch(0.279 0.041 260.031);
-  --popover-foreground: oklch(0.929 0.013 255.508);
+  --background: oklch(0.185 0.026 163); /* deep forest ink */
+  --foreground: oklch(0.945 0.012 158);
+  --card: oklch(0.235 0.030 163);
+  --card-foreground: oklch(0.945 0.012 158);
+  --popover: oklch(0.235 0.030 163);
+  --popover-foreground: oklch(0.945 0.012 158);
 
-  --primary: oklch(0.828 0.189 84.429); /* gold */
-  --primary-foreground: oklch(0.22 0.03 80);
+  --primary: oklch(0.723 0.192 149.58); /* #22c55e — green-500 */
+  --primary-foreground: oklch(0.266 0.063 152.93);
 
-  --secondary: oklch(0.32 0.041 259.733);
-  --secondary-foreground: oklch(0.968 0.007 247.896);
+  --secondary: oklch(0.268 0.032 163);
+  --secondary-foreground: oklch(0.945 0.012 158);
 
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
+  --muted: oklch(0.235 0.030 163);
+  --muted-foreground: oklch(0.720 0.030 158);
 
-  --accent: oklch(0.765 0.177 163.223);
-  --accent-foreground: oklch(0.18 0.03 160);
+  --accent: oklch(0.8 0.182 151.71); /* #4ade80 — green-400 */
+  --accent-foreground: oklch(0.266 0.063 152.93);
 
   --destructive: oklch(0.637 0.237 25.331);
   --destructive-foreground: oklch(0.98 0 0);
 
-  --border: oklch(0.372 0.044 257.287);
-  --input: oklch(0.372 0.044 257.287);
-  --ring: oklch(0.828 0.189 84.429);
+  --border: oklch(0.310 0.032 163);
+  --input: oklch(0.310 0.032 163);
+  --ring: oklch(0.723 0.192 149.58);
 
-  --chart-1: oklch(0.828 0.189 84.429);
-  --chart-2: oklch(0.765 0.177 163.223);
-  --chart-3: oklch(0.707 0.165 254.624);
-  --chart-4: oklch(0.702 0.183 293.541);
-  --chart-5: oklch(0.704 0.04 256.788);
+  --chart-1: oklch(0.723 0.192 149.58); /* green-500 */
+  --chart-2: oklch(0.8 0.182 151.71); /* green-400 */
+  --chart-3: oklch(0.871 0.136 154.45); /* green-300 */
+  --chart-4: oklch(0.800 0.130 85);
+  --chart-5: oklch(0.720 0.030 158);
 
-  --sidebar: oklch(0.169 0.038 264.695);
-  --sidebar-foreground: oklch(0.869 0.022 252.894);
-  --sidebar-primary: oklch(0.828 0.189 84.429);
-  --sidebar-primary-foreground: oklch(0.22 0.03 80);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.968 0.007 247.896);
-  --sidebar-border: oklch(0.32 0.041 259.733);
-  --sidebar-ring: oklch(0.828 0.189 84.429);
+  --sidebar: oklch(0.165 0.024 163);
+  --sidebar-foreground: oklch(0.900 0.014 158);
+  --sidebar-primary: oklch(0.723 0.192 149.58);
+  --sidebar-primary-foreground: oklch(0.266 0.063 152.93);
+  --sidebar-accent: oklch(0.235 0.030 163);
+  --sidebar-accent-foreground: oklch(0.945 0.012 158);
+  --sidebar-border: oklch(0.280 0.030 163);
+  --sidebar-ring: oklch(0.723 0.192 149.58);
+
+  --forest: oklch(0.205 0.038 158);
+  --forest-deep: oklch(0.145 0.030 160);
+  --forest-foreground: oklch(0.982 0.018 155.83);
+  --mint: oklch(0.8 0.182 151.71);
+  --mint-foreground: oklch(0.266 0.063 152.93);
 }
 
 /* ============================================================
    Accents — light values (primary-foreground = near-white)
    ============================================================ */
+[data-accent="gold"] {
+  --primary: oklch(0.666 0.179 58.318);
+  --primary-foreground: oklch(0.98 0 0);
+  --ring: oklch(0.666 0.179 58.318);
+  --chart-1: oklch(0.666 0.179 58.318);
+  --sidebar-primary: oklch(0.666 0.179 58.318);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-ring: oklch(0.666 0.179 58.318);
+}
 [data-accent="orange"] {
   --primary: oklch(0.646 0.222 41.116);
   --primary-foreground: oklch(0.98 0 0);
@@ -264,6 +302,15 @@
 /* ============================================================
    Accents — dark values (pastel + dark text; win over `.dark`)
    ============================================================ */
+.dark[data-accent="gold"] {
+  --primary: oklch(0.828 0.189 84.429);
+  --primary-foreground: oklch(0.22 0.03 80);
+  --ring: oklch(0.828 0.189 84.429);
+  --chart-1: oklch(0.828 0.189 84.429);
+  --sidebar-primary: oklch(0.828 0.189 84.429);
+  --sidebar-primary-foreground: oklch(0.22 0.03 80);
+  --sidebar-ring: oklch(0.828 0.189 84.429);
+}
 .dark[data-accent="orange"] {
   --primary: oklch(0.75 0.183 55.934);
   --primary-foreground: oklch(0.2 0.03 50);
@@ -387,3 +434,243 @@
     -moz-osx-font-smoothing: grayscale;
   }
 }
+
+/* ============================================================
+   Design language — tactile surfaces
+   ============================================================ */
+
+/*
+ * Press: controls carry a permanent 3px bottom edge in a darker shade of their
+ * own fill, lift 2px on hover and settle 1px down while held. The depth is the
+ * edge — there is no gradient and no gloss.
+ */
+.press {
+  --press-edge: color-mix(in oklab, var(--primary) 84%, black);
+  box-shadow: 0 3px 0 0 var(--press-edge);
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease;
+}
+.press:hover {
+  background-color: var(--press-edge);
+  transform: translateY(-2px);
+}
+.press:active {
+  transform: translateY(1px);
+}
+.press-quiet {
+  --press-edge: color-mix(in oklab, var(--border) 88%, black 12%);
+}
+.press-quiet:hover {
+  background-color: var(--secondary);
+}
+.press-mint {
+  --press-edge: color-mix(in oklab, var(--mint) 80%, black);
+}
+.press-mint:hover {
+  background-color: var(--press-edge);
+}
+.press-destructive {
+  --press-edge: color-mix(in oklab, var(--destructive) 84%, black);
+}
+/* Quiet control sitting on a forest band: the edge has to be a shadow, not ink. */
+.press-forest {
+  --press-edge: oklch(0 0 0 / 0.45);
+}
+.press-forest:hover {
+  background-color: rgb(255 255 255 / 0.12);
+}
+/* An inert control should not look pressable. */
+.press:disabled,
+.press[aria-disabled="true"] {
+  --press-edge: color-mix(in oklab, var(--border) 80%, black 20%);
+  box-shadow: 0 2px 0 0 var(--press-edge);
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .press {
+    transition: none;
+  }
+  .press:hover,
+  .press:active {
+    transform: none;
+  }
+}
+
+/*
+ * Grid: a 1px lattice that inherits the current text colour. Used at low
+ * opacity behind full-bleed forest bands to give them depth without noise.
+ */
+.grid-texture {
+  background-image:
+    repeating-linear-gradient(to right, currentColor 0 1px, transparent 1px 72px),
+    repeating-linear-gradient(to bottom, currentColor 0 1px, transparent 1px 72px);
+}
+
+/* ============================================================
+   Page washes — soft green radials that sit behind content
+   ============================================================ */
+
+/* Page background: green lifts off the top edge and settles into warm grey. */
+.bg-wash {
+  background-color: #f3f6f4;
+  background-image: radial-gradient(
+    ellipse at top,
+    #dff3e8 0%,
+    #f3f6f4 42%,
+    #e9eeeb 100%
+  );
+}
+/* Quieter variant for dense pages (tables, reports). */
+.bg-wash-soft {
+  background-color: #f7f8fa;
+  background-image: radial-gradient(
+    ellipse at top,
+    #e8f5ee 0%,
+    #f3f6f4 45%,
+    #eef1f0 100%
+  );
+}
+/* A green sheen fading down from the top of a panel or header. */
+.bg-sheen {
+  background-image: linear-gradient(180deg, rgb(22 101 52 / 0.06), transparent);
+}
+
+/* ============================================================
+   Motion — short, purposeful, disabled when motion is reduced
+   ============================================================ */
+
+@keyframes gare-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes gare-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes gare-scan-line {
+  0%,
+  100% {
+    top: 5%;
+  }
+  50% {
+    top: 95%;
+  }
+}
+@keyframes gare-phrase {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  12% {
+    opacity: 0.55;
+    transform: translateY(0);
+  }
+  78% {
+    opacity: 0.55;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+@keyframes gare-caret {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes gare-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.animate-fade-in {
+  animation: gare-fade-in 200ms ease-out;
+}
+.animate-slide-in {
+  animation: gare-slide-in 200ms ease-out;
+}
+.animate-scan-line {
+  animation: gare-scan-line 2s ease-in-out infinite;
+}
+.animate-phrase {
+  animation: gare-phrase 2.2s ease-in-out;
+}
+
+/* The blinking block caret used while a result streams in. */
+.typing-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  background-color: var(--primary);
+  animation: gare-caret 0.8s step-end infinite;
+}
+
+/* Shimmer for skeleton rows. */
+.skeleton-sweep {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-sweep::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.55),
+    transparent
+  );
+  animation: gare-sweep 1.6s ease-in-out infinite;
+}
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-in,
+  .animate-scan-line,
+  .animate-phrase,
+  .typing-caret,
+  .skeleton-sweep::after {
+    animation: none;
+  }
+}
+
+

@@ -30,7 +30,16 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Eyebrow, FOCUS_RING, Reveal, SectionHeading, SectionShell } from "./shared";
+import { cn } from "@/lib/utils";
+import {
+  Eyebrow,
+  FOCUS_RING,
+  FOCUS_RING_ON_FOREST,
+  GridTexture,
+  Reveal,
+  SectionHeading,
+  SectionShell,
+} from "./shared";
 import { ProductPreview } from "./product-preview";
 
 const JOIN_SEARCH = { mode: "signup" } as const;
@@ -39,69 +48,62 @@ const JOIN_SEARCH = { mode: "signup" } as const;
 
 export function Hero() {
   return (
-    <section id="top" className="relative overflow-hidden border-b">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-[440px]"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(to right, var(--border) 0 1px, transparent 1px 72px), repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px 72px)",
-          maskImage: "radial-gradient(ellipse 75% 70% at 50% 0%, #000 35%, transparent 100%)",
-          WebkitMaskImage: "radial-gradient(ellipse 75% 70% at 50% 0%, #000 35%, transparent 100%)",
-          opacity: 0.7,
-        }}
-      />
-      <div className="relative mx-auto max-w-6xl px-6 pt-14 pb-16 sm:pt-20 sm:pb-24">
-        <div className="grid items-center gap-12 lg:grid-cols-[1.02fr_1fr] lg:gap-14">
-          <div>
-            <Reveal>
-              <Eyebrow>Generas · Autonomous Revenue Engine</Eyebrow>
-            </Reveal>
-            <Reveal delay={70}>
-              <h1 className="mt-5 text-4xl font-bold leading-[1.05] tracking-tight text-balance sm:text-5xl lg:text-6xl">
-                Find the opportunity. Win the business.{" "}
-                <span className="text-primary">Grow your revenue.</span>
-              </h1>
-            </Reveal>
-            <Reveal delay={140}>
-              <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-                GARE helps freelancers, agencies and business builders discover promising
-                opportunities, investigate companies, identify potential customer needs and manage
-                the path from prospect to paid work.
-              </p>
-            </Reveal>
-            <Reveal delay={210}>
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Button asChild size="lg">
-                  <Link to="/auth" search={JOIN_SEARCH}>
-                    Join Early Access
-                    <ArrowRight />
-                  </Link>
-                </Button>
-                <Button asChild size="lg" variant="outline">
-                  <a href="#product">
-                    Explore the Platform
-                    <Search />
-                  </a>
-                </Button>
-              </div>
-            </Reveal>
-            <Reveal delay={280}>
-              <p className="mt-8 flex max-w-xl items-start gap-2.5 text-[13px] leading-relaxed text-muted-foreground">
-                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                <span>
-                  Every record keeps its source and freshness. Confidence levels separate verified
-                  facts from estimates, and AI findings stay hypotheses until you approve them —
-                  GARE never invents facts it did not collect.
-                </span>
-              </p>
-            </Reveal>
-          </div>
-
-          <Reveal delay={160}>
-            <ProductPreview />
+    <section id="top" className="relative overflow-hidden bg-forest text-forest-foreground">
+      <GridTexture className="absolute inset-0 text-white/[0.08]" />
+      <div className="relative mx-auto grid max-w-6xl gap-12 px-6 pb-20 pt-32 lg:grid-cols-[1.03fr_1fr] lg:items-center lg:gap-14 lg:pb-28 lg:pt-40">
+        <div>
+          <Reveal>
+            <Eyebrow tone="forest">Generas · Autonomous Revenue Engine</Eyebrow>
+          </Reveal>
+          <Reveal delay={70}>
+            <h1 className="mt-5 text-4xl font-bold leading-[1.05] tracking-tight text-balance sm:text-5xl lg:text-6xl">
+              Find the opportunity. Win the business.{" "}
+              <span className="text-mint">Grow your revenue.</span>
+            </h1>
+          </Reveal>
+          <Reveal delay={140}>
+            <p className="mt-6 max-w-xl text-base leading-relaxed text-forest-foreground/75 sm:text-lg">
+              GARE helps freelancers, agencies and business builders discover promising
+              opportunities, investigate companies, identify potential customer needs and manage the
+              path from prospect to paid work.
+            </p>
+          </Reveal>
+          <Reveal delay={210}>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Button asChild size="lg">
+                <Link to="/auth" search={JOIN_SEARCH}>
+                  Join Early Access
+                  <ArrowRight />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className={`border-white/25 bg-white/5 text-forest-foreground press-forest hover:bg-white/10 hover:text-forest-foreground ${FOCUS_RING_ON_FOREST}`}
+              >
+                <a href="#product">
+                  Explore the Platform
+                  <Search />
+                </a>
+              </Button>
+            </div>
+          </Reveal>
+          <Reveal delay={280}>
+            <p className="mt-8 flex max-w-xl items-start gap-2.5 text-[13px] leading-relaxed text-forest-foreground/70">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-mint" aria-hidden="true" />
+              <span>
+                Every record keeps its source and freshness. Confidence levels separate verified
+                facts from estimates, and AI findings stay hypotheses until you approve them — GARE
+                never invents facts it did not collect.
+              </span>
+            </p>
           </Reveal>
         </div>
+
+        <Reveal delay={160}>
+          <ProductPreview tone="forest" />
+        </Reveal>
       </div>
     </section>
   );
@@ -110,35 +112,39 @@ export function Hero() {
 /* -------------------------------------------------------------- Product */
 
 type Capability = {
+  id: string;
   icon: ReactNode;
   title: string;
-  status: string;
-  statusTone: "ok" | "note";
-  description: string;
+  status: "live" | "records";
+  summary: string;
+  body: string;
   points: string[];
+  note?: string;
 };
 
-const PRIMARY_CAPABILITIES: Capability[] = [
+const RADAR_CAPABILITY: Capability = {
+  id: "radar",
+  icon: <Radar className="h-4 w-4" aria-hidden="true" />,
+  title: "Local Opportunity Radar",
+  status: "live",
+  summary: "Search a business type in an area and find the gaps worth working on.",
+  body: "Search a business type in an area, see what already exists there, and find the gaps worth working on.",
+  points: [
+    "Up to 20 results per run, deduplicated by place",
+    "Coverage gaps are shown instead of quietly hidden",
+    "Every record remembers which source it came from",
+  ],
+};
+
+const CAPABILITIES: readonly Capability[] = [
+  RADAR_CAPABILITY,
   {
-    icon: <Radar className="h-5 w-5" aria-hidden="true" />,
-    title: "Local Opportunity Radar",
-    status: "Available today",
-    statusTone: "ok",
-    description:
-      "Search a business type in an area, see what already exists there, and find the gaps worth working on.",
-    points: [
-      "Up to 20 results per run, deduplicated by place",
-      "Coverage gaps are shown instead of quietly hidden",
-      "Every record remembers which source it came from",
-    ],
-  },
-  {
-    icon: <Search className="h-5 w-5" aria-hidden="true" />,
+    id: "intel",
+    icon: <Search className="h-4 w-4" aria-hidden="true" />,
     title: "Business Intelligence",
-    status: "Available today",
-    statusTone: "ok",
-    description:
-      "Check a business's own public website for real, observable problems before you ever contact them.",
+    status: "live",
+    summary: "Check a company's own website for real, observable problems.",
+    body: "Check a business's own public website for real, observable problems before you ever contact them.",
     points: [
       "Observed problems from direct checks, not guesses",
       "Service suggestions explained against the evidence",
@@ -146,12 +152,12 @@ const PRIMARY_CAPABILITIES: Capability[] = [
     ],
   },
   {
-    icon: <Target className="h-5 w-5" aria-hidden="true" />,
+    id: "qualify",
+    icon: <Target className="h-4 w-4" aria-hidden="true" />,
     title: "Opportunity Qualification",
-    status: "Available today",
-    statusTone: "ok",
-    description:
-      "Score and shortlist so you spend your time on the prospects most likely to pay, not on the longest list.",
+    status: "live",
+    summary: "Score and shortlist so you work the prospects most likely to pay.",
+    body: "Score and shortlist so you spend your time on the prospects most likely to pay, not on the longest list.",
     points: [
       "Fit, effort and budget bands you set yourself",
       "Buyer intent ranked hot / warm / cool / cold",
@@ -159,88 +165,79 @@ const PRIMARY_CAPABILITIES: Capability[] = [
     ],
   },
   {
-    icon: <Send className="h-5 w-5" aria-hidden="true" />,
+    id: "workflow",
+    icon: <Send className="h-4 w-4" aria-hidden="true" />,
     title: "Sales Workflow",
-    status: "Available today",
-    statusTone: "ok",
-    description:
-      "Turn a qualified prospect into a proposal, a follow-up cadence and a tracked next action.",
+    status: "live",
+    summary: "Proposal, follow-up cadence and tracked next action in one pipeline.",
+    body: "Turn a qualified prospect into a proposal, a follow-up cadence and a tracked next action.",
     points: [
       "Proposals, tasks and reminders in one pipeline",
       "Email, WhatsApp and SMS drafts written for your review",
       "You send the message — GARE never sends it for you",
     ],
+    note: "Drafts only. There is no inbox sync and nothing is dispatched automatically.",
   },
-];
-
-const SECONDARY_CAPABILITIES: Capability[] = [
   {
-    icon: <LineChart className="h-5 w-5" aria-hidden="true" />,
+    id: "money",
+    icon: <LineChart className="h-4 w-4" aria-hidden="true" />,
     title: "Revenue & Profit Intelligence",
-    status: "Records only",
-    statusTone: "note",
-    description:
-      "Track revenue, costs and forecast against actual for every engagement, with raw revenue records and profitability previews.",
+    status: "records",
+    summary: "Track revenue, costs and forecast against actual per engagement.",
+    body: "Track revenue, costs and forecast against actual for every engagement, with raw revenue records and profitability previews.",
     points: [
       "Figures are entered and maintained by you",
       "Actual profit computed from your own records",
-      "No payment integration — GARE does not process money",
+      "Scenario planning for best / base / worst cases",
     ],
+    note: "Records only. There is no payment integration — GARE does not process money.",
   },
   {
-    icon: <RefreshCw className="h-5 w-5" aria-hidden="true" />,
+    id: "recurring",
+    icon: <RefreshCw className="h-4 w-4" aria-hidden="true" />,
     title: "Recurring Revenue & Deal Recovery",
-    status: "Available today",
-    statusTone: "ok",
-    description:
-      "Keep an eye on subscriptions that may lapse, invoices that look missed, and deals that have gone quiet.",
+    status: "live",
+    summary: "Catch lapsed subscriptions, missed invoices and quiet deals.",
+    body: "Keep an eye on subscriptions that may lapse, invoices that look missed, and deals that have gone quiet.",
     points: [
       "Leak flags and lapse dates derived from your records",
       "Recovery messages drafted for you to review and send",
       "Nothing is dispatched automatically",
     ],
+    note: "Flags are suggestions. Renewal and recovery messages are drafts you send yourself.",
   },
 ];
 
-function StatusBadge({ tone, children }: { tone: "ok" | "note"; children: ReactNode }) {
+function StatusBadge({
+  status,
+  tone,
+}: {
+  status: "live" | "records";
+  tone?: "default" | "forest";
+}) {
+  const live = status === "live";
   return (
     <Badge
-      variant={tone === "ok" ? "secondary" : "outline"}
-      className={
-        tone === "ok"
-          ? "border-transparent bg-primary/15 font-mono text-[10px] text-primary"
-          : "font-mono text-[10px]"
-      }
+      variant="outline"
+      className={cn(
+        "shrink-0 font-mono text-[10px]",
+        live
+          ? tone === "forest"
+            ? "border-mint/40 bg-mint/15 text-mint"
+            : "border-primary/40 bg-primary/10 text-primary"
+          : tone === "forest"
+            ? "border-white/20 text-forest-foreground/70"
+            : "text-muted-foreground",
+      )}
     >
-      {children}
+      {live ? "Available today" : "Records only"}
     </Badge>
   );
 }
 
-function CapabilityCard({ item }: { item: Capability }) {
-  return (
-    <article className="flex h-full flex-col rounded-xl border bg-card p-6 transition-colors hover:border-primary/40">
-      <div className="flex items-start justify-between gap-4">
-        <span className="grid h-10 w-10 place-items-center rounded-lg border bg-muted text-primary">
-          {item.icon}
-        </span>
-        <StatusBadge tone={item.statusTone}>{item.status}</StatusBadge>
-      </div>
-      <h3 className="mt-5 text-lg font-semibold tracking-tight">{item.title}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
-      <ul className="mt-4 space-y-2 border-t pt-4">
-        {item.points.map((p) => (
-          <li key={p} className="flex items-start gap-2 text-[13px] leading-relaxed">
-            <Check className="mt-1 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
-            <span className="text-muted-foreground">{p}</span>
-          </li>
-        ))}
-      </ul>
-    </article>
-  );
-}
-
 export function ProductShowcase() {
+  const [current, setCurrent] = useState<Capability>(RADAR_CAPABILITY);
+
   return (
     <SectionShell id="product">
       <Reveal>
@@ -254,12 +251,97 @@ export function ProductShowcase() {
           lead="Each capability below is part of the working product today. What it does — and what it deliberately does not do — is stated plainly."
         />
       </Reveal>
-      <div className="mt-10 grid gap-5 sm:grid-cols-2">
-        {PRIMARY_CAPABILITIES.map((item, i) => (
-          <Reveal key={item.title} delay={i * 70}>
-            <CapabilityCard item={item} />
-          </Reveal>
-        ))}
+
+      <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_1fr] lg:gap-8">
+        {/* Detail panel */}
+        <Reveal>
+          <div className="relative h-full overflow-hidden rounded-2xl bg-forest p-6 text-forest-foreground sm:p-8">
+            <GridTexture className="absolute inset-x-0 top-0 h-2/3 text-white/[0.08]" />
+            <div className="relative">
+              <div className="flex items-center gap-3">
+                <span className="grid h-10 w-10 place-items-center rounded-xl border border-mint/30 bg-mint/10 text-mint">
+                  {current.icon}
+                </span>
+                <StatusBadge status={current.status} tone="forest" />
+              </div>
+              <h3 className="mt-5 text-xl font-semibold tracking-tight">{current.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-forest-foreground/75">
+                {current.body}
+              </p>
+              <ul className="mt-5 space-y-2.5 border-t border-white/10 pt-5">
+                {current.points.map((p) => (
+                  <li key={p} className="flex items-start gap-2.5 text-[13px] leading-relaxed">
+                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-mint" aria-hidden="true" />
+                    <span className="text-forest-foreground/85">{p}</span>
+                  </li>
+                ))}
+              </ul>
+              {current.note && (
+                <p className="mt-5 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-[12px] leading-relaxed text-forest-foreground/70">
+                  {current.note}
+                </p>
+              )}
+            </div>
+          </div>
+        </Reveal>
+
+        {/* Selector */}
+        <Reveal delay={80}>
+          <ul className="flex flex-col gap-1.5">
+            {CAPABILITIES.map((c) => {
+              const isActive = c.id === current.id;
+              return (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    onClick={() => setCurrent(c)}
+                    aria-current={isActive ? "true" : undefined}
+                    className={cn(
+                      "w-full rounded-xl border px-4 py-3 text-left transition-colors",
+                      FOCUS_RING,
+                      isActive
+                        ? "border-primary/45 bg-card shadow-sm"
+                        : "border-transparent hover:bg-muted/70",
+                    )}
+                  >
+                    <span className="flex items-center gap-3">
+                      <span
+                        className={cn(
+                          "grid h-9 w-9 shrink-0 place-items-center rounded-lg border transition-colors",
+                          isActive
+                            ? "border-primary/40 bg-primary/10 text-primary"
+                            : "border-border text-muted-foreground",
+                        )}
+                      >
+                        {c.icon}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-semibold tracking-tight">{c.title}</span>
+                          <StatusBadge status={c.status} />
+                        </span>
+                        <span className="mt-1 block text-[12px] leading-snug text-muted-foreground">
+                          {c.summary}
+                        </span>
+                      </span>
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className="mt-3 block h-0.5 w-full overflow-hidden rounded-full bg-border"
+                    >
+                      <span
+                        className={cn(
+                          "block h-full rounded-full bg-primary transition-[width] duration-500 motion-reduce:transition-none",
+                          isActive ? "w-full" : "w-0",
+                        )}
+                      />
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </Reveal>
       </div>
     </SectionShell>
   );
@@ -283,11 +365,11 @@ const TAG_NOTES: Record<StepTag, string> = {
   manual: "You do it yourself, typically outside the app or in a logged step.",
 };
 
-const TAG_CLASSES: Record<StepTag, string> = {
-  automated: "border-transparent bg-secondary text-secondary-foreground",
-  ai: "border-primary/40 bg-primary/10 text-primary",
-  approved: "bg-transparent",
-  manual: "bg-transparent text-muted-foreground",
+const TAG_CLASSES_FOREST: Record<StepTag, string> = {
+  automated: "border-white/15 bg-white/10 text-forest-foreground",
+  ai: "border-mint/40 bg-mint/15 text-mint",
+  approved: "border-white/20 bg-transparent text-forest-foreground",
+  manual: "border-white/15 bg-transparent text-forest-foreground/60",
 };
 
 const STEPS: { n: string; title: string; tag: StepTag; body: string }[] = [
@@ -345,9 +427,10 @@ export function HowItWorks() {
   const [active, setActive] = useState<StepTag | null>(null);
 
   return (
-    <SectionShell id="how-it-works" tone="muted">
+    <SectionShell id="how-it-works" tone="forest">
       <Reveal>
         <SectionHeading
+          tone="forest"
           eyebrow="How it works"
           title="Eight steps, one owner."
           lead="Some steps run automatically, some are AI analysis that you approve, and some stay manual. Every step is labelled so you always know which is which."
@@ -362,14 +445,19 @@ export function HowItWorks() {
                 type="button"
                 onClick={() => setActive((cur) => (cur === t ? null : t))}
                 aria-pressed={active === t}
-                className={`flex items-center gap-2 rounded-md text-left transition-opacity ${FOCUS_RING} ${
-                  active && active !== t ? "opacity-45" : "opacity-100"
-                }`}
+                className={cn(
+                  "flex items-center gap-2 rounded-md text-left transition-opacity",
+                  FOCUS_RING_ON_FOREST,
+                  active && active !== t ? "opacity-40" : "opacity-100",
+                )}
               >
-                <Badge variant="outline" className={`font-mono text-[10px] ${TAG_CLASSES[t]}`}>
+                <Badge
+                  variant="outline"
+                  className={cn("font-mono text-[10px]", TAG_CLASSES_FOREST[t])}
+                >
                   {TAG_LABELS[t]}
                 </Badge>
-                <span className="max-w-[15rem] text-[11px] leading-snug text-muted-foreground">
+                <span className="max-w-[15rem] text-[11px] leading-snug text-forest-foreground/65">
                   {TAG_NOTES[t]}
                 </span>
               </button>
@@ -378,28 +466,31 @@ export function HowItWorks() {
         </ul>
       </Reveal>
 
-      <ol className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <ol className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {STEPS.map((s, i) => {
           const dimmed = active !== null && active !== s.tag;
           return (
             <li key={s.n} className="flex">
               <Reveal delay={i * 45} className="flex w-full">
                 <div
-                  className={`flex w-full flex-1 flex-col rounded-xl border bg-background p-5 transition-opacity duration-300 ${
-                    dimmed ? "opacity-35" : "opacity-100"
-                  }`}
+                  className={cn(
+                    "flex w-full flex-1 flex-col rounded-xl border border-white/10 bg-white/[0.04] p-5 transition-opacity duration-300",
+                    dimmed ? "opacity-30" : "opacity-100",
+                  )}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-xs text-primary">{s.n}</span>
+                    <span className="font-mono text-xs text-mint">{s.n}</span>
                     <Badge
                       variant="outline"
-                      className={`font-mono text-[10px] ${TAG_CLASSES[s.tag]}`}
+                      className={cn("font-mono text-[10px]", TAG_CLASSES_FOREST[s.tag])}
                     >
                       {TAG_LABELS[s.tag]}
                     </Badge>
                   </div>
                   <h3 className="mt-3 text-base font-semibold tracking-tight">{s.title}</h3>
-                  <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">{s.body}</p>
+                  <p className="mt-2 text-[13px] leading-relaxed text-forest-foreground/70">
+                    {s.body}
+                  </p>
                 </div>
               </Reveal>
             </li>
@@ -445,11 +536,11 @@ export function UseCases() {
           lead="GARE is a workspace you operate. It shortens the research and the writing — the relationship, the judgement and the final call stay yours."
         />
       </Reveal>
-      <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {AUDIENCES.map((a, i) => (
           <Reveal key={a.title} delay={i * 60}>
-            <article className="h-full rounded-xl border bg-card p-5">
-              <span className="grid h-9 w-9 place-items-center rounded-lg border bg-muted text-primary">
+            <article className="h-full rounded-2xl border bg-card p-5 transition-colors hover:border-primary/40">
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-forest text-mint">
                 {a.icon}
               </span>
               <h3 className="mt-4 text-[15px] font-semibold leading-snug tracking-tight">
@@ -466,6 +557,21 @@ export function UseCases() {
 
 /* -------------------------------------------------------------- Features */
 
+const SECONDARY: { icon: ReactNode; title: string; body: string; note: string }[] = [
+  {
+    icon: <LineChart className="h-5 w-5" aria-hidden="true" />,
+    title: "Revenue & Profit Intelligence",
+    body: "Raw revenue records, costs and forecasts per engagement, with profitability previews computed from what you enter.",
+    note: "Records only. No payment integration — GARE does not process money.",
+  },
+  {
+    icon: <RefreshCw className="h-5 w-5" aria-hidden="true" />,
+    title: "Recurring Revenue & Deal Recovery",
+    body: "Lapse dates, missed invoices and quiet deals surfaced from your records, with recovery messages drafted for review.",
+    note: "Suggestions and drafts only. Nothing is dispatched automatically.",
+  },
+];
+
 const ALSO_INCLUDED = [
   "CSV export",
   "Global search across your records",
@@ -479,7 +585,7 @@ const ALSO_INCLUDED = [
 
 export function Features() {
   return (
-    <SectionShell id="features" tone="edge">
+    <SectionShell id="features" tone="muted">
       <Reveal>
         <SectionHeading
           eyebrow="Features"
@@ -488,16 +594,25 @@ export function Features() {
         />
       </Reveal>
 
-      <div className="mt-10 grid gap-5 md:grid-cols-2">
-        {SECONDARY_CAPABILITIES.map((item, i) => (
-          <Reveal key={item.title} delay={i * 70}>
-            <CapabilityCard item={item} />
+      <div className="mt-10 grid gap-4 md:grid-cols-2">
+        {SECONDARY.map((s, i) => (
+          <Reveal key={s.title} delay={i * 70}>
+            <article className="flex h-full flex-col rounded-2xl border bg-card p-6">
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-forest text-mint">
+                {s.icon}
+              </span>
+              <h3 className="mt-4 text-lg font-semibold tracking-tight">{s.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
+              <p className="mt-4 rounded-lg border border-dashed px-3 py-2.5 text-[12px] leading-relaxed text-muted-foreground">
+                {s.note}
+              </p>
+            </article>
           </Reveal>
         ))}
       </div>
 
       <Reveal delay={140}>
-        <div className="mt-8 rounded-xl border bg-card p-6">
+        <div className="mt-4 rounded-2xl border bg-card p-6">
           <div className="flex items-center gap-2">
             <ClipboardList className="h-4 w-4 text-primary" aria-hidden="true" />
             <h3 className="text-sm font-semibold">Also included</h3>
@@ -554,9 +669,10 @@ const TRUST_ITEMS = [
 
 export function Trust() {
   return (
-    <SectionShell id="trust" tone="muted">
+    <SectionShell id="trust" tone="forest">
       <Reveal>
         <SectionHeading
+          tone="forest"
           eyebrow="Transparency"
           title="What GARE promises — and where it stops."
           lead="An AI-assisted product is only useful if you can tell where the machine ends. These are the boundaries the code actually enforces."
@@ -566,12 +682,14 @@ export function Trust() {
         {TRUST_ITEMS.map((t, i) => (
           <Reveal key={t.title} delay={i * 50}>
             <div className="flex gap-3">
-              <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-md border bg-background text-primary">
+              <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-mint/30 bg-mint/10 text-mint">
                 {t.icon}
               </span>
               <div>
                 <h3 className="text-sm font-semibold tracking-tight">{t.title}</h3>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{t.body}</p>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-forest-foreground/65">
+                  {t.body}
+                </p>
               </div>
             </div>
           </Reveal>
@@ -595,7 +713,7 @@ const EARLY_ACCESS_POINTS = [
 export function EarlyAccess() {
   return (
     <SectionShell id="early-access">
-      <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-14">
+      <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:gap-14">
         <div>
           <Reveal>
             <SectionHeading
@@ -629,25 +747,33 @@ export function EarlyAccess() {
         </div>
 
         <Reveal delay={150}>
-          <div className="h-full rounded-xl border bg-card p-6">
-            <div className="flex items-center gap-2 border-b pb-4">
-              <FileText className="h-4 w-4 text-primary" aria-hidden="true" />
-              <h3 className="text-sm font-semibold">What you get</h3>
-            </div>
-            <ul className="mt-4 space-y-3">
-              {EARLY_ACCESS_POINTS.map((p) => (
-                <li key={p} className="flex items-start gap-2.5 text-[13px] leading-relaxed">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                  <span>{p}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-5 rounded-lg border border-dashed bg-muted/40 p-4">
-              <p className="text-[13px] leading-relaxed text-muted-foreground">
-                <span className="font-semibold text-foreground">Pricing:</span> not published yet.
-                Early access accounts are told the plan and price before any subscription is
-                activated, and can decline it.
-              </p>
+          <div className="relative h-full overflow-hidden rounded-2xl bg-forest p-6 text-forest-foreground sm:p-8">
+            <GridTexture className="absolute inset-x-0 top-0 h-2/3 text-white/[0.08]" />
+            <div className="relative">
+              <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-4">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-mint" aria-hidden="true" />
+                  <h3 className="text-sm font-semibold">What you get</h3>
+                </div>
+                <Badge className="border-transparent bg-mint font-mono text-[10px] uppercase tracking-wide text-mint-foreground">
+                  No card
+                </Badge>
+              </div>
+              <ul className="mt-4 space-y-3">
+                {EARLY_ACCESS_POINTS.map((p) => (
+                  <li key={p} className="flex items-start gap-2.5 text-[13px] leading-relaxed">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-mint" aria-hidden="true" />
+                    <span className="text-forest-foreground/85">{p}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-5 rounded-lg border border-white/12 bg-white/5 p-4">
+                <p className="text-[13px] leading-relaxed text-forest-foreground/75">
+                  <span className="font-semibold text-forest-foreground">Pricing:</span> not
+                  published yet. Early access accounts are told the plan and price before any
+                  subscription is activated, and can decline it.
+                </p>
+              </div>
             </div>
           </div>
         </Reveal>
@@ -703,8 +829,8 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
 
 export function Faq() {
   return (
-    <SectionShell id="faq" tone="edge">
-      <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-12">
+    <SectionShell id="faq">
+      <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr] lg:gap-12">
         <Reveal>
           <SectionHeading
             eyebrow="FAQ"
@@ -715,7 +841,11 @@ export function Faq() {
         <Reveal delay={90}>
           <Accordion type="single" collapsible className="w-full">
             {FAQ_ITEMS.map((item, i) => (
-              <AccordionItem key={item.q} value={`faq-${i}`}>
+              <AccordionItem
+                key={item.q}
+                value={`faq-${i}`}
+                className="mb-2 rounded-xl border bg-card px-4 last:border-b"
+              >
                 <AccordionTrigger className="text-left text-[15px] hover:no-underline">
                   {item.q}
                 </AccordionTrigger>
