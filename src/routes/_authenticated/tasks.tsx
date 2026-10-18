@@ -232,13 +232,13 @@ function Tasks() {
           tasks.data?.map((t) => (
             <div key={t.id} className="flex items-center gap-3 px-4 py-3">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm">{t.title}</p>
-                <p className="truncate text-xs text-muted-foreground">
+                <p className="text-sm">{t.title}</p>
+                <p className="text-xs text-muted-foreground">
                   {t.businesses?.name ?? "General"} · {t.source}
                   {t.due_at && ` · due ${new Date(t.due_at).toLocaleString()}`}
                 </p>
                 {t.description && (
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{t.description}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{t.description}</p>
                 )}
               </div>
               {t.priority !== "normal" && (
@@ -247,7 +247,7 @@ function Tasks() {
                 </span>
               )}
               {!showDone && isOverdue(t) && (
-                <span className="shrink-0 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                <span className="shrink-0 rounded-full border border-destructive/40 px-2 py-0.5 text-[10px] font-medium text-destructive">
                   overdue
                 </span>
               )}

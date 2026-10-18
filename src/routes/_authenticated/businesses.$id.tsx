@@ -219,7 +219,11 @@ function BusinessPage() {
               return (
                 <Badge
                   variant="outline"
-                  className={stale ? "border-amber-500/50 text-amber-400" : "text-muted-foreground"}
+                  className={
+                    stale
+                      ? "border-amber-500/50 text-amber-700 dark:text-amber-400"
+                      : "text-muted-foreground"
+                  }
                 >
                   evidence {days === 0 ? "checked today" : `${days}d old`}
                   {stale ? " · refresh recommended" : ""}
@@ -325,7 +329,7 @@ function BusinessPage() {
         />
       )}
       {err && (
-        <p className="rounded border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+        <p className="rounded border border-destructive bg-card p-3 text-sm text-destructive">
           {describeError(err, "Investigation").title}: {err} —{" "}
           {describeError(err, "Investigation").fix}
         </p>
@@ -483,7 +487,7 @@ function BusinessPage() {
                       href={url}
                       target="_blank"
                       rel="noreferrer"
-                      className="truncate font-mono text-primary underline"
+                      className="font-mono text-primary underline"
                     >
                       {url.replace(/^https?:\/\/(www\.)?/, "")}
                     </a>

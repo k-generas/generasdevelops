@@ -300,7 +300,7 @@ function Settings() {
           {offerNamesForFloors(catalog.length ? catalog : (offersQ.data?.offers ?? [])).map(
             (offer) => (
               <div key={offer} className="flex items-center gap-3 px-4 py-3">
-                <span className="min-w-0 flex-1 truncate text-sm">{offer}</span>
+                <span className="min-w-0 flex-1 text-sm">{offer}</span>
                 <span className="text-xs text-muted-foreground">{DEFAULT_CURRENCY}</span>
                 <Input
                   type="number"

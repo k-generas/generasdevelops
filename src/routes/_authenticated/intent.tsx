@@ -130,7 +130,7 @@ function IntentRow({ row }: { row: IntentBoardRow }) {
         </ul>
       )}
       {row.uncertainties.length > 0 && (
-        <ul className="list-disc pl-4 text-amber-600 dark:text-amber-500">
+        <ul className="list-disc pl-4 text-amber-700 dark:text-amber-400">
           {row.uncertainties.map((x) => (
             <li key={x}>{x}</li>
           ))}

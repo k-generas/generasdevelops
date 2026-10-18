@@ -231,7 +231,7 @@ function Orders() {
       )}
 
       {!orders.isLoading && !persisted && (
-        <div className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+        <div className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-card p-4 text-sm">
           <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
           <div>
             <p className="font-medium">Orders need the database update</p>

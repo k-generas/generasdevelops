@@ -459,7 +459,7 @@ function LeakCard({
         ) : null}
       </p>
       {leak.limitation && (
-        <p className="text-xs text-amber-600 dark:text-amber-500">Limitation: {leak.limitation}</p>
+        <p className="text-xs text-amber-700 dark:text-amber-400">Limitation: {leak.limitation}</p>
       )}
 
       <p className="text-sm">
@@ -492,7 +492,7 @@ function LeakCard({
             </p>
           ))}
           {feasibility.flags.length > 0 ? (
-            <ul className="list-disc pl-4 text-amber-600 dark:text-amber-500">
+            <ul className="list-disc pl-4 text-amber-700 dark:text-amber-400">
               {feasibility.flags.map((f) => (
                 <li key={f}>{f}</li>
               ))}

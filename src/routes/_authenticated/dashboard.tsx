@@ -192,7 +192,7 @@ function Dashboard() {
           {overdue > 0 && (
             <Link
               to="/tasks"
-              className="flex items-center gap-3 rounded-xl border border-accent/40 bg-accent/5 px-4 py-3 text-sm transition-colors hover:bg-accent/10"
+              className="flex items-center gap-3 rounded-xl border border-accent/40 bg-card px-4 py-3 text-sm transition-colors hover:bg-muted"
             >
               <ListChecks className="h-4 w-4 text-accent" />
               <span className="flex-1">
@@ -204,10 +204,10 @@ function Dashboard() {
           {failed.length > 0 && (
             <Link
               to="/history"
-              className="flex items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm transition-colors hover:bg-destructive/10"
+              className="flex items-center gap-3 rounded-xl border border-destructive/40 bg-card px-4 py-3 text-sm transition-colors hover:bg-muted"
             >
               <AlertTriangle className="h-4 w-4 text-destructive" />
-              <span className="min-w-0 flex-1 truncate">
+              <span className="min-w-0 flex-1">
                 <strong>{failed.length}</strong> discovery run{failed.length === 1 ? "" : "s"}{" "}
                 failed
                 {failed[0]?.error ? ` — ${failed[0].error}` : ""}
@@ -252,13 +252,13 @@ function Dashboard() {
                   className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{b.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">
+                    <p className="text-sm font-medium">{b.name}</p>
+                    <p className="text-xs text-muted-foreground">
                       {[b.category, b.address].filter(Boolean).join(" · ") || "—"}
                     </p>
                   </div>
                   {!b.website && (
-                    <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-medium text-accent">
+                    <span className="shrink-0 rounded-full border border-accent/40 px-2 py-0.5 text-[11px] font-medium text-accent">
                       no site
                     </span>
                   )}
@@ -281,8 +281,8 @@ function Dashboard() {
               <p className="text-xs font-medium uppercase tracking-wide text-primary">
                 Continue where you left off
               </p>
-              <p className="mt-1 truncate text-sm font-semibold">{lastOpened.data.name}</p>
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">
+              <p className="mt-1 text-sm font-semibold">{lastOpened.data.name}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 {lastOpened.data.category || "Last opened"}
                 {lastOpened.data.last_opened_at
                   ? ` · ${relativeTime(lastOpened.data.last_opened_at)}`
@@ -368,10 +368,8 @@ function Dashboard() {
                   className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{p.title ?? p.mode}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {p.businesses?.name ?? "—"}
-                    </p>
+                    <p className="text-sm font-medium">{p.title ?? p.mode}</p>
+                    <p className="text-xs text-muted-foreground">{p.businesses?.name ?? "—"}</p>
                   </div>
                   <span className="shrink-0 rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">
                     {p.status}
@@ -404,8 +402,8 @@ function Dashboard() {
                 <div key={t.id} className="flex items-center gap-3 px-4 py-3">
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm">{t.title}</p>
-                    <p className="truncate text-xs text-muted-foreground">
+                    <p className="text-sm">{t.title}</p>
+                    <p className="text-xs text-muted-foreground">
                       {t.businesses?.name ?? "General"}
                     </p>
                   </div>

@@ -234,7 +234,7 @@ function RwandaIntel() {
                 onClick={() => toggleIndustry(i.key)}
                 className={`rounded-full border px-3 py-1 text-xs ${
                   industries.includes(i.key)
-                    ? "border-primary bg-primary/10 text-primary"
+                    ? "border-primary text-primary"
                     : "text-muted-foreground hover:bg-muted"
                 }`}
               >
@@ -460,7 +460,7 @@ function RwandaIntel() {
                         {signal ? (
                           <span className="text-muted-foreground">
                             {signal.kind.replace(/_/g, " ")}
-                            <span className="block truncate">{signal.title}</span>
+                            <span className="block">{signal.title}</span>
                           </span>
                         ) : b.last_activity_at ? (
                           <span className="text-muted-foreground">review activity</span>

@@ -475,7 +475,7 @@ function MatchRow({
         <p className="text-xs text-muted-foreground">{match.reasons.join(" ")}</p>
       )}
       {match.uncertainties.length > 0 && (
-        <p className="text-xs text-amber-600 dark:text-amber-500">
+        <p className="text-xs text-amber-700 dark:text-amber-400">
           Uncertain: {match.uncertainties.join(" ")}
         </p>
       )}

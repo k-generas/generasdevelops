@@ -225,7 +225,7 @@ function Businesses() {
         <p
           className={`rounded border p-3 text-sm ${
             note.ok
-              ? "border-emerald-500/50 text-emerald-500"
+              ? "border-emerald-500/50 text-emerald-700 dark:text-emerald-400"
               : "border-destructive text-destructive"
           }`}
         >
@@ -288,8 +288,8 @@ function Businesses() {
                   className="flex flex-wrap items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40"
                 >
                   <Link to="/businesses/$id" params={{ id: b.id }} className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{b.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">
+                    <p className="text-sm font-medium">{b.name}</p>
+                    <p className="text-xs text-muted-foreground">
                       {[
                         ind ? industryLabel(ind) : b.category,
                         loc.district ?? loc.province,

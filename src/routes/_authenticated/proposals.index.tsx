@@ -106,7 +106,7 @@ function Proposals() {
             className="flex flex-wrap items-center gap-3 px-4 py-3 hover:bg-muted"
           >
             <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">{p.title ?? p.mode}</p>
+              <p className="font-medium">{p.title ?? p.mode}</p>
               <p className="text-xs text-muted-foreground">
                 {p.businesses?.name} · {p.mode} · {p.channel} · v{p.current_version} · edited{" "}
                 {new Date(p.updated_at).toLocaleDateString()}

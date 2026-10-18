@@ -564,7 +564,7 @@ function RadarPage() {
 
       {note && (
         <p
-          className={`rounded-md border p-3 text-sm ${note.ok ? "border-emerald-600/40 text-emerald-500" : "border-destructive/50 text-destructive"}`}
+          className={`rounded-md border p-3 text-sm ${note.ok ? "border-emerald-600/40 text-emerald-700 dark:text-emerald-400" : "border-destructive/50 text-destructive"}`}
         >
           {note.text}
         </p>

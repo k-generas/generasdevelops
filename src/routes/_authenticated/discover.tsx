@@ -171,7 +171,7 @@ function Discover() {
         </p>
         {result && <p className="mt-3 font-mono text-sm">{result}</p>}
         {error && (
-          <p className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 font-mono text-sm text-destructive">
+          <p className="mt-3 rounded-md border border-destructive/40 bg-card px-3 py-2 font-mono text-sm text-destructive">
             {error}
           </p>
         )}
@@ -196,8 +196,8 @@ function Discover() {
           <span
             className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono ${
               gmapsHealth.ok
-                ? "bg-emerald-500/15 text-emerald-300"
-                : "bg-amber-500/15 text-amber-400"
+                ? "border border-emerald-600/40 text-emerald-700 dark:text-emerald-300"
+                : "border border-amber-600/40 text-amber-700 dark:text-amber-400"
             }`}
           >
             <span
@@ -271,8 +271,8 @@ function Discover() {
                 className="flex items-center gap-4 px-4 py-3 hover:bg-muted"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{b.name}</p>
-                  <p className="truncate text-xs text-muted-foreground">
+                  <p className="font-medium">{b.name}</p>
+                  <p className="text-xs text-muted-foreground">
                     {[b.category, b.address].filter(Boolean).join(" · ")}
                   </p>
                 </div>
