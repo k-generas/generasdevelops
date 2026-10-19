@@ -57,16 +57,33 @@ export const runDiscovery = createServerFn({ method: "POST" })
       .single();
     if (runErr) throw new Error(runErr.message);
 
+    const markFailed = async (msg: string) => {
+      await supabase
+        .from("discovery_runs")
+        .update({ status: "failed", error: msg, completed_at: new Date().toISOString() })
+        .eq("id", run.id);
+    };
+
     let places;
     try {
       places = await searchPlaces(textQuery, data.maxResults);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      await supabase
-        .from("discovery_runs")
-        .update({ status: "failed", error: msg, completed_at: new Date().toISOString() })
-        .eq("id", run.id);
-      throw new Error(msg);
+      // A fresh serverless isolate can briefly miss the Google Maps connector
+      // env. Retrying costs nothing when there is no provider (no paid call is
+      // made), and clears the transient failure that otherwise looks scary.
+      if (!/no places provider is configured/i.test(msg)) {
+        await markFailed(msg);
+        throw new Error(msg);
+      }
+      await new Promise((r) => setTimeout(r, 1500));
+      try {
+        places = await searchPlaces(textQuery, data.maxResults);
+      } catch (e2) {
+        const msg2 = e2 instanceof Error ? e2.message : String(e2);
+        await markFailed(msg2);
+        throw new Error(msg2);
+      }
     }
 
     // Load everything already known so a business is never counted twice: first
