@@ -42,6 +42,9 @@ function Discover() {
   const [result, setResult] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "no_site" | "investigated" | "closed">("all");
   const [error, setError] = useState<string | null>(null);
+  const [batchLocs, setBatchLocs] = useState<string[]>([]);
+  const [batchBusy, setBatchBusy] = useState(false);
+  const [batchLog, setBatchLog] = useState<string[]>([]);
 
   const businesses = useQuery({
     queryKey: ["businesses"],
@@ -90,6 +93,37 @@ function Discover() {
       );
     }
     setBusy(false);
+    qc.invalidateQueries({ queryKey: ["businesses"] });
+    qc.invalidateQueries({ queryKey: ["runs"] });
+  }
+
+  const BATCH_LIMIT = 12;
+  async function onBatchRun() {
+    if (batchBusy || !query.trim() || batchLocs.length === 0) return;
+    setBatchBusy(true);
+    setBatchLog([]);
+    setError(null);
+    const locs = batchLocs.slice(0, BATCH_LIMIT);
+    for (let i = 0; i < locs.length; i++) {
+      const loc = locs[i];
+      const label = loc || "Worldwide";
+      setBatchLog((l) => [...l, `Scanning ${i + 1}/${locs.length} — ${label}…`]);
+      try {
+        const r = await discover({ data: { query, location: loc, maxResults: 20 } });
+        setBatchLog((l) => [
+          ...l,
+          `  ${label}: ${r.found} found · ${r.added} new · ${r.duplicates} known · ${r.verifiedNoWebsite} no-website`,
+        ]);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setBatchLog((l) => [...l, `  ${label}: failed — ${msg.slice(0, 120)}`]);
+      }
+    }
+    setBatchLog((l) => [
+      ...l,
+      `Batch complete — ${batchLocs.length > BATCH_LIMIT ? `capped at ${BATCH_LIMIT} areas. ` : ""}Reloading leads…`,
+    ]);
+    setBatchBusy(false);
     qc.invalidateQueries({ queryKey: ["businesses"] });
     qc.invalidateQueries({ queryKey: ["runs"] });
   }
@@ -274,6 +308,80 @@ function Discover() {
             </span>
           )}
         </div>
+      </section>
+
+      <section className="rounded-lg border bg-card p-6">
+        <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
+          01b · Batch scan
+        </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Repeats the discovery above across every selected area — pick a business type in step 01,
+          choose locations, then run. Up to {BATCH_LIMIT} paid Google requests per batch, capped at
+          20 real results each; results land in the Pipeline below.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={batchBusy}
+            onClick={() =>
+              setBatchLocs((prev) => {
+                const all = LOCATION_PRESETS.map((p) => p.value);
+                return all.every((v) => prev.includes(v)) ? [] : all;
+              })
+            }
+          >
+            {batchLocs.length >= LOCATION_PRESETS.length ? "Clear all" : "Select all locations"}
+          </Button>
+          <span className="font-mono text-xs text-muted-foreground">
+            {batchLocs.length} selected
+            {batchLocs.length > BATCH_LIMIT ? ` · only first ${BATCH_LIMIT} will run` : ""}
+          </span>
+          <Button
+            size="sm"
+            disabled={batchBusy || !query.trim() || batchLocs.length === 0}
+            onClick={() => void onBatchRun()}
+          >
+            {batchBusy ? "Scanning…" : `Run batch (${Math.min(batchLocs.length, BATCH_LIMIT)})`}
+          </Button>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {LOCATION_PRESETS.map((p) => {
+            const value = p.value;
+            const active = batchLocs.includes(value);
+            return (
+              <button
+                key={`${p.group ?? ""}-${p.value}-${p.label}`}
+                type="button"
+                disabled={batchBusy}
+                onClick={() =>
+                  setBatchLocs((prev) =>
+                    prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
+                  )
+                }
+                className={`rounded-full border px-2.5 py-1 font-mono text-xs transition-colors disabled:opacity-50 ${
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {p.label}
+              </button>
+            );
+          })}
+        </div>
+        {!query.trim() && (
+          <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+            Set a business type in step 01 first — the batch reuses that search text for every area.
+          </p>
+        )}
+        {batchLog.length > 0 && (
+          <div className="mt-3 max-h-56 overflow-y-auto rounded-md border bg-muted/40 p-3 font-mono text-xs leading-relaxed">
+            {batchLog.map((line, i) => (
+              <p key={i}>{line}</p>
+            ))}
+          </div>
+        )}
       </section>
 
       <section>

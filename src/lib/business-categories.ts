@@ -3,6 +3,79 @@ export type CategoryGroup = {
   items: string[];
 };
 
+// Generic tail words that don't distinguish one preset from another — dropped
+// before matching so "Coffee shops" roots to "coffee", not "shop".
+const CATEGORY_STOPWORDS = new Set([
+  "academies",
+  "academy",
+  "and",
+  "businesses",
+  "business",
+  "center",
+  "centers",
+  "classes",
+  "class",
+  "clubs",
+  "club",
+  "companies",
+  "company",
+  "courses",
+  "course",
+  "distributors",
+  "distributor",
+  "for",
+  "hire",
+  "legal",
+  "manufacturers",
+  "manufacturer",
+  "makers",
+  "makers",
+  "operators",
+  "operator",
+  "providers",
+  "provider",
+  "rentals",
+  "rental",
+  "retailers",
+  "retailer",
+  "schools",
+  "school",
+  "service",
+  "services",
+  "shop",
+  "shops",
+  "store",
+  "stores",
+  "studio",
+  "studios",
+  "supplier",
+  "suppliers",
+  "the",
+  "where",
+  "wholesalers",
+  "wholesaler",
+  "with",
+]);
+
+// Client-side match of a saved lead against a preset label. Used by the Leads
+// page to narrow already-discovered businesses without another API call — it
+// only compares the lead's name and Google category against the preset's
+// distinctive words (e.g. "Burger restaurants" -> "burger" / "restaurant").
+export function leadMatchesCategoryPreset(
+  preset: string,
+  name: string,
+  category: string | null,
+): boolean {
+  const hay = `${name} ${category ?? ""}`.toLowerCase();
+  const roots = preset
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 4 && !CATEGORY_STOPWORDS.has(w));
+  if (roots.length === 0) return false;
+  return roots.some((r) => hay.includes(r) || (r.endsWith("s") && hay.includes(r.slice(0, -1))));
+}
+
 export type LocationPreset = {
   label: string;
   value: string; // location string sent to provider ("" means worldwide)
@@ -597,3 +670,6 @@ export const BUSINESS_CATEGORIES: CategoryGroup[] = [
     ],
   },
 ];
+
+// Flat preset list (one select) built from the grouped categories.
+export const ALL_CATEGORY_ITEMS: string[] = BUSINESS_CATEGORIES.flatMap((g) => g.items);

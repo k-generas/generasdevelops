@@ -11,6 +11,17 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  ALL_DISTRICTS,
+  DISTRICTS,
   INDUSTRIES,
   PROVINCES,
   classifyIndustry,
@@ -21,6 +32,7 @@ import {
   type IndustryKey,
   type Province,
 } from "@/lib/rwanda";
+import { BUSINESS_CATEGORIES, leadMatchesCategoryPreset } from "@/lib/business-categories";
 import { matchesBusinessSearch } from "@/lib/business-search";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 
@@ -68,7 +80,9 @@ function Businesses() {
   const investigate = useServerFn(investigateBusiness);
   const [website, setWebsite] = useState<WebsiteFilter>("no_site");
   const [province, setProvince] = useState<Province | "ALL">("ALL");
+  const [district, setDistrict] = useState<string>("ALL");
   const [industry, setIndustry] = useState<IndustryKey | "ALL">("ALL");
+  const [categoryPreset, setCategoryPreset] = useState<string>("ALL");
   const [q, setQ] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
@@ -131,14 +145,20 @@ function Businesses() {
       if (website === "has_site" && !b.website) return false;
       const loc = locationOf(b);
       if (province !== "ALL" && loc.province !== province) return false;
+      if (district !== "ALL" && loc.district !== district) return false;
       const ind =
         (b.industry as IndustryKey | null) ??
         classifyIndustry(`${b.category ?? ""} ${b.name ?? ""}`);
       if (industry !== "ALL" && ind !== industry) return false;
+      if (
+        categoryPreset !== "ALL" &&
+        !leadMatchesCategoryPreset(categoryPreset, b.name, b.category)
+      )
+        return false;
       if (!matchesBusinessSearch(b, q)) return false;
       return true;
     });
-  }, [businesses.data, website, province, industry, q]);
+  }, [businesses.data, website, province, district, industry, categoryPreset, q]);
 
   async function runInvestigation(b: LeadRow) {
     const id = b.id;
@@ -180,15 +200,48 @@ function Businesses() {
             placeholder="Search saved leads…"
             className="w-52"
           />
+          <Select value={categoryPreset} onValueChange={(v) => setCategoryPreset(v)}>
+            <SelectTrigger className="w-56">
+              <SelectValue placeholder="All business types" />
+            </SelectTrigger>
+            <SelectContent className="max-h-96">
+              <SelectItem value="ALL">All business types</SelectItem>
+              {BUSINESS_CATEGORIES.map((group) => (
+                <SelectGroup key={group.name}>
+                  <SelectLabel>{group.name}</SelectLabel>
+                  {group.items.map((item) => (
+                    <SelectItem key={item} value={item}>
+                      {item}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              ))}
+            </SelectContent>
+          </Select>
           <select
             value={province}
-            onChange={(e) => setProvince(e.target.value as Province | "ALL")}
+            onChange={(e) => {
+              setProvince(e.target.value as Province | "ALL");
+              setDistrict("ALL");
+            }}
             className="rounded border bg-background px-2 py-1.5 text-sm"
           >
             <option value="ALL">All provinces</option>
             {PROVINCES.map((p) => (
               <option key={p} value={p}>
                 {p}
+              </option>
+            ))}
+          </select>
+          <select
+            value={district}
+            onChange={(e) => setDistrict(e.target.value)}
+            className="rounded border bg-background px-2 py-1.5 text-sm"
+          >
+            <option value="ALL">All districts</option>
+            {(province === "ALL" ? ALL_DISTRICTS : DISTRICTS[province]).map((d) => (
+              <option key={d} value={d}>
+                {d}
               </option>
             ))}
           </select>
@@ -262,7 +315,9 @@ function Businesses() {
                   onClick={() => {
                     setWebsite("all");
                     setProvince("ALL");
+                    setDistrict("ALL");
                     setIndustry("ALL");
+                    setCategoryPreset("ALL");
                     setQ("");
                   }}
                 >
