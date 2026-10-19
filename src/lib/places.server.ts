@@ -190,8 +190,48 @@ async function searchPlacesGoogle(
     throw new Error(`Google Maps search failed [${res.status}]: ${body.slice(0, 300)}`);
   }
   const data = (await res.json()) as { places?: RawPlace[] };
+  return mapGooglePlaces(data.places);
+}
+
+// Direct Google Places API (New), used when a plain Google Maps key is set but
+// the Lovable connector gateway is not (e.g. local runs). Same response shape.
+const GOOGLE_PLACES_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText";
+
+async function searchPlacesGoogleDirect(
+  textQuery: string,
+  maxResults: number,
+  apiKey: string,
+): Promise<PlaceResult[]> {
+  const fieldMask = [...BASE_FIELDS, ...ACTIVITY_FIELDS].join(",");
+  const call = (mask: string) =>
+    fetch(GOOGLE_PLACES_SEARCH_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": mask,
+      },
+      body: JSON.stringify({ textQuery, maxResultCount: maxResults }),
+    });
+  let res = await call(fieldMask);
+  if (res.status === 400) res = await call(BASE_FIELDS.join(","));
+  if (res.status === 403) {
+    const body = await res.text();
+    throw new Error(`Google Places denied the request (403): ${body.slice(0, 300)}`);
+  }
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Google Places search failed [${res.status}]: ${body.slice(0, 300)}`);
+  }
+  const data = (await res.json()) as { places?: RawPlace[] };
+  return mapGooglePlaces(data.places);
+}
+
+// Maps the Google Places (New) payload to our PlaceResult shape. Shared by the
+// Lovable connector gateway and a direct Google Places API key.
+function mapGooglePlaces(places: RawPlace[] | undefined): PlaceResult[] {
   const checkedAt = new Date().toISOString();
-  return (data.places ?? []).map((p) => {
+  return (places ?? []).map((p) => {
     const recent_reviews = toRecentReviews(p.reviews);
     const { last_activity_at, reviews_last_90d } = activityFromReviews(recent_reviews);
     const { open_now, opening_hours } = hoursOf(p.regularOpeningHours, p.currentOpeningHours);
@@ -303,17 +343,37 @@ async function searchPlacesGeoapify(
     .slice(0, maxResults);
 }
 
+export type PlacesProviderKind = "google" | "geoapify" | null;
+export type GooglePlacesMode = "connector" | "direct" | null;
+
+// Which provider discovery will use, without calling anything. `google` covers
+// both the Lovable connector (LOVABLE_API_KEY + GOOGLE_MAPS_API_KEY) and a
+// direct Google Places key (GOOGLE_MAPS_API_KEY alone).
+export function detectPlacesProvider(): {
+  provider: PlacesProviderKind;
+  google: GooglePlacesMode;
+} {
+  const lovableKey = process.env["LOVABLE_API_KEY"];
+  const mapsKey = process.env["GOOGLE_MAPS_API_KEY"];
+  if (lovableKey && mapsKey) return { provider: "google", google: "connector" };
+  if (mapsKey) return { provider: "google", google: "direct" };
+  if (process.env["GEOAPIFY_API_KEY"]) return { provider: "geoapify", google: null };
+  return { provider: null, google: null };
+}
+
 // Provider selection: the Lovable Google Maps connector wins when configured,
-// otherwise Geoapify makes local discovery work.
+// then a direct Google Places key, then Geoapify (free, local-friendly).
 export async function searchPlaces(textQuery: string, maxResults: number): Promise<PlaceResult[]> {
   const lovableKey = process.env["LOVABLE_API_KEY"];
   const mapsKey = process.env["GOOGLE_MAPS_API_KEY"];
   if (lovableKey && mapsKey) return searchPlacesGoogle(textQuery, maxResults, lovableKey, mapsKey);
+  if (mapsKey) return searchPlacesGoogleDirect(textQuery, maxResults, mapsKey);
 
   const geoKey = process.env["GEOAPIFY_API_KEY"];
   if (geoKey) return searchPlacesGeoapify(textQuery, maxResults, geoKey);
 
   throw new Error(
-    "No places provider is configured. Connect Google Maps in Lovable, or set GEOAPIFY_API_KEY for local runs.",
+    "No places provider is configured. Connect Google Maps in Lovable (Settings → Integrations), " +
+      "set GOOGLE_MAPS_API_KEY to a Google Places API key, or set GEOAPIFY_API_KEY for a free fallback.",
   );
 }

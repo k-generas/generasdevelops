@@ -6,6 +6,7 @@ import {
   normalizeCompanyName,
   normalizeDomain,
   normalizePhone,
+  sameBusinessRecord,
 } from "@/lib/company-identity";
 
 describe("company identity", () => {
@@ -64,5 +65,43 @@ describe("company identity", () => {
     expect(out.duplicates).toHaveLength(1);
     expect(out.kept[0]!.name).toBe("Kigali Coffee Ltd");
     expect(out.duplicates[0]!.reason.kind).toBe("domain");
+  });
+
+  describe("sameBusinessRecord", () => {
+    it("matches deterministically on place_id, domain and phone", () => {
+      expect(
+        sameBusinessRecord({ place_id: "p1", name: "Anything" }, { place_id: "p1", name: "Other" }),
+      ).toEqual({ kind: "place_id", value: "p1" });
+      expect(
+        sameBusinessRecord(
+          { name: "A", website: "https://a.rw" },
+          { name: "B", website: "http://www.a.rw/x" },
+        ),
+      ).toEqual({ kind: "domain", value: "a.rw" });
+      expect(
+        sameBusinessRecord(
+          { name: "A", phone: "+250788111222" },
+          { name: "B", phone: "0788 111 222" },
+        ),
+      ).toEqual({ kind: "phone", value: "788111222" });
+    });
+
+    it("requires a high name similarity to avoid hiding generic names", () => {
+      expect(sameBusinessRecord({ name: "Salon" }, { name: "Shop" })).toBeNull();
+      expect(sameBusinessRecord({ name: "Kigali Coffee" }, { name: "Kigali Coffee Ltd" })).toEqual({
+        kind: "name",
+        value: 1,
+      });
+    });
+
+    it("honours the name-similarity threshold", () => {
+      const a = { name: "Alpha Trading" };
+      const b = { name: "Alpha Trading House" };
+      const sim = nameSimilarity(a.name, b.name);
+      expect(sim).toBeGreaterThan(0);
+      expect(sim).toBeLessThan(0.9);
+      expect(sameBusinessRecord(a, b)).toBeNull();
+      expect(sameBusinessRecord(a, b, sim)).toEqual({ kind: "name", value: sim });
+    });
   });
 });

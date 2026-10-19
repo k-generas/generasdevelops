@@ -5,6 +5,15 @@ import type { Json } from "@/integrations/supabase/types";
 import { searchPlaces } from "./places.server";
 import { probeWebsite, analyzeWithAI, computeVisibility } from "./investigate.server";
 import { verifyWebsite } from "./website-finder.server";
+import { sameBusinessRecord } from "./company-identity";
+
+// Website verification runs inside discovery so we never claim a business has
+// no website when it actually has one. It is time-boxed so a run always returns;
+// anything not reached stays "unchecked" rather than being falsely confirmed.
+const VERIFY_BUDGET_MS = 15_000;
+const VERIFY_CONCURRENCY = 4;
+const VERIFY_MAX_DOMAINS = 6;
+const VERIFY_PER_REQUEST_MS = 4_000;
 
 // Columns added in migration 0003 — stripped on retry if the DB predates them.
 const ACTIVITY_COLUMNS = [
@@ -60,17 +69,46 @@ export const runDiscovery = createServerFn({ method: "POST" })
       throw new Error(msg);
     }
 
-    const ids = places.map((p) => p.place_id);
-    const { data: existing } = ids.length
-      ? await supabase.from("businesses").select("id, place_id").in("place_id", ids)
-      : { data: [] as { id: string; place_id: string }[] };
-    const known = new Map((existing ?? []).map((r) => [r.place_id, r.id]));
-    const fresh = places.filter((p) => !known.has(p.place_id));
+    // Load everything already known so a business is never counted twice: first
+    // by Google place_id, then by domain/phone/name identity, so the same lead
+    // reached through another source (or an earlier run) is not re-added.
+    const { data: existingData } = await supabase
+      .from("businesses")
+      .select("id, place_id, name, website, phone, address")
+      .limit(5000);
+    const existing = (existingData ?? []) as {
+      id: string;
+      place_id: string | null;
+      name: string;
+      website: string | null;
+      phone: string | null;
+      address: string | null;
+    }[];
+    const knownByPlaceId = new Map<string, string>();
+    for (const e of existing) if (e.place_id) knownByPlaceId.set(e.place_id, e.id);
 
+    // place_id -> resolved business id (existing match or newly inserted row).
+    const resolved = new Map<string, string>();
+    const fresh: typeof places = [];
+    for (const p of places) {
+      const byPlace = knownByPlaceId.get(p.place_id);
+      if (byPlace) {
+        resolved.set(p.place_id, byPlace);
+        continue;
+      }
+      const dup = existing.find((e) => sameBusinessRecord(e, p));
+      if (dup) {
+        resolved.set(p.place_id, dup.id);
+        continue;
+      }
+      if (fresh.some((f) => sameBusinessRecord(f, p))) continue;
+      fresh.push(p);
+    }
+
+    type InsertedRow = { id: string; place_id: string; name: string };
+    let inserted: InsertedRow[] = [];
     if (fresh.length) {
       const rows = fresh.map((p) => ({ ...p, owner_id: userId, discovery_run_id: run.id }));
-      type InsertedRow = { id: string; place_id: string; name: string };
-      let inserted: InsertedRow[] = [];
       let insErr: string | null = null;
       {
         const res = await supabase.from("businesses").insert(rows).select("id, place_id, name");
@@ -93,7 +131,7 @@ export const runDiscovery = createServerFn({ method: "POST" })
         insErr = res.error?.message ?? null;
       }
       if (insErr) throw new Error(insErr);
-      for (const b of inserted) known.set(b.place_id, b.id);
+      for (const b of inserted) resolved.set(b.place_id, b.id);
       await supabase.from("business_activity_events").insert(
         inserted.map((b) => ({
           owner_id: userId,
@@ -106,12 +144,76 @@ export const runDiscovery = createServerFn({ method: "POST" })
       );
     }
 
-    const links = places.map((p) => ({
-      owner_id: userId,
-      run_id: run.id,
-      business_id: known.get(p.place_id)!,
-      was_new: !fresh.some((f) => f.place_id === p.place_id) ? false : true,
-    }));
+    // Verify "no website" claims up front. Only a completed check marks a
+    // business as confirmed no-website; if a website is found we store it so the
+    // lead is no longer shown as website-less.
+    const freshByPlaceId = new Map(fresh.map((p) => [p.place_id, p]));
+    const noSite = inserted.filter((b) => !freshByPlaceId.get(b.place_id)?.website);
+    let verifiedNoWebsite = 0;
+    if (noSite.length) {
+      const deadline = Date.now() + VERIFY_BUDGET_MS;
+      for (let i = 0; i < noSite.length; i += VERIFY_CONCURRENCY) {
+        if (Date.now() >= deadline) break;
+        await Promise.allSettled(
+          noSite.slice(i, i + VERIFY_CONCURRENCY).map(async (b) => {
+            const place = freshByPlaceId.get(b.place_id);
+            if (!place) return;
+            const check = await verifyWebsite(
+              {
+                place_id: place.place_id,
+                name: place.name,
+                address: place.address,
+                website: null,
+              },
+              {
+                maxDomainCandidates: VERIFY_MAX_DOMAINS,
+                perRequestMs: VERIFY_PER_REQUEST_MS,
+                deadlineMs: deadline,
+              },
+            );
+            const now = new Date().toISOString();
+            const websiteCheck = {
+              confidence: check.confidence,
+              source: check.source,
+              steps: check.steps,
+            } as unknown as Json;
+            if (check.website) {
+              await supabase
+                .from("businesses")
+                .update({
+                  website: check.website,
+                  website_source: check.source,
+                  website_checked_at: now,
+                  website_check: websiteCheck,
+                })
+                .eq("id", b.id);
+              await supabase.from("business_activity_events").insert({
+                owner_id: userId,
+                business_id: b.id,
+                event_type: "website_found",
+                summary: `Website found during discovery (${check.source}): ${check.website}`,
+              });
+            } else if (check.confidence === "none_found" && !check.truncated) {
+              verifiedNoWebsite += 1;
+              await supabase
+                .from("businesses")
+                .update({ website_checked_at: now, website_check: websiteCheck })
+                .eq("id", b.id);
+            }
+          }),
+        );
+      }
+    }
+
+    const freshIds = new Set(fresh.map((p) => p.place_id));
+    const links = places
+      .filter((p) => resolved.has(p.place_id))
+      .map((p) => ({
+        owner_id: userId,
+        run_id: run.id,
+        business_id: resolved.get(p.place_id)!,
+        was_new: freshIds.has(p.place_id),
+      }));
     if (links.length) await supabase.from("search_run_results").insert(links);
 
     await supabase
@@ -128,6 +230,7 @@ export const runDiscovery = createServerFn({ method: "POST" })
       found: places.length,
       added: fresh.length,
       duplicates: places.length - fresh.length,
+      verifiedNoWebsite,
     };
   });
 

@@ -37,7 +37,7 @@ export const Route = createFileRoute("/_authenticated/businesses/")({
   component: Businesses,
 });
 
-const WEBSITE_OPTIONS = ["no_site", "has_site", "all"] as const;
+const WEBSITE_OPTIONS = ["no_site", "unverified", "has_site", "all"] as const;
 type WebsiteFilter = (typeof WEBSITE_OPTIONS)[number];
 
 type LeadRow = {
@@ -124,7 +124,10 @@ function Businesses() {
 
   const rows = useMemo(() => {
     return (businesses.data ?? []).filter((b) => {
-      if (website === "no_site" && b.website) return false;
+      // "no_site" only counts businesses we actually verified as having no
+      // website; "unverified" is everything else with an empty website field.
+      if (website === "no_site" && (b.website || !b.website_checked_at)) return false;
+      if (website === "unverified" && (b.website || b.website_checked_at)) return false;
       if (website === "has_site" && !b.website) return false;
       const loc = locationOf(b);
       if (province !== "ALL" && loc.province !== province) return false;
@@ -158,7 +161,7 @@ function Businesses() {
     setBusyId(null);
   }
 
-  const noSite = rows.filter((b) => !b.website).length;
+  const noSite = rows.filter((b) => !b.website && b.website_checked_at).length;
 
   return (
     <div className="space-y-4">
@@ -166,8 +169,8 @@ function Businesses() {
         <div>
           <h1 className="text-2xl font-bold">Leads</h1>
           <p className="text-sm text-muted-foreground">
-            {rows.length} shown of {businesses.data?.length ?? "…"} saved · {noSite} without a
-            website
+            {rows.length} shown of {businesses.data?.length ?? "…"} saved · {noSite} verified with
+            no website
           </p>
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -206,7 +209,8 @@ function Businesses() {
             onChange={(e) => setWebsite(e.target.value as WebsiteFilter)}
             className="rounded border bg-background px-2 py-1.5 text-sm"
           >
-            <option value="no_site">No website</option>
+            <option value="no_site">No website (verified)</option>
+            <option value="unverified">No website (unverified)</option>
             <option value="has_site">Has website</option>
             <option value="all">Any website</option>
           </select>
@@ -308,9 +312,14 @@ function Businesses() {
                 </p>
                 {hasBadges && (
                   <div className="flex flex-wrap items-center gap-1.5">
-                    {!b.website && (
+                    {!b.website && b.website_checked_at && (
                       <Badge variant="outline" className="border-accent/40 text-accent">
                         no site
+                      </Badge>
+                    )}
+                    {!b.website && !b.website_checked_at && (
+                      <Badge variant="outline" className="text-muted-foreground">
+                        unchecked
                       </Badge>
                     )}
                     {investigatedFlag && (

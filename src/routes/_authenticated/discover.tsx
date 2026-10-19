@@ -64,7 +64,9 @@ function Discover() {
     setError(null);
     try {
       const r = await discover({ data: { query, location, maxResults: 20 } });
-      setResult(`Found ${r.found} · ${r.added} new · ${r.duplicates} already known`);
+      setResult(
+        `Found ${r.found} · ${r.added} new · ${r.duplicates} already known · ${r.verifiedNoWebsite} verified with no website`,
+      );
       if (r.found === 0) {
         setError(
           "The search returned no results. Try a broader query (e.g. 'restaurants' instead of a specific name), a different location, or check the source health below.",

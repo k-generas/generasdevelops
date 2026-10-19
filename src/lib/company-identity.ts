@@ -110,6 +110,31 @@ export function matchBusiness(a: BusinessIdentity, b: BusinessIdentity): MatchRe
   return null;
 }
 
+// Import-oriented check used when importing fresh search results against
+// already-stored records. Deterministic signals (place_id, domain, phone) are
+// definitive, but names must clear a high bar because generic business names
+// ("Salon", "Shop") collide easily and would otherwise hide real leads.
+export function sameBusinessRecord(
+  a: BusinessIdentity,
+  b: BusinessIdentity,
+  nameThreshold = 0.9,
+): MatchReason | null {
+  if (a.place_id && b.place_id && a.place_id === b.place_id)
+    return { kind: "place_id", value: a.place_id };
+
+  const da = normalizeDomain(a.website);
+  const db = normalizeDomain(b.website);
+  if (da && db && da === db) return { kind: "domain", value: da };
+
+  const pa = normalizePhone(a.phone);
+  const pb = normalizePhone(b.phone);
+  if (pa && pb && pa === pb) return { kind: "phone", value: pa };
+
+  const sim = nameSimilarity(a.name, b.name);
+  if (sim >= nameThreshold) return { kind: "name", value: sim };
+  return null;
+}
+
 export type DedupeOutcome<T> = {
   kept: T[];
   duplicates: { kept: T; dropped: T; reason: MatchReason }[];

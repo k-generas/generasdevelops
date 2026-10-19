@@ -12,6 +12,9 @@ export type WebsiteCheck = {
   source: "google_places" | "place_details" | "domain_match" | null;
   confidence: "confirmed" | "likely" | "none_found";
   steps: { step: string; result: string }[];
+  // True when the domain probe stopped early on a deadline, so "none_found"
+  // must NOT be treated as a confirmed absence.
+  truncated?: boolean;
 };
 
 const STOP = new Set([
@@ -75,6 +78,16 @@ async function placeDetailsWebsite(placeId: string): Promise<string | null> {
       const d = (await res.json()) as { websiteUri?: string };
       if (d.websiteUri) return d.websiteUri;
     }
+  } else if (mapsKey && !isGeoapify) {
+    // Direct Google Places API (New): a plain GOOGLE_MAPS_API_KEY, no gateway.
+    const res = await fetch(
+      `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
+      { headers: { "X-Goog-Api-Key": mapsKey, "X-Goog-FieldMask": "websiteUri" } },
+    );
+    if (res.ok) {
+      const d = (await res.json()) as { websiteUri?: string };
+      if (d.websiteUri) return d.websiteUri;
+    }
   }
 
   const geoKey = process.env["GEOAPIFY_API_KEY"];
@@ -97,18 +110,18 @@ async function placeDetailsWebsite(placeId: string): Promise<string | null> {
   return null;
 }
 
-async function pageMentions(url: string, tokens: string[]): Promise<boolean> {
-  if (await mentionsAt(url, tokens)) return true;
+async function pageMentions(url: string, tokens: string[], timeoutMs = 7000): Promise<boolean> {
+  if (await mentionsAt(url, tokens, timeoutMs)) return true;
   // Many small-business sites only answer on http://www.
-  return mentionsAt(url.replace("https://", "http://www."), tokens);
+  return mentionsAt(url.replace("https://", "http://www."), tokens, timeoutMs);
 }
 
-async function mentionsAt(url: string, tokens: string[]): Promise<boolean> {
+async function mentionsAt(url: string, tokens: string[], timeoutMs = 7000): Promise<boolean> {
   try {
     const r = await fetch(url, {
       redirect: "follow",
       headers: { "User-Agent": "Mozilla/5.0 (compatible; GARE-Investigator/1.0)" },
-      signal: AbortSignal.timeout(7000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     if (!r.ok) return false;
     const html = (await r.text()).slice(0, 200_000).toLowerCase();
@@ -122,12 +135,45 @@ async function mentionsAt(url: string, tokens: string[]): Promise<boolean> {
   }
 }
 
-export async function verifyWebsite(b: {
-  place_id: string;
-  name: string;
-  address: string | null;
-  website: string | null;
-}): Promise<WebsiteCheck> {
+export type VerifyWebsiteOptions = {
+  // Cap how many guessed domains are probed (default 20 for a thorough check).
+  maxDomainCandidates?: number;
+  // Absolute epoch-ms deadline: stop probing new batches once passed.
+  deadlineMs?: number;
+  // Per-request timeout for each domain probe (default 7000ms).
+  perRequestMs?: number;
+};
+
+// Probe candidates in small batches so a deadline can actually bound the work.
+async function firstMatchingDomain(
+  candidates: string[],
+  tokens: string[],
+  perRequestMs: number,
+  deadlineMs?: number,
+): Promise<{ hit: string | null; truncated: boolean }> {
+  const CONCURRENCY = 4;
+  for (let i = 0; i < candidates.length; i += CONCURRENCY) {
+    if (deadlineMs != null && Date.now() >= deadlineMs) return { hit: null, truncated: true };
+    const batch = candidates.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(
+      batch.map(async (u) => [u, await pageMentions(u, tokens, perRequestMs)] as const),
+    );
+    const hit = results.find(([, ok]) => ok)?.[0];
+    if (hit) return { hit, truncated: false };
+  }
+  return { hit: null, truncated: false };
+}
+
+export async function verifyWebsite(
+  b: {
+    place_id: string;
+    name: string;
+    address: string | null;
+    website: string | null;
+  },
+  options: VerifyWebsiteOptions = {},
+): Promise<WebsiteCheck> {
+  const { maxDomainCandidates = 20, deadlineMs, perRequestMs = 7000 } = options;
   const steps: WebsiteCheck["steps"] = [];
   if (b.website)
     return {
@@ -151,17 +197,27 @@ export async function verifyWebsite(b: {
       .slice(0, 4);
     const candidates = slugs
       .flatMap((s) => countryTlds(b.address).map((tld) => `https://${s}${tld}`))
-      .slice(0, 20);
-    const results = await Promise.all(
-      candidates.map(async (u) => [u, await pageMentions(u, tokens)] as const),
+      .slice(0, Math.max(0, maxDomainCandidates));
+    const { hit, truncated } = await firstMatchingDomain(
+      candidates,
+      tokens,
+      perRequestMs,
+      deadlineMs,
     );
-    const hit = results.find(([, ok]) => ok)?.[0] ?? null;
     // (hit is the https form; the probe follows whichever variant answers)
     steps.push({
       step: `Checked ${candidates.length} likely domains`,
-      result: hit ?? "none matched the business name",
+      result: truncatingResult(hit, truncated),
     });
     if (hit) return { website: hit, source: "domain_match", confidence: "likely", steps };
+    if (truncated)
+      return { website: null, source: null, confidence: "none_found", steps, truncated };
+    return { website: null, source: null, confidence: "none_found", steps };
   }
   return { website: null, source: null, confidence: "none_found", steps };
+}
+
+function truncatingResult(hit: string | null, truncated: boolean): string {
+  if (hit) return hit;
+  return truncated ? "timed out before finishing the checks" : "none matched the business name";
 }

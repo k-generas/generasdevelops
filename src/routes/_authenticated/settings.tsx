@@ -355,10 +355,12 @@ function Settings() {
                 ok={!!sys.data?.placesProvider}
                 hint={
                   sys.data?.placesProvider === "google"
-                    ? "Google Maps via Lovable connector"
+                    ? sys.data?.mapsMode === "direct"
+                      ? "Google Maps (direct GOOGLE_MAPS_API_KEY)"
+                      : "Google Maps via Lovable connector"
                     : sys.data?.placesProvider === "geoapify"
                       ? "Geoapify (local fallback)"
-                      : "Google Maps connector or GEOAPIFY_API_KEY"
+                      : "Connect Google Maps in Lovable, or set GOOGLE_MAPS_API_KEY / GEOAPIFY_API_KEY"
                 }
               />
               <StatusRow

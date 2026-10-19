@@ -43,7 +43,7 @@ function Dashboard() {
       (
         await supabase
           .from("businesses")
-          .select("id,name,category,address,website,status,score,created_at")
+          .select("id,name,category,address,website,website_checked_at,status,score,created_at")
           .order("created_at", { ascending: false })
           .limit(1000)
       ).data ?? [],
@@ -127,7 +127,7 @@ function Dashboard() {
 
   const rows = businesses.data ?? [];
   const total = rows.length;
-  const noSite = rows.filter((b) => !b.website).length;
+  const noSite = rows.filter((b) => !b.website && b.website_checked_at).length;
   const investigated = rows.filter((b) => b.status === "investigated").length;
 
   const props = proposals.data ?? [];
@@ -177,7 +177,7 @@ function Dashboard() {
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label="Businesses" value={total} icon={Globe} />
-        <Kpi label="No website" value={noSite} icon={TrendingUp} hint="Leads without a site" />
+        <Kpi label="No website" value={noSite} icon={TrendingUp} hint="Verified no site" />
         <Kpi label="Investigated" value={investigated} icon={BadgeCheck} />
         <Kpi
           label="Open tasks"
@@ -257,7 +257,7 @@ function Dashboard() {
                       {[b.category, b.address].filter(Boolean).join(" · ") || "—"}
                     </p>
                   </div>
-                  {!b.website && (
+                  {!b.website && b.website_checked_at && (
                     <span className="shrink-0 rounded-full border border-accent/40 px-2 py-0.5 text-xs font-medium text-accent">
                       no site
                     </span>
