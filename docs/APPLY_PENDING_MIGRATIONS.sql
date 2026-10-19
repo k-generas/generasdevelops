@@ -550,7 +550,7 @@ CREATE OR REPLACE FUNCTION public.redeem_access_code(p_code text)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_uid uuid := auth.uid();
@@ -636,7 +636,7 @@ CREATE OR REPLACE FUNCTION public.admin_issue_access_code(
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_uid uuid := auth.uid();
