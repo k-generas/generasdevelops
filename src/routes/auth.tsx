@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { recordLoginEvent } from "@/lib/access";
+import { recordLoginEvent, ADMIN_EMAIL } from "@/lib/access";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,7 +57,10 @@ function AuthPage() {
         options: { emailRedirectTo: `${window.location.origin}/dashboard` },
       });
       if (error) setMsg(error.message);
-      else if (!data.session) setMsg("Check your email to confirm your account, then sign in.");
+      else if (!data.session)
+        setMsg(
+          `Account created. To activate it, contact 0794144738 (WhatsApp/phone) or ${ADMIN_EMAIL} with the email you signed up with — no confirmation email needed.`,
+        );
       else navigate({ to: "/dashboard" });
     }
     setBusy(false);
