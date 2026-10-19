@@ -1,5 +1,6 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import {
   AlertTriangle,
@@ -27,6 +28,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getNavCounts, type NavCounts } from "@/lib/nav-counts.functions";
 import { AccessGate } from "@/components/AccessGate";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { ThemeMenu } from "@/components/ThemeMenu";
@@ -116,10 +118,74 @@ const MOBILE_NAV = NAV.filter(
     n.to !== "/referrals",
 ).slice(0, 5);
 
-function NavBadge({ count }: { count: number }) {
+export type NavTone = "primary" | "danger" | "warning" | "neutral";
+
+const TONE_CLASS: Record<NavTone, string> = {
+  primary: "bg-primary text-primary-foreground",
+  danger: "bg-destructive text-destructive-foreground",
+  warning: "bg-accent text-accent-foreground",
+  neutral: "border border-border bg-muted text-muted-foreground",
+};
+
+const EMPTY_COUNTS: NavCounts = {
+  businesses: 0,
+  updatesUnread: 0,
+  discoverFailed: 0,
+  leaksOpen: 0,
+  tasksOpen: 0,
+  tasksOverdue: 0,
+  proposalsDraft: 0,
+  invoicesOverdue: 0,
+};
+
+// Which badge (if any) to show next to a nav item, and how urgent it is.
+function navBadgeFor(to: string, c: NavCounts): { count: number; tone: NavTone } | null {
+  switch (to) {
+    case "/updates":
+      return c.updatesUnread > 0 ? { count: c.updatesUnread, tone: "primary" } : null;
+    case "/discover":
+      return c.discoverFailed > 0 ? { count: c.discoverFailed, tone: "danger" } : null;
+    case "/leaks":
+      return c.leaksOpen > 0 ? { count: c.leaksOpen, tone: "danger" } : null;
+    case "/tasks":
+      return c.tasksOpen > 0
+        ? { count: c.tasksOpen, tone: c.tasksOverdue > 0 ? "danger" : "warning" }
+        : null;
+    case "/proposals":
+      return c.proposalsDraft > 0 ? { count: c.proposalsDraft, tone: "primary" } : null;
+    case "/invoices":
+      return c.invoicesOverdue > 0 ? { count: c.invoicesOverdue, tone: "danger" } : null;
+    case "/businesses":
+      return c.businesses > 0 ? { count: c.businesses, tone: "neutral" } : null;
+    default:
+      return null;
+  }
+}
+
+function NavBadge({
+  count,
+  tone = "primary",
+  floating = false,
+}: {
+  count: number;
+  tone?: NavTone;
+  floating?: boolean;
+}) {
+  const label = count > 99 ? "99+" : count;
+  if (floating) {
+    return (
+      <span
+        className={`absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full px-1 text-xs leading-none font-semibold ${TONE_CLASS[tone]}`}
+      >
+        {count > 9 ? "9+" : label}
+      </span>
+    );
+  }
   return (
-    <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground">
-      {count > 99 ? "99+" : count}
+    <span
+      className={`ml-auto grid h-5 min-w-5 place-items-center rounded-full px-1 text-xs font-semibold ${TONE_CLASS[tone]}`}
+    >
+      {label}
     </span>
   );
 }
@@ -137,18 +203,15 @@ function Shell() {
   const accessStatus = access.data?.status;
   const approved = accessStatus === "approved";
 
-  const unread = useQuery({
-    queryKey: ["updates-unread"],
+  const fetchNavCounts = useServerFn(getNavCounts);
+  const countsQ = useQuery({
+    queryKey: ["nav-counts"],
     enabled: approved,
-    queryFn: async () => {
-      const { count } = await supabase
-        .from("daily_digests")
-        .select("id", { count: "exact", head: true })
-        .is("read_at", null);
-      return count ?? 0;
-    },
+    queryFn: () => fetchNavCounts({}),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
-  const unreadCount = unread.data ?? 0;
+  const counts = countsQ.data ?? EMPTY_COUNTS;
 
   useEffect(() => {
     if (approved) void trackVisit();
@@ -196,17 +259,20 @@ function Shell() {
           </span>
         </Link>
         <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain scroll-smooth px-3 py-2">
-          {navItems.map((n) => (
-            <Link
-              key={n.to}
-              to={n.to}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent data-[status=active]:font-semibold data-[status=active]:text-foreground"
-            >
-              <n.icon className="h-4 w-4" />
-              {n.label}
-              {n.to === "/updates" && unreadCount > 0 && <NavBadge count={unreadCount} />}
-            </Link>
-          ))}
+          {navItems.map((n) => {
+            const badge = navBadgeFor(n.to, counts);
+            return (
+              <Link
+                key={n.to}
+                to={n.to}
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent data-[status=active]:font-semibold data-[status=active]:text-foreground"
+              >
+                <n.icon className="h-4 w-4" />
+                {n.label}
+                {badge && <NavBadge count={badge.count} tone={badge.tone} />}
+              </Link>
+            );
+          })}
         </nav>
         <div className="shrink-0 border-t border-sidebar-border p-3">
           <div className="flex items-center gap-3 rounded-lg px-2 py-2">
@@ -260,18 +326,21 @@ function Shell() {
                   </Link>
                 </div>
                 <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 py-3">
-                  {navItems.map((n) => (
-                    <Link
-                      key={n.to}
-                      to={n.to}
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted data-[status=active]:bg-primary/10 data-[status=active]:font-semibold data-[status=active]:text-primary"
-                    >
-                      <n.icon className="h-4 w-4" />
-                      <span className="flex-1">{n.label}</span>
-                      {n.to === "/updates" && unreadCount > 0 && <NavBadge count={unreadCount} />}
-                    </Link>
-                  ))}
+                  {navItems.map((n) => {
+                    const badge = navBadgeFor(n.to, counts);
+                    return (
+                      <Link
+                        key={n.to}
+                        to={n.to}
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted data-[status=active]:bg-primary/10 data-[status=active]:font-semibold data-[status=active]:text-primary"
+                      >
+                        <n.icon className="h-4 w-4" />
+                        <span className="flex-1">{n.label}</span>
+                        {badge && <NavBadge count={badge.count} tone={badge.tone} />}
+                      </Link>
+                    );
+                  })}
                 </nav>
                 <div className="shrink-0 border-t p-3">
                   <div className="flex items-center gap-3 rounded-lg px-2 py-2">
@@ -350,23 +419,22 @@ function Shell() {
       {/* Mobile bottom tabs */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur pb-[env(safe-area-inset-bottom)] lg:hidden">
         <div className="mx-auto grid max-w-lg grid-cols-5">
-          {MOBILE_NAV.map((n) => (
-            <Link
-              key={n.to}
-              to={n.to}
-              className="flex flex-col items-center gap-1 py-2.5 text-xs font-medium text-muted-foreground transition-colors data-[status=active]:text-primary"
-            >
-              <span className="relative">
-                <n.icon className="h-5 w-5" />
-                {n.to === "/updates" && unreadCount > 0 && (
-                  <span className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-xs leading-none font-semibold text-primary-foreground">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
-                )}
-              </span>
-              <span className="w-full truncate">{n.label}</span>
-            </Link>
-          ))}
+          {MOBILE_NAV.map((n) => {
+            const badge = navBadgeFor(n.to, counts);
+            return (
+              <Link
+                key={n.to}
+                to={n.to}
+                className="flex flex-col items-center gap-1 py-2.5 text-xs font-medium text-muted-foreground transition-colors data-[status=active]:text-primary"
+              >
+                <span className="relative">
+                  <n.icon className="h-5 w-5" />
+                  {badge && <NavBadge count={badge.count} tone={badge.tone} floating />}
+                </span>
+                <span className="w-full truncate">{n.label}</span>
+              </Link>
+            );
+          })}
         </div>
       </nav>
     </div>
