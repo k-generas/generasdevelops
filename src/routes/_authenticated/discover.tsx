@@ -7,8 +7,19 @@ import { runDiscovery } from "@/lib/discovery.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { scanHealth, type Source } from "@/lib/sources";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { BUSINESS_CATEGORIES } from "@/lib/business-categories";
+import { LOCATION_PRESETS } from "@/lib/location-presets";
 
 export const Route = createFileRoute("/_authenticated/discover")({
   head: () => ({
@@ -149,23 +160,71 @@ function Discover() {
 
       <section className="rounded-lg border bg-card p-6">
         <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">01 · Discover</p>
-        <form onSubmit={onRun} className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <Input
-            placeholder="What kind of business? e.g. restaurants, salons, hardware shops"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            required
-            minLength={2}
-          />
-          <Input
-            placeholder="Where? e.g. Kigali, Rwanda"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="sm:max-w-xs"
-          />
-          <Button type="submit" disabled={busy}>
-            {busy ? "Searching…" : "Run discovery"}
-          </Button>
+        <form onSubmit={onRun} className="mt-4 flex flex-col gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Select
+              value={query || "__custom__"}
+              onValueChange={(v) => {
+                if (v === "__custom__") return;
+                setQuery(v);
+              }}
+            >
+              <SelectTrigger className="sm:max-w-xs">
+                <SelectValue placeholder="Pick a business type preset" />
+              </SelectTrigger>
+              <SelectContent className="max-h-96">
+                {BUSINESS_CATEGORIES.map((group) => (
+                  <SelectGroup key={group.name}>
+                    <SelectLabel>{group.name}</SelectLabel>
+                    {group.items.map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {item}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={location === "" ? "worldwide" : location}
+              onValueChange={(v) => {
+                if (v === "worldwide") setLocation("");
+                else setLocation(v);
+              }}
+            >
+              <SelectTrigger className="sm:max-w-xs">
+                <SelectValue placeholder="Pick a location preset" />
+              </SelectTrigger>
+              <SelectContent className="max-h-96">
+                {LOCATION_PRESETS.map((p) => (
+                  <SelectGroup key={p.group ?? p.label}>
+                    {p.group && <SelectLabel>{p.group}</SelectLabel>}
+                    <SelectItem value={p.value === "" ? "worldwide" : p.value}>
+                      {p.label}
+                    </SelectItem>
+                  </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Input
+              placeholder="What kind of business? e.g. restaurants, salons, hardware shops"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              required
+              minLength={2}
+            />
+            <Input
+              placeholder="Where? e.g. Kigali, Rwanda or Gasabo, Rwanda"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="sm:max-w-xs"
+            />
+            <Button type="submit" disabled={busy}>
+              {busy ? "Searching…" : "Run discovery"}
+            </Button>
+          </div>
         </form>
         <p className="mt-2 text-xs text-muted-foreground">
           Up to 20 real results per run from Google Maps. Each run is a paid Google request, so
