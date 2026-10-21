@@ -82,8 +82,8 @@ export function ProductPreview({ tone = "default" }: { tone?: "default" | "fores
           ))}
         </dl>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
+        {/* Table (sm+); stacked cards below sm so nothing is clipped on phones */}
+        <div className="hidden overflow-x-auto sm:block">
           <table className="w-full min-w-[520px] border-collapse text-left">
             <thead>
               <tr className="border-b bg-muted/30">
@@ -142,6 +142,20 @@ export function ProductPreview({ tone = "default" }: { tone?: "default" | "fores
             </tbody>
           </table>
         </div>
+
+        <ul className="divide-y sm:hidden">
+          {SAMPLE_ROWS.map((r) => (
+            <li key={r.name} className="flex items-center gap-3 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{r.name}</p>
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">{r.signal}</p>
+              </div>
+              <span className="shrink-0 whitespace-nowrap font-mono text-xs text-primary">
+                {r.action} →
+              </span>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <figcaption

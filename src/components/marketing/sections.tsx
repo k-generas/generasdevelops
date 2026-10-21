@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -237,6 +237,18 @@ function StatusBadge({
 
 export function ProductShowcase() {
   const [current, setCurrent] = useState<Capability>(RADAR_CAPABILITY);
+  const detailRef = useRef<HTMLDivElement>(null);
+
+  function select(c: Capability) {
+    setCurrent(c);
+    // On mobile the detail panel sits below the selector; bring it into view
+    // so the tap has an immediate, visible effect.
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      window.requestAnimationFrame(() =>
+        detailRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }),
+      );
+    }
+  }
 
   return (
     <SectionShell id="product">
@@ -253,9 +265,12 @@ export function ProductShowcase() {
       </Reveal>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_1fr] lg:gap-8">
-        {/* Detail panel */}
-        <Reveal>
-          <div className="relative h-full overflow-hidden rounded-2xl bg-forest p-6 text-forest-foreground sm:p-8">
+        {/* Detail panel — below the selector on mobile, left column on desktop */}
+        <Reveal className="order-2 lg:order-1">
+          <div
+            ref={detailRef}
+            className="relative h-full overflow-hidden rounded-2xl bg-forest p-6 text-forest-foreground sm:p-8"
+          >
             <GridTexture className="absolute inset-x-0 top-0 h-2/3 text-white/[0.08]" />
             <div className="relative">
               <div className="flex items-center gap-3">
@@ -285,8 +300,8 @@ export function ProductShowcase() {
           </div>
         </Reveal>
 
-        {/* Selector */}
-        <Reveal delay={80}>
+        {/* Selector — first on mobile, right column on desktop */}
+        <Reveal delay={80} className="order-1 lg:order-2">
           <ul className="flex flex-col gap-1.5">
             {CAPABILITIES.map((c) => {
               const isActive = c.id === current.id;
@@ -294,7 +309,7 @@ export function ProductShowcase() {
                 <li key={c.id}>
                   <button
                     type="button"
-                    onClick={() => setCurrent(c)}
+                    onClick={() => select(c)}
                     aria-current={isActive ? "true" : undefined}
                     className={cn(
                       "w-full rounded-xl border px-4 py-3 text-left transition-colors",
@@ -446,7 +461,7 @@ export function HowItWorks() {
                 onClick={() => setActive((cur) => (cur === t ? null : t))}
                 aria-pressed={active === t}
                 className={cn(
-                  "flex items-center gap-2 rounded-md text-left transition-opacity",
+                  "flex flex-col items-start gap-1.5 rounded-md text-left transition-opacity sm:flex-row sm:items-center sm:gap-2",
                   FOCUS_RING_ON_FOREST,
                   active && active !== t ? "opacity-40" : "opacity-100",
                 )}
@@ -454,7 +469,7 @@ export function HowItWorks() {
                 <Badge variant="outline" className={cn("font-mono text-xs", TAG_CLASSES_FOREST[t])}>
                   {TAG_LABELS[t]}
                 </Badge>
-                <span className="max-w-[15rem] text-xs leading-snug text-forest-foreground/65">
+                <span className="text-xs leading-snug text-forest-foreground/65 sm:max-w-[15rem]">
                   {TAG_NOTES[t]}
                 </span>
               </button>
