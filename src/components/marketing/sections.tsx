@@ -51,7 +51,7 @@ export function Hero() {
     <section id="top" className="relative overflow-hidden bg-forest text-forest-foreground">
       <GridTexture className="absolute inset-0 text-white/[0.08]" />
       <div className="relative mx-auto grid max-w-6xl gap-12 px-6 pb-20 pt-32 lg:grid-cols-[1.03fr_1fr] lg:items-center lg:gap-14 lg:pb-28 lg:pt-40">
-        <div>
+        <div className="min-w-0">
           <Reveal>
             <Eyebrow tone="forest">Generas · Autonomous Revenue Engine</Eyebrow>
           </Reveal>
@@ -101,7 +101,7 @@ export function Hero() {
           </Reveal>
         </div>
 
-        <Reveal delay={160}>
+        <Reveal delay={160} className="min-w-0">
           <ProductPreview tone="forest" />
         </Reveal>
       </div>

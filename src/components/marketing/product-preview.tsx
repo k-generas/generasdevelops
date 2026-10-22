@@ -53,7 +53,10 @@ export function ProductPreview({ tone = "default" }: { tone?: "default" | "fores
             <span className="h-2.5 w-2.5 rounded-full bg-border" />
           </span>
           <span className="truncate font-mono text-xs text-muted-foreground">Discover — GARE</span>
-          <Badge variant="outline" className="ml-auto shrink-0 font-mono text-xs">
+          <Badge
+            variant="outline"
+            className="ml-auto hidden shrink-0 font-mono text-xs sm:inline-flex"
+          >
             Interface preview
           </Badge>
         </div>
@@ -145,12 +148,10 @@ export function ProductPreview({ tone = "default" }: { tone?: "default" | "fores
 
         <ul className="divide-y sm:hidden">
           {SAMPLE_ROWS.map((r) => (
-            <li key={r.name} className="flex items-center gap-3 px-4 py-3">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{r.name}</p>
-                <p className="mt-0.5 truncate text-xs text-muted-foreground">{r.signal}</p>
-              </div>
-              <span className="shrink-0 whitespace-nowrap font-mono text-xs text-primary">
+            <li key={r.name} className="px-4 py-3">
+              <p className="truncate text-sm font-medium">{r.name}</p>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">{r.signal}</p>
+              <span className="mt-1.5 inline-block font-mono text-xs text-primary">
                 {r.action} →
               </span>
             </li>
