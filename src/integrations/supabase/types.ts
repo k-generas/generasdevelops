@@ -240,6 +240,7 @@ export type Database = {
           industry_secondary: string | null
           intel_updated_at: string | null
           last_activity_at: string | null
+          last_contacted_at: string | null
           last_investigated_at: string | null
           last_opened_at: string | null
           latitude: number | null
@@ -252,6 +253,8 @@ export type Database = {
           name: string
           open_now: boolean | null
           opening_hours: Json
+          outreach_note: string | null
+          outreach_stage: string
           owner_id: string
           parent_organization: string | null
           phone: string | null
@@ -310,6 +313,7 @@ export type Database = {
           industry_secondary?: string | null
           intel_updated_at?: string | null
           last_activity_at?: string | null
+          last_contacted_at?: string | null
           last_investigated_at?: string | null
           last_opened_at?: string | null
           latitude?: number | null
@@ -322,6 +326,8 @@ export type Database = {
           name: string
           open_now?: boolean | null
           opening_hours?: Json
+          outreach_note?: string | null
+          outreach_stage?: string
           owner_id?: string
           parent_organization?: string | null
           phone?: string | null
@@ -380,6 +386,7 @@ export type Database = {
           industry_secondary?: string | null
           intel_updated_at?: string | null
           last_activity_at?: string | null
+          last_contacted_at?: string | null
           last_investigated_at?: string | null
           last_opened_at?: string | null
           latitude?: number | null
@@ -392,6 +399,8 @@ export type Database = {
           name?: string
           open_now?: boolean | null
           opening_hours?: Json
+          outreach_note?: string | null
+          outreach_stage?: string
           owner_id?: string
           parent_organization?: string | null
           phone?: string | null

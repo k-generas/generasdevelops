@@ -34,6 +34,15 @@ import {
 } from "@/lib/rwanda";
 import { BUSINESS_CATEGORIES, leadMatchesCategoryPreset } from "@/lib/business-categories";
 import { matchesBusinessSearch } from "@/lib/business-search";
+import {
+  OUTREACH_STAGES,
+  contactChannels,
+  normalizeStage,
+  stageCounts,
+  stageLabel,
+  stagePatch,
+  type OutreachStage,
+} from "@/lib/outreach-tracker";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 
 export const Route = createFileRoute("/_authenticated/businesses/")({
@@ -83,8 +92,10 @@ function Businesses() {
   const [district, setDistrict] = useState<string>("ALL");
   const [industry, setIndustry] = useState<IndustryKey | "ALL">("ALL");
   const [categoryPreset, setCategoryPreset] = useState<string>("ALL");
+  const [stageFilter, setStageFilter] = useState<OutreachStage | "ANY">("ANY");
   const [q, setQ] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [stageBusyId, setStageBusyId] = useState<string | null>(null);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   // The business whose full-report modal is open (null = closed).
   const [modalBiz, setModalBiz] = useState<LeadRow | null>(null);
@@ -155,10 +166,43 @@ function Businesses() {
         !leadMatchesCategoryPreset(categoryPreset, b.name, b.category)
       )
         return false;
+      if (stageFilter !== "ANY" && normalizeStage(b.outreach_stage) !== stageFilter) return false;
       if (!matchesBusinessSearch(b, q)) return false;
       return true;
     });
-  }, [businesses.data, website, province, district, industry, categoryPreset, q]);
+  }, [businesses.data, website, province, district, industry, categoryPreset, stageFilter, q]);
+
+  // Counters always describe the whole saved list, not the current filters, so
+  // "how many did I message" stays visible while browsing.
+  const counts = useMemo(() => stageCounts(businesses.data ?? []), [businesses.data]);
+
+  async function setStage(b: BusinessRow, stage: OutreachStage) {
+    setStageBusyId(b.id);
+    setNote(null);
+    try {
+      const patch: Record<string, unknown> = stagePatch(stage);
+      const { error } = await supabase.from("businesses").update(patch as never).eq("id", b.id);
+      if (error) {
+        // Fallback: columns may not exist yet or schema cache not reloaded
+        if (/last_contacted_at|schema cache/i.test(error.message)) {
+          const { error: e2 } = await supabase
+            .from("businesses")
+            .update({ outreach_stage: stage })
+            .eq("id", b.id);
+          if (e2) throw e2;
+        } else {
+          throw error;
+        }
+      }
+      await qc.invalidateQueries({ queryKey: ["businesses"] });
+    } catch (e) {
+      setNote({
+        ok: false,
+        text: `Could not save outreach stage: ${e instanceof Error ? e.message : String(e)}`,
+      });
+    }
+    setStageBusyId(null);
+  }
 
   async function runInvestigation(b: LeadRow) {
     const id = b.id;
@@ -192,6 +236,21 @@ function Businesses() {
             {rows.length} shown of {businesses.data?.length ?? "…"} saved · {noSite} verified with
             no website
           </p>
+          <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+            <CountChip label="Scanned" value={counts.total} />
+            <CountChip
+              label="Messaged"
+              value={counts.messaged}
+              className={stageClass("messaged")}
+            />
+            <CountChip label="Replied" value={counts.replied} className={stageClass("replied")} />
+            <CountChip
+              label="Negotiating"
+              value={counts.negotiating}
+              className={stageClass("negotiating")}
+            />
+            <CountChip label="Won" value={counts.won} className={stageClass("won")} />
+          </div>
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Input
@@ -200,6 +259,22 @@ function Businesses() {
             placeholder="Search saved leads…"
             className="w-52"
           />
+          <Select
+            value={stageFilter}
+            onValueChange={(v) => setStageFilter(v as OutreachStage | "ANY")}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Any stage" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ANY">Any stage</SelectItem>
+              {OUTREACH_STAGES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {stageLabel(s)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={categoryPreset} onValueChange={(v) => setCategoryPreset(v)}>
             <SelectTrigger className="w-56">
               <SelectValue placeholder="All business types" />
@@ -318,6 +393,7 @@ function Businesses() {
                     setDistrict("ALL");
                     setIndustry("ALL");
                     setCategoryPreset("ALL");
+                    setStageFilter("ANY");
                     setQ("");
                   }}
                 >
@@ -343,6 +419,8 @@ function Businesses() {
             const investigatedFlag = investigated.data?.has(b.id) ?? false;
             const closedFlag = b.business_status === "CLOSED_PERMANENTLY";
             const hasBadges = !b.website || investigatedFlag || closedFlag;
+            const { phone, email, extraEmails } = contactChannels(b);
+            const stage = normalizeStage(b.outreach_stage);
             return (
               <div
                 key={b.id}
@@ -365,6 +443,44 @@ function Businesses() {
                     .filter(Boolean)
                     .join(" · ") || "—"}
                 </p>
+                {(phone || email) && (
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    {phone && <span className="truncate">📞 {phone}</span>}
+                    {email && (
+                      <a
+                        href={`mailto:${email}`}
+                        className="truncate text-primary hover:underline"
+                        title={email}
+                      >
+                        ✉ {email}
+                        {extraEmails.length > 0 ? ` +${extraEmails.length}` : ""}
+                      </a>
+                    )}
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={stage}
+                    disabled={stageBusyId === b.id}
+                    onValueChange={(v) => setStage(b, v as OutreachStage)}
+                  >
+                    <SelectTrigger className={`h-7 w-36 text-xs ${stageClass(stage)}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {OUTREACH_STAGES.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {stageLabel(s)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {b.last_contacted_at && stage !== "not_contacted" && (
+                    <span className="truncate text-xs text-muted-foreground">
+                      {new Date(b.last_contacted_at).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
                 {hasBadges && (
                   <div className="flex flex-wrap items-center gap-1.5">
                     {!b.website && b.website_checked_at && (
@@ -430,6 +546,36 @@ function Businesses() {
       )}
     </div>
   );
+}
+
+function CountChip({
+  label,
+  value,
+  className = "",
+}: {
+  label: string;
+  value: number;
+  className?: string;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${
+        className || "border-border text-muted-foreground"
+      }`}
+    >
+      <span className={className ? "" : "text-muted-foreground"}>{label}</span>
+      <span className="font-medium">{value}</span>
+    </span>
+  );
+}
+
+function stageClass(stage: OutreachStage) {
+  if (stage === "won") return "border-emerald-500/40 text-emerald-700 dark:text-emerald-400";
+  if (stage === "negotiating") return "border-amber-500/40 text-amber-700 dark:text-amber-400";
+  if (stage === "replied") return "border-sky-500/40 text-sky-700 dark:text-sky-400";
+  if (stage === "messaged") return "border-primary/40 text-primary";
+  if (stage === "lost") return "border-destructive/40 text-destructive";
+  return "";
 }
 
 function outreachEnabled(biz: LeadRow, inv: unknown): boolean {
