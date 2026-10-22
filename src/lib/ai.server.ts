@@ -1,8 +1,8 @@
 // Returns the final JSON text from an AI call. Supports several providers and can
-// fall back from one to the next:
+// fall back from one to the next. Auto order: your own key first, Lovable credits last:
+//   gemini  -> https://generativelanguage.googleapis.com      (GEMINI_API_KEY)   [first]
 //   openai  -> https://api.openai.com/v1/responses            (OPENAI_API_KEY)
-//   gemini  -> https://generativelanguage.googleapis.com      (GEMINI_API_KEY)
-//   lovable -> https://ai.gateway.lovable.dev/v1/responses    (LOVABLE_API_KEY, managed by Lovable)
+//   lovable -> https://ai.gateway.lovable.dev/v1/responses    (LOVABLE_API_KEY)  [last]
 export type AiProvider = "auto" | "openai" | "gemini" | "lovable";
 
 export const AI_PROVIDERS: AiProvider[] = ["auto", "openai", "gemini", "lovable"];
@@ -101,6 +101,19 @@ function toGeminiSchema(node: unknown): unknown {
   return node;
 }
 
+// Transient provider statuses (rate limits, capacity spikes). Worth one short
+// retry before moving on — Gemini's 503 "high demand" spikes usually clear in
+// seconds, and the alternative is burning Lovable credits on every spike.
+function isTransient(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+function geminiModels(): string[] {
+  const primary = process.env["GEMINI_MODEL"] || "gemini-2.5-flash";
+  const fallback = "gemini-2.5-flash-lite";
+  return primary === fallback ? [primary] : [primary, fallback];
+}
+
 async function callGemini(
   instructions: string,
   input: string,
@@ -109,33 +122,41 @@ async function callGemini(
 ): Promise<string> {
   const apiKey = geminiKey();
   if (!apiKey) throw new Error("GEMINI_API_KEY is not set.");
-  const model = process.env["GEMINI_MODEL"] || "gemini-2.5-flash";
-  const res = await fetch(`${GEMINI_URL}/${model}:generateContent`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: instructions }] },
-      contents: [{ role: "user", parts: [{ text: input }] }],
-      generationConfig: {
-        response_mime_type: "application/json",
-        response_schema: toGeminiSchema(schema),
-      },
-    }),
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    if (res.status === 400 && /API key not valid/i.test(body))
-      throw new Error("Gemini rejected the key. Check GEMINI_API_KEY.");
-    if (res.status === 429)
-      throw new Error("Gemini is rate limited right now. Try again in a minute.");
-    throw new Error(`Gemini request failed [${res.status}]: ${body.slice(0, 300)}`);
+  let lastError: Error | null = null;
+  for (const model of geminiModels()) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 1500));
+      const res = await fetch(`${GEMINI_URL}/${model}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: instructions }] },
+          contents: [{ role: "user", parts: [{ text: input }] }],
+          generationConfig: {
+            response_mime_type: "application/json",
+            response_schema: toGeminiSchema(schema),
+          },
+        }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as {
+          candidates?: { content?: { parts?: { text?: string }[] } }[];
+        };
+        const text = (data.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("");
+        if (!text) throw new Error("Gemini returned an empty answer.");
+        return text;
+      }
+      const body = await res.text().catch(() => "");
+      if (res.status === 400 && /API key not valid/i.test(body))
+        throw new Error("Gemini rejected the key. Check GEMINI_API_KEY.");
+      if (!isTransient(res.status))
+        throw new Error(`Gemini request failed [${res.status}]: ${body.slice(0, 300)}`);
+      lastError = new Error(
+        `Gemini ${model} unavailable [${res.status}]: ${body.slice(0, 160) || "transient provider error"}`,
+      );
+    }
   }
-  const data = (await res.json()) as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
-  };
-  const text = (data.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("");
-  if (!text) throw new Error("Gemini returned an empty answer.");
-  return text;
+  throw lastError ?? new Error("Gemini request failed.");
 }
 
 async function callLovable(
@@ -210,9 +231,14 @@ export async function callResponsesJSON(
   schema: object,
   provider: AiProvider = "auto",
 ): Promise<string> {
-  const order: AiProvider[] = provider === "auto" ? ["openai", "gemini", "lovable"] : [provider];
+  const order: AiProvider[] = provider === "auto" ? ["gemini", "openai", "lovable"] : [provider];
   const errors: string[] = [];
   for (const p of order) {
+    // Skip providers with no key configured instead of recording a throwaway
+    // error — keeps the final message about real failures only.
+    if (p === "openai" && !openaiKey()) continue;
+    if (p === "gemini" && !geminiKey()) continue;
+    if (p === "lovable" && !lovableKey()) continue;
     try {
       if (p === "openai") return await callOpenAI(instructions, input, name, schema);
       if (p === "gemini") return await callGemini(instructions, input, name, schema);
@@ -221,9 +247,13 @@ export async function callResponsesJSON(
       errors.push(`${p}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
-  if (provider !== "auto") throw new Error(errors[0] ?? "AI request failed.");
-  if (errors.length === 3 && errors.every((e) => e.includes("is not set"))) {
+  if (provider !== "auto")
+    throw new Error(errors[0] ?? `AI provider "${provider}" is not configured (missing key).`);
+  if (errors.length === 0) throw new Error("AI is not configured (missing key).");
+  if (errors.every((e) => e.includes("is not set"))) {
     throw new Error("AI is not configured (missing key).");
   }
-  throw new Error(`AI request failed. Tried: ${errors.join(" | ")}`);
+  throw new Error(
+    `AI request failed. Tried: ${errors.join(" | ")} — add a working GEMINI_API_KEY or OPENAI_API_KEY (Lovable → project Settings → Environment variables for the deployed app, or .env.local for local dev).`,
+  );
 }

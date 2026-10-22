@@ -109,7 +109,7 @@ export function describeError(error: unknown, context?: string): AppError {
     return {
       title: "AI provider error",
       message: `${context ? context + ": " : ""}${raw}`,
-      fix: "Check Settings → Integrations to confirm an AI key is configured. Try switching the AI provider dropdown to Auto, or pick a different provider.",
+      fix: "Check Settings → Integrations to confirm an AI key is configured. To use your own Gemini key on the deployed app: Lovable → project Settings → Environment variables → add GEMINI_API_KEY (then redeploy). Locally: .env.local. Auto always tries your own key before Lovable credits.",
     };
   }
 
