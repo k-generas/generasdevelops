@@ -86,3 +86,46 @@ export function stagePatch(stage: OutreachStage, now: Date = new Date()) {
   else patch["last_contacted_at"] = now.toISOString();
   return patch;
 }
+
+// Stage changes are stored as events in `business_activity_events`, a table that
+// already exists on the hosted database. That keeps outreach history durable
+// without needing a schema migration, and the newest event is the current stage.
+export const OUTREACH_EVENT_TYPE = "outreach_stage";
+
+export type OutreachEventRow = {
+  business_id: string | null;
+  created_at: string;
+  details?: unknown;
+};
+
+export function outreachEventFor(businessId: string, stage: OutreachStage) {
+  return {
+    business_id: businessId,
+    event_type: OUTREACH_EVENT_TYPE,
+    summary: `Outreach stage: ${stageLabel(stage)}`,
+    details: { stage },
+  };
+}
+
+function stageFromDetails(details: unknown): OutreachStage {
+  if (details && typeof details === "object" && "stage" in details) {
+    return normalizeStage((details as { stage?: string | null }).stage);
+  }
+  return "not_contacted";
+}
+
+// Latest stage per business, plus when it was set (used for "contacted on").
+export function stagesFromEvents(
+  rows: OutreachEventRow[],
+): Record<string, { stage: OutreachStage; at: string }> {
+  const out: Record<string, { stage: OutreachStage; at: string }> = {};
+  for (const row of rows) {
+    if (!row.business_id) continue;
+    const at = row.created_at;
+    const prev = out[row.business_id];
+    if (!prev || Date.parse(at) > Date.parse(prev.at)) {
+      out[row.business_id] = { stage: stageFromDetails(row.details), at };
+    }
+  }
+  return out;
+}

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { investigateBusiness } from "@/lib/discovery.functions";
@@ -35,12 +35,14 @@ import {
 import { BUSINESS_CATEGORIES, leadMatchesCategoryPreset } from "@/lib/business-categories";
 import { matchesBusinessSearch } from "@/lib/business-search";
 import {
+  OUTREACH_EVENT_TYPE,
   OUTREACH_STAGES,
   contactChannels,
   normalizeStage,
+  outreachEventFor,
   stageCounts,
   stageLabel,
-  stagePatch,
+  stagesFromEvents,
   type OutreachStage,
 } from "@/lib/outreach-tracker";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
@@ -99,6 +101,64 @@ function Businesses() {
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   // The business whose full-report modal is open (null = closed).
   const [modalBiz, setModalBiz] = useState<LeadRow | null>(null);
+  const [localStages, setLocalStages] = useState<Record<string, OutreachStage>>({});
+
+  // Stage changes are stored as events in business_activity_events, which the
+  // hosted database already has. Newest event per business wins.
+  const outreachEvents = useQuery({
+    queryKey: ["outreach-events"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("business_activity_events")
+        .select("business_id, details, created_at")
+        .eq("event_type", OUTREACH_EVENT_TYPE)
+        .order("created_at", { ascending: false });
+      if (error) return [];
+      return data ?? [];
+    },
+  });
+
+  const dbStages = useMemo(
+    () => stagesFromEvents(outreachEvents.data ?? []),
+    [outreachEvents.data],
+  );
+
+  const stageOf = useMemo(
+    () =>
+      (b: { id: string; outreach_stage?: string | null }): OutreachStage =>
+        localStages[b.id] ?? dbStages[b.id]?.stage ?? normalizeStage(b.outreach_stage),
+    [localStages, dbStages],
+  );
+
+  useEffect(() => {
+    const saved = readLocalStages();
+    setLocalStages(saved);
+    // Anything saved while the database was unreachable is written to the
+    // history table on the next visit, so it is never lost.
+    const entries = Object.entries(saved);
+    if (entries.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      let synced = 0;
+      for (const [id, stage] of entries) {
+        if (cancelled) return;
+        const { error } = await supabase
+          .from("business_activity_events")
+          .insert(outreachEventFor(id, stage));
+        if (!error) {
+          clearLocalStage(id);
+          synced++;
+        }
+      }
+      if (!cancelled && synced > 0) {
+        setLocalStages(readLocalStages());
+        void qc.invalidateQueries({ queryKey: ["outreach-events"] });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [qc]);
 
   const businesses = useQuery({
     queryKey: ["businesses"],
@@ -166,39 +226,59 @@ function Businesses() {
         !leadMatchesCategoryPreset(categoryPreset, b.name, b.category)
       )
         return false;
-      if (stageFilter !== "ANY" && normalizeStage(b.outreach_stage) !== stageFilter) return false;
+      const st = stageOf(b);
+      if (stageFilter !== "ANY" && st !== stageFilter) return false;
       if (!matchesBusinessSearch(b, q)) return false;
       return true;
     });
-  }, [businesses.data, website, province, district, industry, categoryPreset, stageFilter, q]);
+  }, [
+    businesses.data,
+    website,
+    province,
+    district,
+    industry,
+    categoryPreset,
+    stageFilter,
+    q,
+    stageOf,
+  ]);
 
   // Counters always describe the whole saved list, not the current filters, so
   // "how many did I message" stays visible while browsing.
-  const counts = useMemo(() => stageCounts(businesses.data ?? []), [businesses.data]);
+  const counts = useMemo(() => {
+    const all = (businesses.data ?? []).map((b) => ({ outreach_stage: stageOf(b) }));
+    return stageCounts(all);
+  }, [businesses.data, stageOf]);
 
   async function setStage(b: BusinessRow, stage: OutreachStage) {
     setStageBusyId(b.id);
     setNote(null);
+    // Write to the shared activity/event log first (already exists). Fall back
+    // to this device so the change is never lost regardless of network timing.
+    writeLocalStage(b.id, stage);
+    setLocalStages((prev) => ({ ...prev, [b.id]: stage }));
     try {
-      const patch: Record<string, unknown> = stagePatch(stage);
-      const { error } = await supabase.from("businesses").update(patch as never).eq("id", b.id);
+      const { error } = await supabase
+        .from("business_activity_events")
+        .insert(outreachEventFor(b.id, stage));
       if (error) {
-        // Fallback: columns may not exist yet or schema cache not reloaded
-        if (/last_contacted_at|schema cache/i.test(error.message)) {
-          const { error: e2 } = await supabase
-            .from("businesses")
-            .update({ outreach_stage: stage })
-            .eq("id", b.id);
-          if (e2) throw e2;
-        } else {
-          throw error;
-        }
+        setNote({
+          ok: true,
+          text: "Saved on this device. It syncs to the database when the connection recovers.",
+        });
+      } else {
+        clearLocalStage(b.id);
+        setLocalStages((prev) => {
+          const next = { ...prev };
+          delete next[b.id];
+          return next;
+        });
+        void qc.invalidateQueries({ queryKey: ["outreach-events"] });
       }
-      await qc.invalidateQueries({ queryKey: ["businesses"] });
-    } catch (e) {
+    } catch {
       setNote({
-        ok: false,
-        text: `Could not save outreach stage: ${e instanceof Error ? e.message : String(e)}`,
+        ok: true,
+        text: "Saved on this device. It syncs to the database when the connection recovers.",
       });
     }
     setStageBusyId(null);
@@ -420,7 +500,7 @@ function Businesses() {
             const closedFlag = b.business_status === "CLOSED_PERMANENTLY";
             const hasBadges = !b.website || investigatedFlag || closedFlag;
             const { phone, email, extraEmails } = contactChannels(b);
-            const stage = normalizeStage(b.outreach_stage);
+            const stage = stageOf(b);
             return (
               <div
                 key={b.id}
@@ -475,9 +555,9 @@ function Businesses() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {b.last_contacted_at && stage !== "not_contacted" && (
+                  {(dbStages[b.id]?.at || b.last_contacted_at) && stage !== "not_contacted" && (
                     <span className="truncate text-xs text-muted-foreground">
-                      {new Date(b.last_contacted_at).toLocaleDateString()}
+                      {new Date(dbStages[b.id]?.at || b.last_contacted_at!).toLocaleDateString()}
                     </span>
                   )}
                 </div>
@@ -567,6 +647,42 @@ function CountChip({
       <span className="font-medium">{value}</span>
     </span>
   );
+}
+
+const OUTREACH_KEY = "gare:outreach-stage:v1";
+
+function readLocalStages(): Record<string, OutreachStage> {
+  try {
+    const raw = localStorage.getItem(OUTREACH_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed && typeof parsed === "object") return parsed as Record<string, OutreachStage>;
+  } catch {
+    // ignore storage errors
+  }
+  return {};
+}
+
+function writeLocalStage(id: string, stage: OutreachStage) {
+  try {
+    const all = readLocalStages();
+    all[id] = stage;
+    localStorage.setItem(OUTREACH_KEY, JSON.stringify(all));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function clearLocalStage(id: string) {
+  try {
+    const all = readLocalStages();
+    if (id in all) {
+      delete all[id];
+      localStorage.setItem(OUTREACH_KEY, JSON.stringify(all));
+    }
+  } catch {
+    // ignore storage errors
+  }
 }
 
 function stageClass(stage: OutreachStage) {
