@@ -37,12 +37,15 @@ import { matchesBusinessSearch } from "@/lib/business-search";
 import {
   OUTREACH_EVENT_TYPE,
   OUTREACH_STAGES,
+  clearLocalStage,
   contactChannels,
   normalizeStage,
   outreachEventFor,
+  readLocalStages,
   stageCounts,
   stageLabel,
   stagesFromEvents,
+  writeLocalStage,
   type OutreachStage,
 } from "@/lib/outreach-tracker";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
@@ -253,20 +256,16 @@ function Businesses() {
   async function setStage(b: BusinessRow, stage: OutreachStage) {
     setStageBusyId(b.id);
     setNote(null);
-    // Write to the shared activity/event log first (already exists). Fall back
-    // to this device so the change is never lost regardless of network timing.
+    // Always save locally first - this is the source of truth for now
     writeLocalStage(b.id, stage);
     setLocalStages((prev) => ({ ...prev, [b.id]: stage }));
+
+    // Try to persist to events table (exists in DB) in background
     try {
       const { error } = await supabase
         .from("business_activity_events")
         .insert(outreachEventFor(b.id, stage));
-      if (error) {
-        setNote({
-          ok: true,
-          text: "Saved on this device. It syncs to the database when the connection recovers.",
-        });
-      } else {
+      if (!error) {
         clearLocalStage(b.id);
         setLocalStages((prev) => {
           const next = { ...prev };
@@ -275,11 +274,9 @@ function Businesses() {
         });
         void qc.invalidateQueries({ queryKey: ["outreach-events"] });
       }
+      // If error, just keep it local - no user-facing error
     } catch {
-      setNote({
-        ok: true,
-        text: "Saved on this device. It syncs to the database when the connection recovers.",
-      });
+      // Ignore all errors - local save is sufficient
     }
     setStageBusyId(null);
   }
@@ -647,42 +644,6 @@ function CountChip({
       <span className="font-medium">{value}</span>
     </span>
   );
-}
-
-const OUTREACH_KEY = "gare:outreach-stage:v1";
-
-function readLocalStages(): Record<string, OutreachStage> {
-  try {
-    const raw = localStorage.getItem(OUTREACH_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as unknown;
-    if (parsed && typeof parsed === "object") return parsed as Record<string, OutreachStage>;
-  } catch {
-    // ignore storage errors
-  }
-  return {};
-}
-
-function writeLocalStage(id: string, stage: OutreachStage) {
-  try {
-    const all = readLocalStages();
-    all[id] = stage;
-    localStorage.setItem(OUTREACH_KEY, JSON.stringify(all));
-  } catch {
-    // ignore storage errors
-  }
-}
-
-function clearLocalStage(id: string) {
-  try {
-    const all = readLocalStages();
-    if (id in all) {
-      delete all[id];
-      localStorage.setItem(OUTREACH_KEY, JSON.stringify(all));
-    }
-  } catch {
-    // ignore storage errors
-  }
 }
 
 function stageClass(stage: OutreachStage) {

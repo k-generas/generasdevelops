@@ -18,6 +18,7 @@ import { Route as AuthenticatedDiscoverRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedIntentRouteImport } from './routes/_authenticated/intent'
 import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticated/invoices'
 import { Route as AuthenticatedLeaksRouteImport } from './routes/_authenticated/leaks'
+import { Route as AuthenticatedNumbersRouteImport } from './routes/_authenticated/numbers'
 import { Route as AuthenticatedOffersRouteImport } from './routes/_authenticated/offers'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedPartnersRouteImport } from './routes/_authenticated/partners'
@@ -78,6 +79,11 @@ const AuthenticatedInvoicesRoute = AuthenticatedInvoicesRouteImport.update({
 const AuthenticatedLeaksRoute = AuthenticatedLeaksRouteImport.update({
   id: '/leaks',
   path: '/leaks',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedNumbersRoute = AuthenticatedNumbersRouteImport.update({
+  id: '/numbers',
+  path: '/numbers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedOffersRoute = AuthenticatedOffersRouteImport.update({
@@ -180,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/intent': typeof AuthenticatedIntentRoute
   '/invoices': typeof AuthenticatedInvoicesRoute
   '/leaks': typeof AuthenticatedLeaksRoute
+  '/numbers': typeof AuthenticatedNumbersRoute
   '/offers': typeof AuthenticatedOffersRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/partners': typeof AuthenticatedPartnersRoute
@@ -207,6 +214,7 @@ export interface FileRoutesByTo {
   '/intent': typeof AuthenticatedIntentRoute
   '/invoices': typeof AuthenticatedInvoicesRoute
   '/leaks': typeof AuthenticatedLeaksRoute
+  '/numbers': typeof AuthenticatedNumbersRoute
   '/offers': typeof AuthenticatedOffersRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/partners': typeof AuthenticatedPartnersRoute
@@ -236,6 +244,7 @@ export interface FileRoutesById {
   '/_authenticated/intent': typeof AuthenticatedIntentRoute
   '/_authenticated/invoices': typeof AuthenticatedInvoicesRoute
   '/_authenticated/leaks': typeof AuthenticatedLeaksRoute
+  '/_authenticated/numbers': typeof AuthenticatedNumbersRoute
   '/_authenticated/offers': typeof AuthenticatedOffersRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
   '/_authenticated/partners': typeof AuthenticatedPartnersRoute
@@ -265,6 +274,7 @@ export interface FileRouteTypes {
     | '/intent'
     | '/invoices'
     | '/leaks'
+    | '/numbers'
     | '/offers'
     | '/orders'
     | '/partners'
@@ -292,6 +302,7 @@ export interface FileRouteTypes {
     | '/intent'
     | '/invoices'
     | '/leaks'
+    | '/numbers'
     | '/offers'
     | '/orders'
     | '/partners'
@@ -320,6 +331,7 @@ export interface FileRouteTypes {
     | '/_authenticated/intent'
     | '/_authenticated/invoices'
     | '/_authenticated/leaks'
+    | '/_authenticated/numbers'
     | '/_authenticated/offers'
     | '/_authenticated/orders'
     | '/_authenticated/partners'
@@ -408,6 +420,13 @@ declare module '@tanstack/react-router' {
       path: '/leaks'
       fullPath: '/leaks'
       preLoaderRoute: typeof AuthenticatedLeaksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/numbers': {
+      id: '/_authenticated/numbers'
+      path: '/numbers'
+      fullPath: '/numbers'
+      preLoaderRoute: typeof AuthenticatedNumbersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/offers': {
@@ -539,6 +558,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIntentRoute: typeof AuthenticatedIntentRoute
   AuthenticatedInvoicesRoute: typeof AuthenticatedInvoicesRoute
   AuthenticatedLeaksRoute: typeof AuthenticatedLeaksRoute
+  AuthenticatedNumbersRoute: typeof AuthenticatedNumbersRoute
   AuthenticatedOffersRoute: typeof AuthenticatedOffersRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
   AuthenticatedPartnersRoute: typeof AuthenticatedPartnersRoute
@@ -565,6 +585,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIntentRoute: AuthenticatedIntentRoute,
   AuthenticatedInvoicesRoute: AuthenticatedInvoicesRoute,
   AuthenticatedLeaksRoute: AuthenticatedLeaksRoute,
+  AuthenticatedNumbersRoute: AuthenticatedNumbersRoute,
   AuthenticatedOffersRoute: AuthenticatedOffersRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
   AuthenticatedPartnersRoute: AuthenticatedPartnersRoute,

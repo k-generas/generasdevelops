@@ -129,3 +129,41 @@ export function stagesFromEvents(
   }
   return out;
 }
+
+// Device cache used when the database is unreachable. Shared by the Leads and
+// Numbers pages so a stage set in one place shows up in the other instantly.
+export const OUTREACH_CACHE_KEY = "gare:outreach-stage:v1";
+
+export function readLocalStages(): Record<string, OutreachStage> {
+  try {
+    const raw = localStorage.getItem(OUTREACH_CACHE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed && typeof parsed === "object") return parsed as Record<string, OutreachStage>;
+  } catch {
+    // ignore storage errors
+  }
+  return {};
+}
+
+export function writeLocalStage(id: string, stage: OutreachStage) {
+  try {
+    const all = readLocalStages();
+    all[id] = stage;
+    localStorage.setItem(OUTREACH_CACHE_KEY, JSON.stringify(all));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+export function clearLocalStage(id: string) {
+  try {
+    const all = readLocalStages();
+    if (id in all) {
+      delete all[id];
+      localStorage.setItem(OUTREACH_CACHE_KEY, JSON.stringify(all));
+    }
+  } catch {
+    // ignore storage errors
+  }
+}
