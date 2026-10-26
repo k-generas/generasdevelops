@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   Bell,
   Building2,
+  ChartLine,
   Compass,
   Factory,
   FileText,
@@ -87,6 +88,7 @@ type NavItem = { to: string; label: string; icon: LucideIcon };
 
 const NAV: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/analytics", label: "Analytics", icon: ChartLine },
   { to: "/updates", label: "Updates", icon: Bell },
   { to: "/leaks", label: "Revenue Leaks", icon: AlertTriangle },
   { to: "/offers", label: "Offer studio", icon: Package },
@@ -151,6 +153,7 @@ const EMPTY_COUNTS: NavCounts = {
   tasksOverdue: 0,
   proposalsDraft: 0,
   invoicesOverdue: 0,
+  winsThisMonth: 0,
 };
 
 // Which badge (if any) to show next to a nav item, and how urgent it is.
@@ -158,6 +161,8 @@ function navBadgeFor(to: string, c: NavCounts): { count: number; tone: NavTone }
   switch (to) {
     case "/dashboard":
       return c.newLeads > 0 ? { count: c.newLeads, tone: "primary" } : null;
+    case "/analytics":
+      return c.winsThisMonth > 0 ? { count: c.winsThisMonth, tone: "primary" } : null;
     case "/updates":
       return c.updatesUnread > 0 ? { count: c.updatesUnread, tone: "primary" } : null;
     case "/discover":

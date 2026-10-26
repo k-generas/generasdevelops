@@ -11,6 +11,59 @@ npm test
 npm run build
 ```
 
+## 2026-10-26 — Phase 2: Data & reporting
+
+Adds time-series analytics, CSV/JSON export, safe duplicate merging, and the missing
+`company_events` collector. Outbound email/WhatsApp sending stays intentionally out of scope.
+
+### Baseline at start of pass
+- `git` HEAD `d6ec683`; working tree clean before this pass
+- `npx tsc --noEmit` — clean
+- `npx eslint .` — 0 errors (7 pre-existing `react-refresh` warnings)
+- `npx vitest run` — 39 files / 277 tests passing after this pass
+- `npm run build` — succeeded; regenerated `routeTree.gen.ts` for `/analytics`
+
+### Changes
+- **`src/lib/analytics.ts`** (+ `analytics.test.ts`) — pure UTC Monday week bucketing; weekly leads,
+  proposals, accepted and collected-cash series; all-time funnel, win rate, average deal, and
+  per-currency won/pipeline/cash totals. No blended currencies.
+- **`src/routes/_authenticated/analytics.tsx`** + nav — paginated owner reads, KPI cards, activity
+  and cash charts, conversion funnel, weekly table, CSV export, `winsThisMonth` sidebar badge.
+- **`src/lib/export.ts`** + Settings "Data & backup" — owner-scoped paged JSON backup across the
+  26 business/user tables (admin/auth audit tables excluded), with per-table errors recorded.
+- **CSV exports** on `/businesses` and `/numbers` using the shared `src/lib/csv.ts` helpers.
+- **`src/lib/duplicates.ts`** (+ tests) — conservative grouping by usable phone, non-social
+  website domain, or normalized name + district; completeness-based suggested keep record.
+- **`src/lib/merge.functions.ts`** + `MergeDuplicatesDialog.tsx` — moves linked rows
+  (`business_activity_events`, facts, notes, company events, investigations, invoices, orders,
+  partner handoffs, proposals, leaks, subscriptions, tasks, business sources, search results,
+  referral sides), cleans conflicting unique links, merges contact/profile fields, deletes the
+  duplicates, and logs a `merged` activity event. Owner session + RLS only.
+- **`src/lib/signals.ts`** + `signals.server.ts` (+ tests) — detects rating, review-count, closure/
+  reopening, website and phone changes; refreshes activity fields; writes deduped `company_events`
+  and timeline rows. Wired into `runDiscovery` and `performRwandaScan`, so the collector reuses
+  search data already paid for (no extra Google Places calls).
+- Discovery now pages through every known business (previous `limit(5000)` was capped at the
+  PostgREST 1,000-row default) with an `id` tie-breaker, so duplicate checks cover the full list.
+- Analytics pagination now uses an `id` tie-breaker; `/analytics` added to the tracked route tree.
+
+### Non-breaking design decisions
+- Additive routes, files and tables only; no schema migration is required for this phase.
+- Duplicate deletion is explicit and per-group; the owner picks the record to keep. Grouping does
+  not merge generic names across different districts.
+- Contact details are only filled when blank; a verified website/phone is never overwritten by a
+  Google listing. Signals are idempotent via `company_events.dedupe_key`.
+- Backup export is client-side under RLS; excluded admin/auth audit tables are not owner data.
+- Outbound email/WhatsApp/SMS sending remains skipped by user direction.
+
+### Known limitations / follow-ups
+- Activity signals only refresh businesses revisited by a later discovery/Rwanda scan; there is
+  no standalone scheduler yet (Phase 3).
+- Older databases without migration `0008` tables/columns degrade gracefully: scans still work,
+  but no signals are stored until the migration is applied on the hosted project.
+- Payment/cash collection itself remains Phase 1 (manual ledger first); analytics reads recorded
+  invoices only.
+
 ## 2026-10-14 — Buyer Intent (D) + Referral/Partnership (H)
 
 Phase 5 (final) of the Revenue Growth Engine plan. Turns recorded signals into an

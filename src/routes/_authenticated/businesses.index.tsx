@@ -2,7 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
+import { Download, Merge } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { downloadCsv, rowsToCsv } from "@/lib/csv";
+import { findDuplicateGroups } from "@/lib/duplicates";
+import { MergeDuplicatesDialog } from "@/components/MergeDuplicatesDialog";
 import type { Database } from "@/integrations/supabase/types";
 import { investigateBusiness } from "@/lib/discovery.functions";
 import { BusinessIntelModal } from "@/components/BusinessIntelModal";
@@ -105,6 +109,7 @@ function Businesses() {
   // The business whose full-report modal is open (null = closed).
   const [modalBiz, setModalBiz] = useState<LeadRow | null>(null);
   const [localStages, setLocalStages] = useState<Record<string, OutreachStage>>({});
+  const [mergeOpen, setMergeOpen] = useState(false);
 
   // Stage changes are stored as events in business_activity_events, which the
   // hosted database already has. Newest event per business wins.
@@ -302,7 +307,41 @@ function Businesses() {
     setBusyId(null);
   }
 
+  function exportLeads() {
+    const csv = rows.map((b) => {
+      const loc = locationOf(b);
+      const ind =
+        (b.industry as IndustryKey | null) ??
+        classifyIndustry(`${b.category ?? ""} ${b.name ?? ""}`);
+      return {
+        name: b.name,
+        phone: b.phone ?? "",
+        cell: b.cell ?? "",
+        emails: (b.emails ?? []).join("; "),
+        website: b.website ?? "",
+        category: b.category ?? "",
+        industry: ind ? industryLabel(ind) : "",
+        province: loc.province ?? "",
+        district: loc.district ?? "",
+        address: b.address ?? "",
+        business_status: b.business_status ?? "",
+        outreach_stage: stageLabel(stageOf(b)),
+        score: b.score ?? "",
+        rating: b.rating ?? "",
+        review_count: b.review_count ?? "",
+        maps_url: b.maps_url ?? "",
+        created_at: b.created_at,
+      };
+    });
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(rowsToCsv(csv), `gare-leads-${stamp}.csv`);
+  }
+
   const noSite = rows.filter((b) => !b.website && b.website_checked_at).length;
+  const duplicateGroups = useMemo(
+    () => findDuplicateGroups(businesses.data ?? []),
+    [businesses.data],
+  );
 
   return (
     <div className="space-y-4">
@@ -330,6 +369,27 @@ function Businesses() {
           </div>
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setMergeOpen(true)}
+            disabled={!businesses.data?.length}
+            title="Find and merge duplicate businesses"
+          >
+            <Merge className="h-4 w-4" />
+            Duplicates
+            {duplicateGroups.length > 0 ? ` (${duplicateGroups.length})` : ""}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportLeads}
+            disabled={rows.length === 0}
+            title="Export the currently filtered leads as CSV"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -603,6 +663,20 @@ function Businesses() {
           })}
         </div>
       )}
+
+      <MergeDuplicatesDialog
+        open={mergeOpen}
+        onOpenChange={setMergeOpen}
+        businesses={businesses.data ?? []}
+        onMerged={() => {
+          void qc.invalidateQueries({ queryKey: ["businesses"] });
+          void qc.invalidateQueries({ queryKey: ["businesses-investigated"] });
+          void qc.invalidateQueries({ queryKey: ["outreach-events"] });
+          void qc.invalidateQueries({ queryKey: ["numbers-businesses"] });
+          void qc.invalidateQueries({ queryKey: ["analytics-data"] });
+          void qc.invalidateQueries({ queryKey: ["rwanda-companies"] });
+        }}
+      />
 
       {modalBiz && (
         <BusinessIntelModal

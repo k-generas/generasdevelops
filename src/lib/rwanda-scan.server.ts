@@ -3,7 +3,8 @@
 // job (which has no user session and uses the service-role client).
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { searchPlaces } from "./places.server";
+import { searchPlaces, type PlaceResult } from "./places.server";
+import { recordPlaceChanges } from "./signals.server";
 import { buildScanPlan, estimateScanCost, type ScanScope } from "./rwanda-scan";
 import { dedupeBusinesses } from "./company-identity";
 import { normalizeProvince, type IndustryKey } from "./rwanda";
@@ -45,16 +46,26 @@ const NEW_PROFILE_COLUMNS = [
   "intel_updated_at",
 ] as const;
 
-type Collected = {
-  place_id: string;
-  name: string;
-  website: string | null;
-  phone: string | null;
-  address: string | null;
+type Collected = PlaceResult & {
   industry: IndustryKey;
   province: string;
   district: string | null;
-  [key: string]: unknown;
+};
+
+type ExistingRow = {
+  id: string;
+  place_id: string;
+  name: string;
+  website?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  rating?: number | null;
+  review_count?: number | null;
+  business_status?: string | null;
+  reviews_last_90d?: number | null;
+  open_now?: boolean | null;
+  last_activity_at?: string | null;
+  activity_checked_at?: string | null;
 };
 
 export async function performRwandaScan(
@@ -118,7 +129,7 @@ export async function performRwandaScan(
           industry: q.industry,
           province: q.province,
           district: q.district,
-        } as Collected);
+        });
       }
       perQuery.push({ query: q.query, location: q.location, found: places.length, error: null });
     } catch (e) {
@@ -136,10 +147,23 @@ export async function performRwandaScan(
   const { kept, duplicates } = dedupeBusinesses(collected);
 
   const ids = kept.map((p) => p.place_id);
-  const { data: existing } = ids.length
-    ? await supabase.from("businesses").select("id, place_id").in("place_id", ids)
-    : { data: [] as { id: string; place_id: string }[] };
-  const known = new Map((existing ?? []).map((r) => [r.place_id, r.id]));
+  const EXISTING_COLUMNS =
+    "id, place_id, name, website, phone, address, rating, review_count, business_status, reviews_last_90d, open_now, last_activity_at, activity_checked_at";
+  const fullRes = ids.length
+    ? await supabase.from("businesses").select(EXISTING_COLUMNS).in("place_id", ids)
+    : null;
+  let existing = (fullRes?.data ?? []) as ExistingRow[];
+  if (
+    fullRes?.error &&
+    /column .* does not exist|could not find|schema cache/i.test(fullRes.error.message)
+  ) {
+    const fallback = ids.length
+      ? await supabase.from("businesses").select("id, place_id").in("place_id", ids)
+      : null;
+    existing = (fallback?.data ?? []) as ExistingRow[];
+  }
+  const known = new Map(existing.map((r) => [r.place_id, r.id]));
+  const existingById = new Map(existing.map((r) => [r.id, r]));
   const fresh = kept.filter((p) => !known.has(p.place_id));
 
   if (fresh.length) {
@@ -231,6 +255,16 @@ export async function performRwandaScan(
         finished_at: new Date().toISOString(),
       })
       .eq("id", scanId);
+
+  // Revisited companies: the scan already paid for this data, so use it to
+  // refresh activity and record change signals.
+  await Promise.allSettled(
+    kept.flatMap((p) => {
+      const before = existingById.get(known.get(p.place_id) ?? "");
+      if (!before?.name) return [];
+      return [recordPlaceChanges(supabase, userId, before, p)];
+    }),
+  );
 
   return {
     runId: run.id,

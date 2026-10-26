@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bell, Phone, Search, Building2 } from "lucide-react";
+import { Bell, Download, Phone, Search, Building2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { downloadCsv, rowsToCsv } from "@/lib/csv";
 import {
   OUTREACH_EVENT_TYPE,
   OUTREACH_STAGES,
@@ -179,6 +180,22 @@ function NumbersPage() {
     return c;
   }, [businesses.data, stageOf]);
 
+  function exportNumbers() {
+    const csv = rows.map((r) => ({
+      number: r.number,
+      type: r.type,
+      business: r.business.name,
+      stage: stageLabel(r.stage),
+      category: r.business.category ?? "",
+      district: r.business.district ?? "",
+      province: r.business.province ?? "",
+      address: r.business.address ?? "",
+      business_status: r.business.business_status ?? "",
+    }));
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(rowsToCsv(csv), `gare-numbers-${stamp}.csv`);
+  }
+
   const collectedNumbers = useMemo(() => {
     const unique = new Set<string>();
     for (const b of businesses.data ?? []) {
@@ -243,6 +260,15 @@ function NumbersPage() {
               ))}
             </SelectContent>
           </Select>
+          <Button
+            variant="outline"
+            onClick={exportNumbers}
+            disabled={rows.length === 0}
+            title="Export the currently filtered numbers as CSV"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
         </CardContent>
       </Card>
 

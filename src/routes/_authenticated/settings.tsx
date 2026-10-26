@@ -2,8 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, Plus, Trash2, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, Plus, Trash2, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { downloadJson, exportAllData } from "@/lib/export";
 import { getSystemStatus } from "@/lib/system.functions";
 import { DEFAULT_CURRENCY, parseMinPrices, type MinPrices } from "@/lib/pricing";
 import { offerNamesForFloors, sortOffers, type Offer } from "@/lib/offers";
@@ -46,6 +47,8 @@ function Settings() {
   const [offersReady, setOffersReady] = useState(false);
   const [offerMsg, setOfferMsg] = useState<string | null>(null);
   const [offerBusy, setOfferBusy] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (prefs.data && !ready) {
@@ -82,6 +85,29 @@ function Settings() {
       setSaved(`${d.title}: ${d.message} How to fix: ${d.fix}`);
     }
     setBusy(false);
+  }
+
+  async function downloadBackup() {
+    setExportBusy(true);
+    setExportMsg(null);
+    try {
+      const backup = await exportAllData();
+      const stamp = new Date().toISOString().slice(0, 10);
+      downloadJson(backup, `gare-backup-${stamp}.json`);
+      const rows = Object.values(backup.tables).reduce((sum, list) => sum + list.length, 0);
+      const missing = backup.errors.length
+        ? ` ${backup.errors.length} table(s) could not be read: ${backup.errors
+            .map((e) => e.table)
+            .join(", ")}.`
+        : "";
+      setExportMsg(
+        `Exported ${rows.toLocaleString()} rows across ${Object.keys(backup.tables).length} tables.${missing}`,
+      );
+    } catch (e) {
+      const d = describeError(e, "Export data");
+      setExportMsg(`${d.title}: ${d.message} How to fix: ${d.fix}`);
+    }
+    setExportBusy(false);
   }
 
   function patchOffer(index: number, next: Partial<Offer>) {
@@ -331,6 +357,22 @@ function Settings() {
             {busy ? "Saving…" : "Save pricing floors"}
           </Button>
           {saved && <span className="text-sm text-muted-foreground">{saved}</span>}
+        </div>
+      </section>
+
+      <section className="rounded-xl border bg-card">
+        <div className="border-b px-4 py-3">
+          <h2 className="text-sm font-semibold">Data &amp; backup</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Download every owner-scoped table as one JSON file. Keep a copy before big changes.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3">
+          <Button variant="outline" onClick={() => void downloadBackup()} disabled={exportBusy}>
+            <Download className="h-4 w-4" />
+            {exportBusy ? "Preparing…" : "Download all data (JSON)"}
+          </Button>
+          {exportMsg && <span className="text-sm text-muted-foreground">{exportMsg}</span>}
         </div>
       </section>
 

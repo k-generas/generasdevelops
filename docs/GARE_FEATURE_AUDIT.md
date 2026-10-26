@@ -52,10 +52,10 @@ Legend: **Done** = implemented and wired · **Partial** — exists but limited �
 | --- | --- | --- |
 | Owner auth | Done | Supabase auth + `_authenticated` gate |
 | Lead discovery (Maps) | Done | `runDiscovery`, bounds + dedupe |
-| Lead storage / dedupe | Done | `businesses` keyed by `place_id` |
+| Lead storage / dedupe | Done | `businesses` keyed by `place_id`; reviewable duplicate groups + safe merge (`duplicates.ts`, `merge.functions.ts`) |
 | Website double-check | Done | `website-finder.server.ts`, `verifyWebsite` |
 | Investigation & scoring | Done | `investigate.server.ts` (visibility + AI report) |
-| Activity / closure signals | Done | migration 0003 + `places.server.ts` + UI badges |
+| Activity / closure signals | Done | migration 0003 + `places.server.ts` + UI badges; discovery/Rwanda scans now populate deduped `company_events` (`signals.ts`) |
 | Proposals (draft/edit) | Done | `generateProposal`, `proposals.$id`; channel-aware, copy-paste-ready output (Email / WhatsApp / SMS / LinkedIn / DM / call script / formal) |
 | Proposal versioning | Done | `proposal_versions` |
 | Proposal outcomes / win rate | Done | outcome reason captured in `proposals.$id`; win rate + pipeline on the dashboard (`src/lib/outcomes.ts`) |
@@ -83,7 +83,8 @@ Legend: **Done** = implemented and wired · **Partial** — exists but limited �
 | Jobs / workers / cron | Missing | `cron-auth.ts` exists but is unused; no queue |
 | Cost / budget tracking | Missing | no token or spend accounting |
 | Automation control center | Missing | discovery is manually triggered only |
-| Analytics / reporting | Partial | dashboard counters + win rate; no time-series or export |
+| Analytics / reporting | Done | `/analytics` weekly time-series, funnel, cash by currency, win rate; CSV exports on Leads/Numbers |
+| Backup / data export | Done | Settings JSON backup over 26 owner tables; per-table errors reported |
 | Multi-user / roles | Missing | intentionally single-owner |
 
 ## Data collected per business (confirmed)

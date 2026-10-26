@@ -26,6 +26,7 @@ export type NavCounts = {
   tasksOverdue: number;
   proposalsDraft: number;
   invoicesOverdue: number;
+  winsThisMonth: number;
 };
 
 type CountQuery = PromiseLike<{ count: number | null }>;
@@ -60,6 +61,9 @@ export const getNavCounts = createServerFn({ method: "GET" })
     const nowIso = now.toISOString();
     const weekAgoIso = new Date(now.getTime() - 7 * 86_400_000).toISOString();
     const staleIso = new Date(now.getTime() - 14 * 86_400_000).toISOString();
+    const monthStartIso = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+    ).toISOString();
 
     const head = <T extends keyof Database["public"]["Tables"]>(table: T) =>
       supabase.from(table).select("id", { count: "exact", head: true });
@@ -86,6 +90,7 @@ export const getNavCounts = createServerFn({ method: "GET" })
       tasksOverdue,
       proposalsDraft,
       invoicesOverdue,
+      winsThisMonth,
     ] = await Promise.all([
       n(head("businesses")),
       supabase
@@ -127,6 +132,7 @@ export const getNavCounts = createServerFn({ method: "GET" })
       n(head("tasks").eq("status", "open").not("due_at", "is", null).lt("due_at", nowIso)),
       n(head("proposals").in("status", ["DRAFT", "READY_TO_SEND"])),
       n(head("invoices").neq("status", "PAID").not("due_at", "is", null).lt("due_at", nowIso)),
+      n(head("proposals").eq("status", "ACCEPTED").gte("updated_at", monthStartIso)),
     ]);
 
     return {
@@ -151,5 +157,6 @@ export const getNavCounts = createServerFn({ method: "GET" })
       tasksOverdue,
       proposalsDraft,
       invoicesOverdue,
+      winsThisMonth,
     };
   });

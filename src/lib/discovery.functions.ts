@@ -6,6 +6,7 @@ import { searchPlaces } from "./places.server";
 import { probeWebsite, analyzeWithAI, computeVisibility } from "./investigate.server";
 import { verifyWebsite } from "./website-finder.server";
 import { sameBusinessRecord } from "./company-identity";
+import { recordPlaceChanges } from "./signals.server";
 
 // Website verification runs inside discovery so we never claim a business has
 // no website when it actually has one. It is time-boxed so a run always returns;
@@ -89,19 +90,51 @@ export const runDiscovery = createServerFn({ method: "POST" })
     // Load everything already known so a business is never counted twice: first
     // by Google place_id, then by domain/phone/name identity, so the same lead
     // reached through another source (or an earlier run) is not re-added.
-    const { data: existingData } = await supabase
-      .from("businesses")
-      .select("id, place_id, name, website, phone, address")
-      .limit(5000);
-    const existing = (existingData ?? []) as {
+    type KnownBusiness = {
       id: string;
       place_id: string | null;
       name: string;
       website: string | null;
       phone: string | null;
       address: string | null;
-    }[];
+      rating?: number | null;
+      review_count?: number | null;
+      business_status?: string | null;
+      reviews_last_90d?: number | null;
+      open_now?: boolean | null;
+      last_activity_at?: string | null;
+      activity_checked_at?: string | null;
+    };
+    const EXISTING_COLUMNS =
+      "id, place_id, name, website, phone, address, rating, review_count, business_status, reviews_last_90d, open_now, last_activity_at, activity_checked_at";
+    const BASE_COLUMNS = "id, place_id, name, website, phone, address";
+    async function loadKnown(columns: string): Promise<KnownBusiness[]> {
+      const rows: KnownBusiness[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase
+          .from("businesses")
+          .select(columns)
+          .order("id")
+          .range(from, from + 999);
+        if (error) throw new Error(error.message);
+        const batch = (data ?? []) as unknown as KnownBusiness[];
+        rows.push(...batch);
+        if (batch.length < 1000) break;
+      }
+      return rows;
+    }
+    let existing: KnownBusiness[];
+    try {
+      existing = await loadKnown(EXISTING_COLUMNS);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      if (!/column .* does not exist|could not find|schema cache/i.test(message)) {
+        throw new Error(message);
+      }
+      existing = await loadKnown(BASE_COLUMNS);
+    }
     const knownByPlaceId = new Map<string, string>();
+    const existingById = new Map(existing.map((e) => [e.id, e]));
     for (const e of existing) if (e.place_id) knownByPlaceId.set(e.place_id, e.id);
 
     // place_id -> resolved business id (existing match or newly inserted row).
@@ -242,6 +275,18 @@ export const runDiscovery = createServerFn({ method: "POST" })
         completed_at: new Date().toISOString(),
       })
       .eq("id", run.id);
+
+    // Places we already knew came back with fresh (already paid for) data.
+    // Refresh their activity fields and record meaningful changes as signals.
+    await Promise.allSettled(
+      places.flatMap((p) => {
+        const id = knownByPlaceId.get(p.place_id);
+        const before = id ? existingById.get(id) : undefined;
+        if (!before) return [];
+        return [recordPlaceChanges(supabase, userId, before, p)];
+      }),
+    );
+
     return {
       runId: run.id,
       found: places.length,
