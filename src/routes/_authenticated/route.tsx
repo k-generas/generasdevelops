@@ -131,6 +131,7 @@ const TONE_CLASS: Record<NavTone, string> = {
 
 const EMPTY_COUNTS: NavCounts = {
   businesses: 0,
+  phoneNumbers: 0,
   updatesUnread: 0,
   discoverFailed: 0,
   leaksOpen: 0,
@@ -159,6 +160,8 @@ function navBadgeFor(to: string, c: NavCounts): { count: number; tone: NavTone }
       return c.invoicesOverdue > 0 ? { count: c.invoicesOverdue, tone: "danger" } : null;
     case "/businesses":
       return c.businesses > 0 ? { count: c.businesses, tone: "neutral" } : null;
+    case "/numbers":
+      return c.phoneNumbers > 0 ? { count: c.phoneNumbers, tone: "primary" } : null;
     default:
       return null;
   }

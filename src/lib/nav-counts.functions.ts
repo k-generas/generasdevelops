@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 // attention without opening a page. All counts are owner-scoped by RLS.
 export type NavCounts = {
   businesses: number;
+  phoneNumbers: number;
   updatesUnread: number;
   discoverFailed: number;
   leaksOpen: number;
@@ -21,6 +22,23 @@ async function n(q: CountQuery): Promise<number> {
   return count ?? 0;
 }
 
+function normalizePhone(p: string | null | undefined): string {
+  if (!p) return "";
+  return p.replace(/\s+/g, "").replace(/[^+\d]/g, "");
+}
+
+// Mirrors the Numbers page: count unique phone/cell values collected so far.
+function countPhoneNumbers(rows: Array<{ phone: string | null; cell: string | null }>): number {
+  const unique = new Set<string>();
+  for (const row of rows) {
+    const phone = normalizePhone(row.phone);
+    const cell = normalizePhone(row.cell);
+    if (phone) unique.add(phone);
+    if (cell) unique.add(cell);
+  }
+  return unique.size;
+}
+
 export const getNavCounts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<NavCounts> => {
@@ -28,6 +46,7 @@ export const getNavCounts = createServerFn({ method: "GET" })
     const nowIso = new Date().toISOString();
     const [
       businesses,
+      phoneNumbers,
       updatesUnread,
       discoverFailed,
       leaksOpen,
@@ -37,6 +56,10 @@ export const getNavCounts = createServerFn({ method: "GET" })
       invoicesOverdue,
     ] = await Promise.all([
       n(supabase.from("businesses").select("id", { count: "exact", head: true })),
+      supabase
+        .from("businesses")
+        .select("phone,cell")
+        .then(({ data }) => countPhoneNumbers(data ?? [])),
       n(
         supabase
           .from("daily_digests")
@@ -81,6 +104,7 @@ export const getNavCounts = createServerFn({ method: "GET" })
     ]);
     return {
       businesses,
+      phoneNumbers,
       updatesUnread,
       discoverFailed,
       leaksOpen,
