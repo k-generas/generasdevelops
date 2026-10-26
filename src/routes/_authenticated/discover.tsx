@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { runDiscovery } from "@/lib/discovery.functions";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,11 @@ function Discover() {
   const [batchLocs, setBatchLocs] = useState<string[]>([]);
   const [batchBusy, setBatchBusy] = useState(false);
   const [batchLog, setBatchLog] = useState<string[]>([]);
+  const queryInputRef = useRef<HTMLInputElement>(null);
+  const locationInputRef = useRef<HTMLInputElement>(null);
+
+  const queryIsPreset = BUSINESS_CATEGORIES.some((group) => group.items.includes(query));
+  const locationIsPreset = LOCATION_PRESETS.some((preset) => preset.value === location);
 
   const businesses = useQuery({
     queryKey: ["businesses"],
@@ -197,9 +202,13 @@ function Discover() {
         <form onSubmit={onRun} className="mt-4 flex flex-col gap-3">
           <div className="flex flex-col gap-3 sm:flex-row">
             <Select
-              value={query || "__custom__"}
+              value={query === "" ? "" : queryIsPreset ? query : "__custom__"}
               onValueChange={(v) => {
-                if (v === "__custom__") return;
+                if (v === "__custom__") {
+                  setQuery("");
+                  requestAnimationFrame(() => queryInputRef.current?.focus());
+                  return;
+                }
                 setQuery(v);
               }}
             >
@@ -207,6 +216,7 @@ function Discover() {
                 <SelectValue placeholder="Pick a business type preset" />
               </SelectTrigger>
               <SelectContent className="max-h-96">
+                <SelectItem value="__custom__">Custom — type my own</SelectItem>
                 {BUSINESS_CATEGORIES.map((group) => (
                   <SelectGroup key={group.name}>
                     <SelectLabel>{group.name}</SelectLabel>
@@ -220,16 +230,25 @@ function Discover() {
               </SelectContent>
             </Select>
             <Select
-              value={location === "" ? "worldwide" : location}
+              value={locationIsPreset ? (location === "" ? "worldwide" : location) : "__custom__"}
               onValueChange={(v) => {
-                if (v === "worldwide") setLocation("");
-                else setLocation(v);
+                if (v === "worldwide") {
+                  setLocation("");
+                  return;
+                }
+                if (v === "__custom__") {
+                  setLocation("");
+                  requestAnimationFrame(() => locationInputRef.current?.focus());
+                  return;
+                }
+                setLocation(v);
               }}
             >
               <SelectTrigger className="sm:max-w-xs">
                 <SelectValue placeholder="Pick a location preset" />
               </SelectTrigger>
               <SelectContent className="max-h-96">
+                <SelectItem value="__custom__">Custom — type my own</SelectItem>
                 {LOCATION_PRESETS.map((p) => (
                   <SelectGroup key={p.group ?? p.label}>
                     {p.group && <SelectLabel>{p.group}</SelectLabel>}
@@ -243,16 +262,22 @@ function Discover() {
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Input
+              ref={queryInputRef}
+              aria-label="Business type"
               placeholder="What kind of business? e.g. restaurants, salons, hardware shops"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              autoComplete="off"
               required
               minLength={2}
             />
             <Input
+              ref={locationInputRef}
+              aria-label="Location"
               placeholder="Where? e.g. Kigali, Rwanda or Gasabo, Rwanda"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
+              autoComplete="off"
               className="sm:max-w-xs"
             />
             <Button type="submit" disabled={busy}>
@@ -261,8 +286,9 @@ function Discover() {
           </div>
         </form>
         <p className="mt-2 text-xs text-muted-foreground">
-          Up to 20 real results per run from Google Maps. Each run is a paid Google request, so
-          search deliberately.
+          Presets and manual typing share the same fields — pick a preset to fill the box, then edit
+          it freely (or choose “Custom — type my own”). Up to 20 real results per run from Google
+          Maps. Each run is a paid Google request, so search deliberately.
         </p>
         {result && <p className="mt-3 font-mono text-sm">{result}</p>}
         {error && (
