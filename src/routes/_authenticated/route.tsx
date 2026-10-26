@@ -132,9 +132,21 @@ const TONE_CLASS: Record<NavTone, string> = {
 const EMPTY_COUNTS: NavCounts = {
   businesses: 0,
   phoneNumbers: 0,
+  newLeads: 0,
   updatesUnread: 0,
   discoverFailed: 0,
+  historyRuns: 0,
   leaksOpen: 0,
+  offersActive: 0,
+  offersMissingPrice: 0,
+  handoffsPlanned: 0,
+  subscriptionsProposed: 0,
+  referralsPending: 0,
+  recoveryCandidates: 0,
+  intentSignals: 0,
+  radarNew: 0,
+  ordersOpen: 0,
+  rwandaCompanies: 0,
   tasksOpen: 0,
   tasksOverdue: 0,
   proposalsDraft: 0,
@@ -144,12 +156,36 @@ const EMPTY_COUNTS: NavCounts = {
 // Which badge (if any) to show next to a nav item, and how urgent it is.
 function navBadgeFor(to: string, c: NavCounts): { count: number; tone: NavTone } | null {
   switch (to) {
+    case "/dashboard":
+      return c.newLeads > 0 ? { count: c.newLeads, tone: "primary" } : null;
     case "/updates":
       return c.updatesUnread > 0 ? { count: c.updatesUnread, tone: "primary" } : null;
     case "/discover":
       return c.discoverFailed > 0 ? { count: c.discoverFailed, tone: "danger" } : null;
+    case "/history":
+      return c.historyRuns > 0 ? { count: c.historyRuns, tone: "neutral" } : null;
     case "/leaks":
       return c.leaksOpen > 0 ? { count: c.leaksOpen, tone: "danger" } : null;
+    case "/offers":
+      return c.offersActive > 0 ? { count: c.offersActive, tone: "neutral" } : null;
+    case "/partners":
+      return c.handoffsPlanned > 0 ? { count: c.handoffsPlanned, tone: "warning" } : null;
+    case "/revenue":
+      return c.subscriptionsProposed > 0
+        ? { count: c.subscriptionsProposed, tone: "primary" }
+        : null;
+    case "/recovery":
+      return c.recoveryCandidates > 0 ? { count: c.recoveryCandidates, tone: "warning" } : null;
+    case "/intent":
+      return c.intentSignals > 0 ? { count: c.intentSignals, tone: "neutral" } : null;
+    case "/referrals":
+      return c.referralsPending > 0 ? { count: c.referralsPending, tone: "primary" } : null;
+    case "/radar":
+      return c.radarNew > 0 ? { count: c.radarNew, tone: "primary" } : null;
+    case "/orders":
+      return c.ordersOpen > 0 ? { count: c.ordersOpen, tone: "warning" } : null;
+    case "/rwanda":
+      return c.rwandaCompanies > 0 ? { count: c.rwandaCompanies, tone: "neutral" } : null;
     case "/tasks":
       return c.tasksOpen > 0
         ? { count: c.tasksOpen, tone: c.tasksOverdue > 0 ? "danger" : "warning" }
@@ -162,6 +198,8 @@ function navBadgeFor(to: string, c: NavCounts): { count: number; tone: NavTone }
       return c.businesses > 0 ? { count: c.businesses, tone: "neutral" } : null;
     case "/numbers":
       return c.phoneNumbers > 0 ? { count: c.phoneNumbers, tone: "primary" } : null;
+    case "/settings":
+      return c.offersMissingPrice > 0 ? { count: c.offersMissingPrice, tone: "warning" } : null;
     default:
       return null;
   }
@@ -176,13 +214,13 @@ function NavBadge({
   tone?: NavTone;
   floating?: boolean;
 }) {
-  const label = count > 99 ? "99+" : count;
+  const label = count > 999 ? "999+" : count;
   if (floating) {
     return (
       <span
-        className={`absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full px-1 text-xs leading-none font-semibold ${TONE_CLASS[tone]}`}
+        className={`absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full px-1 text-[10px] leading-none font-semibold ${TONE_CLASS[tone]}`}
       >
-        {count > 9 ? "9+" : label}
+        {label}
       </span>
     );
   }
