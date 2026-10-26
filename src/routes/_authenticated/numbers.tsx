@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo, useState } from "react";
-import { Phone, Search, Building2 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Bell, Phone, Search, Building2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,7 @@ function normalizePhone(p: string | null | undefined): string {
 }
 
 function NumbersPage() {
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [stageFilter, setStageFilter] = useState<OutreachStage | "ANY">("ANY");
 
@@ -91,7 +92,21 @@ function NumbersPage() {
       }
       return all;
     },
+    staleTime: 15_000,
+    refetchInterval: 30_000,
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("numbers-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "businesses" }, () => {
+        void qc.invalidateQueries({ queryKey: ["numbers-businesses"] });
+      })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [qc]);
 
   const outreachEvents = useQuery({
     queryKey: ["outreach-events-numbers"],
@@ -164,13 +179,38 @@ function NumbersPage() {
     return c;
   }, [businesses.data, stageOf]);
 
+  const collectedNumbers = useMemo(() => {
+    const unique = new Set<string>();
+    for (const b of businesses.data ?? []) {
+      const phone = normalizePhone(b.phone);
+      const cell = normalizePhone(b.cell);
+      if (phone) unique.add(phone);
+      if (cell) unique.add(cell);
+    }
+    return unique.size;
+  }, [businesses.data]);
+
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Numbers lookup</h1>
-        <p className="text-sm text-muted-foreground">
-          Find which business/company a number belongs to and its outreach status
-        </p>
+      <header className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Numbers lookup</h1>
+          <p className="text-sm text-muted-foreground">
+            Find which business/company a number belongs to and its outreach status
+          </p>
+        </div>
+        <div
+          role="status"
+          title={`Live — ${collectedNumbers.toLocaleString()} phone numbers collected`}
+          aria-label={`${collectedNumbers.toLocaleString()} phone numbers collected`}
+          className="relative mt-1 shrink-0 rounded-full border bg-card p-2.5 text-muted-foreground shadow-sm"
+        >
+          <Bell className="h-5 w-5" />
+          <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[11px] leading-none font-semibold text-primary-foreground">
+            {collectedNumbers > 999 ? "999+" : collectedNumbers}
+          </span>
+          <span className="absolute -bottom-0.5 -left-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-emerald-500" />
+        </div>
       </header>
 
       <Card>
