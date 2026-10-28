@@ -131,7 +131,12 @@ export const getNavCounts = createServerFn({ method: "GET" })
       n(head("tasks").eq("status", "open")),
       n(head("tasks").eq("status", "open").not("due_at", "is", null).lt("due_at", nowIso)),
       n(head("proposals").in("status", ["DRAFT", "READY_TO_SEND"])),
-      n(head("invoices").neq("status", "PAID").not("due_at", "is", null).lt("due_at", nowIso)),
+      n(
+        head("invoices")
+          .in("status", ["SENT", "PARTIAL"])
+          .not("due_at", "is", null)
+          .lt("due_at", nowIso),
+      ),
       n(head("proposals").eq("status", "ACCEPTED").gte("updated_at", monthStartIso)),
     ]);
 

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { Copy, Printer, Receipt, Trash2, TriangleAlert } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { Copy, Printer, Receipt, Trash2, TriangleAlert, Undo2, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,19 +9,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { useInvoices, type InvoiceRow } from "@/lib/invoices.hooks";
 import {
   formatMoney,
-  invoiceTotals,
   isOverdue,
   nextInvoiceNumber,
   renderInvoiceText,
   INVOICE_STATUSES,
 } from "@/lib/invoices";
+import {
+  invoiceCashTotals,
+  invoicePaymentState,
+  paymentTotalsByInvoice,
+  sumMoney,
+} from "@/lib/money";
+import { usePayments } from "@/lib/money.hooks";
+import { removeInvoicePayments } from "@/lib/money.actions";
+import { RecordPaymentDialog, type PaymentInvoiceOption } from "@/components/RecordPaymentDialog";
 import { downloadCsv, rowsToCsv } from "@/lib/csv";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 import { describeError } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/invoices")({
   head: () => ({
-    meta: [{ title: "Invoices — GARE" }, { name: "description", content: "Invoices." }],
+    meta: [
+      { title: "Invoices - GARE" },
+      { name: "description", content: "Invoices and customer payments." },
+    ],
   }),
   component: Invoices,
 });
@@ -30,10 +41,27 @@ function escapeHtml(s: string): string {
   return s.replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c]!);
 }
 
+function TotalsList({ rows }: { rows: { currency: string; amount: number }[] }) {
+  if (!rows.length) return <p className="text-xl font-semibold">-</p>;
+  return (
+    <div className="space-y-0.5">
+      {rows.map((row) => (
+        <p key={row.currency} className="text-xl font-semibold">
+          {formatMoney(row.amount, row.currency)}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 function Invoices() {
+  const qc = useQueryClient();
   const invoices = useInvoices();
-  const list = invoices.data?.invoices ?? [];
+  const paymentsQ = usePayments();
+  const list = useMemo(() => invoices.data?.invoices ?? [], [invoices.data?.invoices]);
+  const payments = useMemo(() => paymentsQ.data?.rows ?? [], [paymentsQ.data?.rows]);
   const persisted = invoices.data?.persisted ?? false;
+  const paymentsPersisted = paymentsQ.data?.persisted ?? false;
 
   const [filter, setFilter] = useState("ALL");
   const [propId, setPropId] = useState("");
@@ -43,6 +71,8 @@ function Invoices() {
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentInvoiceId, setPaymentInvoiceId] = useState<string | null>(null);
 
   const proposals = useQuery({
     queryKey: ["invoices", "proposals"],
@@ -57,7 +87,50 @@ function Invoices() {
   });
 
   const filtered = list.filter((i) => filter === "ALL" || i.status === filter);
-  const totals = invoiceTotals(list);
+  const paidByInvoice = useMemo(() => paymentTotalsByInvoice(payments), [payments]);
+
+  const totals = useMemo(() => {
+    if (paymentsPersisted) return invoiceCashTotals(list, payments);
+    const paidRows = list
+      .filter((invoice) => invoice.status === "PAID")
+      .map((invoice) => ({ amount: Number(invoice.amount) || 0, currency: invoice.currency }));
+    const outstandingRows = list
+      .filter((invoice) => invoice.status !== "PAID" && invoice.status !== "VOID")
+      .map((invoice) => ({ amount: Number(invoice.amount) || 0, currency: invoice.currency }));
+    return {
+      paid: sumMoney(paidRows),
+      outstanding: sumMoney(outstandingRows),
+      count: list.length,
+    };
+  }, [list, payments, paymentsPersisted]);
+
+  const paymentOptions = useMemo(
+    () =>
+      list
+        .filter((invoice) => invoice.id && invoice.status !== "VOID")
+        .map<PaymentInvoiceOption>((invoice) => ({
+          id: invoice.id as string,
+          number: invoice.number,
+          business_id: invoice.business_id,
+          businessName: invoice.businesses?.name ?? null,
+          amount: Number(invoice.amount) || 0,
+          currency: invoice.currency,
+          status: invoice.status,
+          paid: paidByInvoice.get(invoice.id as string) ?? 0,
+        })),
+    [list, paidByInvoice],
+  );
+
+  function paidFor(invoice: InvoiceRow): number {
+    if (paymentsPersisted && invoice.id) return paidByInvoice.get(invoice.id) ?? 0;
+    return invoice.status === "PAID" ? Number(invoice.amount) || 0 : 0;
+  }
+
+  async function refreshMoney() {
+    await Promise.all([invoices.refetch(), paymentsQ.refetch()]);
+    void qc.invalidateQueries({ queryKey: ["nav-counts"] });
+    void qc.invalidateQueries({ queryKey: ["analytics-data"] });
+  }
 
   function onPick(id: string) {
     setPropId(id);
@@ -113,6 +186,7 @@ function Invoices() {
       setNotes("");
       setMsg(`Created ${number}.`);
       await invoices.refetch();
+      void qc.invalidateQueries({ queryKey: ["nav-counts"] });
     } catch (e) {
       const d = describeError(e, "Create invoice");
       setMsg(`${d.title}: ${d.message} How to fix: ${d.fix}`);
@@ -120,7 +194,7 @@ function Invoices() {
     setBusy(false);
   }
 
-  async function setStatus(inv: InvoiceRow, status: string) {
+  async function setLegacyStatus(inv: InvoiceRow, status: string) {
     const { error } = await supabase
       .from("invoices")
       .update({
@@ -134,16 +208,35 @@ function Invoices() {
       setMsg(`${d.title}: ${d.message} How to fix: ${d.fix}`);
     }
     await invoices.refetch();
+    void qc.invalidateQueries({ queryKey: ["nav-counts"] });
   }
 
   async function remove(inv: InvoiceRow) {
-    if (!window.confirm(`Delete ${inv.number}?`)) return;
+    const hasPayments = paidFor(inv) > 0;
+    const extra = hasPayments ? " Recorded payments stay in the cash ledger." : "";
+    if (!window.confirm(`Delete ${inv.number}?${extra}`)) return;
     const { error } = await supabase.from("invoices").delete().eq("id", inv.id!);
     if (error) {
       const d = describeError(error, "Delete invoice");
       setMsg(`${d.title}: ${d.message} How to fix: ${d.fix}`);
     }
-    await invoices.refetch();
+    await refreshMoney();
+  }
+
+  async function clearPayments(inv: InvoiceRow) {
+    if (!inv.id) return;
+    if (!window.confirm(`Remove every payment recorded against ${inv.number}?`)) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      await removeInvoicePayments(inv.id);
+      setMsg(`Removed payments from ${inv.number}.`);
+      await refreshMoney();
+    } catch (e) {
+      const d = describeError(e, "Remove payments");
+      setMsg(`${d.title}: ${d.message} How to fix: ${d.fix}`);
+    }
+    setBusy(false);
   }
 
   function print(inv: InvoiceRow) {
@@ -171,7 +264,7 @@ function Invoices() {
         <div>
           <h1 className="text-2xl font-bold">Invoices</h1>
           <p className="text-sm text-muted-foreground">
-            Make a document from a proposal, then mark it paid or unpaid. No online payment.
+            Make a document from a proposal, then record the payments you actually receive.
           </p>
         </div>
         <div className="ml-auto">
@@ -180,16 +273,21 @@ function Invoices() {
             variant="outline"
             onClick={() => {
               const csv = rowsToCsv(
-                list.map((i) => ({
-                  number: i.number,
-                  business_name: i.businesses?.name,
-                  amount: i.amount,
-                  currency: i.currency,
-                  status: i.status,
-                  issued_at: i.issued_at,
-                  due_at: i.due_at,
-                  paid_at: i.paid_at,
-                })),
+                list.map((i) => {
+                  const paid = paidFor(i);
+                  return {
+                    number: i.number,
+                    business_name: i.businesses?.name,
+                    amount: i.amount,
+                    currency: i.currency,
+                    status: i.status,
+                    paid,
+                    outstanding: Math.max(0, (Number(i.amount) || 0) - paid),
+                    issued_at: i.issued_at,
+                    due_at: i.due_at,
+                    paid_at: i.paid_at,
+                  };
+                }),
               );
               downloadCsv(csv, `invoices-${new Date().toISOString().slice(0, 10)}.csv`);
             }}
@@ -223,6 +321,19 @@ function Invoices() {
         </div>
       )}
 
+      {!paymentsQ.isLoading && persisted && !paymentsPersisted && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-card p-4 text-sm">
+          <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+          <div>
+            <p className="font-medium">Payment ledger needs migration 0021</p>
+            <p className="text-muted-foreground">
+              Apply <code>0021_payments_expenses.sql</code> to record partial and full payments.
+              Until then you can still mark invoices paid or unpaid.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-3 rounded-lg border bg-card p-4">
         <h2 className="font-semibold">New invoice from a proposal</h2>
         <label className="block text-sm">
@@ -232,10 +343,10 @@ function Invoices() {
             value={propId}
             onChange={(e) => onPick(e.target.value)}
           >
-            <option value="">Select a proposal…</option>
+            <option value="">Select a proposal...</option>
             {proposals.data?.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.businesses?.name ?? "No client"} — {p.title ?? p.offer ?? p.mode} ({p.status}
+                {p.businesses?.name ?? "No client"} - {p.title ?? p.offer ?? p.mode} ({p.status}
                 {p.price != null ? `, ${formatMoney(p.price, p.currency ?? "USD")}` : ""})
               </option>
             ))}
@@ -284,11 +395,11 @@ function Invoices() {
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground">Outstanding</p>
-          <p className="text-xl font-semibold">{formatMoney(totals.outstanding, "USD")}</p>
+          <TotalsList rows={totals.outstanding} />
         </div>
         <div className="rounded-lg border bg-card p-4">
-          <p className="text-xs text-muted-foreground">Paid</p>
-          <p className="text-xl font-semibold">{formatMoney(totals.paid, "USD")}</p>
+          <p className="text-xs text-muted-foreground">Collected against invoices</p>
+          <TotalsList rows={totals.paid} />
         </div>
         <div className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground">Invoices</p>
@@ -319,13 +430,13 @@ function Invoices() {
             />
           </div>
         ) : invoices.isLoading ? (
-          <p className="p-4 text-sm text-muted-foreground">Loading…</p>
+          <p className="p-4 text-sm text-muted-foreground">Loading...</p>
         ) : filtered.length === 0 ? (
           <EmptyState
             title={filter === "ALL" ? "No invoices yet" : `No ${filter.toLowerCase()} invoices`}
             why={
               filter === "ALL"
-                ? "Create one from a proposal above — it becomes a printable document with a status you can mark paid/unpaid."
+                ? "Create one from a proposal above - it becomes a printable document with payments tracked against it."
                 : "Nothing currently has this status. Change the status filter above to see other invoices."
             }
             action={
@@ -337,51 +448,106 @@ function Invoices() {
             }
           />
         ) : (
-          filtered.map((inv) => (
-            <div key={inv.id ?? inv.number} className="flex flex-wrap items-center gap-3 px-4 py-3">
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">
-                  {inv.number}
-                  {inv.businesses?.name ? ` · ${inv.businesses.name}` : ""}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {formatMoney(Number(inv.amount) || 0, inv.currency)} · issued{" "}
-                  {new Date(inv.issued_at).toLocaleDateString()}
-                  {inv.due_at ? ` · due ${new Date(inv.due_at).toLocaleDateString()}` : ""}
-                  {isOverdue(inv) ? " · OVERDUE" : ""}
-                </p>
-              </div>
-              <span className="rounded-full border px-2 py-0.5 text-xs">{inv.status}</span>
-              <div className="flex items-center gap-1">
-                {inv.status === "PAID" ? (
-                  <Button size="sm" variant="outline" onClick={() => setStatus(inv, "SENT")}>
-                    Mark unpaid
+          filtered.map((inv) => {
+            const paid = paidFor(inv);
+            const state = invoicePaymentState(inv.amount, [{ amount: paid }]);
+            return (
+              <div
+                key={inv.id ?? inv.number}
+                className="flex flex-wrap items-center gap-3 px-4 py-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">
+                    {inv.number}
+                    {inv.businesses?.name ? ` - ${inv.businesses.name}` : ""}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatMoney(Number(inv.amount) || 0, inv.currency)} - paid{" "}
+                    {formatMoney(paid, inv.currency)}
+                    {state.remaining > 0
+                      ? ` - remaining ${formatMoney(state.remaining, inv.currency)}`
+                      : ""}
+                    {state.overpaid > 0
+                      ? ` - overpaid ${formatMoney(state.overpaid, inv.currency)}`
+                      : ""}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Issued {new Date(inv.issued_at).toLocaleDateString()}
+                    {inv.due_at ? ` - due ${new Date(inv.due_at).toLocaleDateString()}` : ""}
+                    {isOverdue(inv) ? " - OVERDUE" : ""}
+                  </p>
+                </div>
+                <span className="rounded-full border px-2 py-0.5 text-xs">{inv.status}</span>
+                <div className="flex items-center gap-1">
+                  {paymentsPersisted ? (
+                    <Button
+                      size="sm"
+                      variant={state.remaining > 0 ? "default" : "outline"}
+                      onClick={() => {
+                        setPaymentInvoiceId(inv.id);
+                        setPaymentOpen(true);
+                      }}
+                      disabled={!inv.id || inv.status === "VOID"}
+                    >
+                      <Wallet className="h-4 w-4" />
+                      Record payment
+                    </Button>
+                  ) : inv.status === "PAID" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setLegacyStatus(inv, "SENT")}
+                    >
+                      Mark unpaid
+                    </Button>
+                  ) : (
+                    <Button size="sm" onClick={() => setLegacyStatus(inv, "PAID")}>
+                      Mark paid
+                    </Button>
+                  )}
+                  {paymentsPersisted && paid > 0 && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => void clearPayments(inv)}
+                      title="Remove all payments"
+                    >
+                      <Undo2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button size="sm" variant="ghost" onClick={() => print(inv)} title="Print / PDF">
+                    <Printer className="h-4 w-4" />
                   </Button>
-                ) : (
-                  <Button size="sm" onClick={() => setStatus(inv, "PAID")}>
-                    Mark paid
+                  <Button size="sm" variant="ghost" onClick={() => copy(inv)} title="Copy">
+                    <Copy className="h-4 w-4" />
                   </Button>
-                )}
-                <Button size="sm" variant="ghost" onClick={() => print(inv)} title="Print / PDF">
-                  <Printer className="h-4 w-4" />
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => copy(inv)} title="Copy">
-                  <Copy className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => remove(inv)}
-                  title="Delete"
-                  className="text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => remove(inv)}
+                    title="Delete"
+                    className="text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
+
+      <RecordPaymentDialog
+        open={paymentOpen}
+        onOpenChange={setPaymentOpen}
+        invoices={paymentOptions}
+        fixedInvoiceId={paymentInvoiceId}
+        onSaved={(message) => {
+          if (message) setMsg(message);
+          setPaymentInvoiceId(null);
+          void refreshMoney();
+        }}
+      />
     </div>
   );
 }

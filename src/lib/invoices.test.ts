@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  INVOICE_STATUSES,
   formatMoney,
-  invoiceTotals,
   isOverdue,
   nextInvoiceNumber,
   renderInvoiceText,
@@ -42,20 +40,10 @@ describe("invoices", () => {
   it("detects overdue invoices but not paid/void ones", () => {
     const past = "2020-01-01T00:00:00.000Z";
     expect(isOverdue({ status: "SENT", due_at: past })).toBe(true);
+    expect(isOverdue({ status: "PARTIAL", due_at: past })).toBe(true);
     expect(isOverdue({ status: "PAID", due_at: past })).toBe(false);
     expect(isOverdue({ status: "VOID", due_at: past })).toBe(false);
     expect(isOverdue({ status: "SENT", due_at: null })).toBe(false);
-  });
-
-  it("totals paid vs outstanding, ignoring void", () => {
-    const t = invoiceTotals([
-      { amount: 100, status: "PAID" },
-      { amount: 50, status: "SENT" },
-      { amount: 999, status: "VOID" },
-    ]);
-    expect(t.paid).toBe(100);
-    expect(t.outstanding).toBe(50);
-    expect(t.count).toBe(3);
   });
 
   it("renders a plain-text invoice with the amount and client", () => {

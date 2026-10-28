@@ -1,8 +1,7 @@
 // Invoicing-lite helpers. Pure and dependency-free so they are easy to test.
-// No payment provider is involved: an invoice is a document the owner marks paid
-// or unpaid by hand.
+// No payment provider is involved: payments are recorded by hand in the ledger.
 
-export const INVOICE_STATUSES = ["DRAFT", "SENT", "PAID", "VOID"] as const;
+export const INVOICE_STATUSES = ["DRAFT", "SENT", "PARTIAL", "PAID", "VOID"] as const;
 export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
 
 export type Invoice = {
@@ -48,21 +47,6 @@ export function isOverdue(
   if (inv.status === "PAID" || inv.status === "VOID") return false;
   if (!inv.due_at) return false;
   return new Date(inv.due_at).getTime() < now.getTime();
-}
-
-export function invoiceTotals(rows: Pick<Invoice, "amount" | "status">[]): {
-  paid: number;
-  outstanding: number;
-  count: number;
-} {
-  let paid = 0;
-  let outstanding = 0;
-  for (const r of rows) {
-    const a = Number(r.amount) || 0;
-    if (r.status === "PAID") paid += a;
-    else if (r.status !== "VOID") outstanding += a;
-  }
-  return { paid, outstanding, count: rows.length };
 }
 
 // A plain-text invoice ready to copy or print.

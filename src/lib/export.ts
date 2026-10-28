@@ -16,6 +16,8 @@ export const BACKUP_TABLES = [
   "proposals",
   "proposal_versions",
   "invoices",
+  "payments",
+  "expenses",
   "orders",
   "tasks",
   "partners",

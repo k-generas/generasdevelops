@@ -8,6 +8,7 @@ import {
   computeAnalytics,
   type AnalyticsBusiness,
   type AnalyticsInvoice,
+  type AnalyticsPayment,
   type AnalyticsProposal,
   type CurrencyTotal,
 } from "@/lib/analytics";
@@ -71,8 +72,23 @@ async function collectPages<T>(
   return all;
 }
 
+async function loadPayments(): Promise<AnalyticsPayment[] | undefined> {
+  try {
+    return await collectPages<AnalyticsPayment>((from, to) =>
+      supabase
+        .from("payments")
+        .select("amount,currency,received_at")
+        .order("received_at", { ascending: true })
+        .order("id")
+        .range(from, to),
+    );
+  } catch {
+    return undefined;
+  }
+}
+
 async function loadAnalyticsData() {
-  const [businesses, proposals, invoices] = await Promise.all([
+  const [businesses, proposals, invoices, payments] = await Promise.all([
     collectPages<AnalyticsBusiness>((from, to) =>
       supabase
         .from("businesses")
@@ -97,8 +113,9 @@ async function loadAnalyticsData() {
         .order("id")
         .range(from, to),
     ),
+    loadPayments(),
   ]);
-  return { businesses, proposals, invoices };
+  return { businesses, proposals, invoices, payments };
 }
 
 function formatMoney(amount: number, currency: string): string {
@@ -151,6 +168,7 @@ function AnalyticsPage() {
             businesses: dataQ.data.businesses,
             proposals: dataQ.data.proposals,
             invoices: dataQ.data.invoices,
+            payments: dataQ.data.payments,
             weeks,
           })
         : null,

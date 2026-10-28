@@ -28,6 +28,12 @@ export type AnalyticsInvoice = {
   paid_at: string | null;
 };
 
+export type AnalyticsPayment = {
+  amount: number;
+  currency: string;
+  received_at: string;
+};
+
 export type WeekPoint = {
   start: string;
   label: string;
@@ -131,10 +137,15 @@ function addTo(map: Map<string, number>, currency: string, amount: number) {
   map.set(currency, (map.get(currency) ?? 0) + amount);
 }
 
-function dominantCurrency(proposals: AnalyticsProposal[], invoices: AnalyticsInvoice[]): string {
+function dominantCurrency(
+  proposals: AnalyticsProposal[],
+  invoices: AnalyticsInvoice[],
+  payments?: AnalyticsPayment[],
+): string {
   const counts = new Map<string, number>();
   for (const p of proposals) addTo(counts, currencyOf(p.currency), 1);
   for (const i of invoices) addTo(counts, currencyOf(i.currency), 1);
+  for (const p of payments ?? []) addTo(counts, currencyOf(p.currency), 1);
   const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   const top = ranked[0]?.[1] ?? 0;
   if (top > 0 && (counts.get("USD") ?? 0) === top) return "USD";
@@ -145,6 +156,7 @@ export function computeAnalytics(input: {
   businesses: AnalyticsBusiness[];
   proposals: AnalyticsProposal[];
   invoices: AnalyticsInvoice[];
+  payments?: AnalyticsPayment[] | undefined;
   weeks: number;
   now?: Date;
 }): AnalyticsSnapshot {
@@ -158,7 +170,7 @@ export function computeAnalytics(input: {
     return Math.floor((startOfWeekUtc(new Date(t)).getTime() - oldest) / WEEK_MS);
   };
 
-  const currency = dominantCurrency(input.proposals, input.invoices);
+  const currency = dominantCurrency(input.proposals, input.invoices, input.payments);
   const series: WeekPoint[] = starts.map((start) => ({
     start: start.toISOString(),
     label: weekLabel(start),
@@ -181,12 +193,23 @@ export function computeAnalytics(input: {
       if (accepted != null) series[accepted]!.accepted += 1;
     }
   }
-  for (const inv of input.invoices) {
-    if (inv.status !== "PAID") continue;
-    const i = bucketOf(inv.paid_at);
-    if (i == null) continue;
-    series[i]!.payments += 1;
-    if (currencyOf(inv.currency) === currency) series[i]!.cash += Number(inv.amount) || 0;
+  if (input.payments) {
+    for (const payment of input.payments) {
+      const i = bucketOf(payment.received_at);
+      if (i == null) continue;
+      series[i]!.payments += 1;
+      if (currencyOf(payment.currency) === currency) {
+        series[i]!.cash += Number(payment.amount) || 0;
+      }
+    }
+  } else {
+    for (const inv of input.invoices) {
+      if (inv.status !== "PAID") continue;
+      const i = bucketOf(inv.paid_at);
+      if (i == null) continue;
+      series[i]!.payments += 1;
+      if (currencyOf(inv.currency) === currency) series[i]!.cash += Number(inv.amount) || 0;
+    }
   }
   for (const point of series) point.cash = Math.round(point.cash * 100) / 100;
 
@@ -216,9 +239,15 @@ export function computeAnalytics(input: {
   }
 
   const cashByCurrency = new Map<string, number>();
-  for (const inv of input.invoices) {
-    if (inv.status !== "PAID") continue;
-    addTo(cashByCurrency, currencyOf(inv.currency), Number(inv.amount) || 0);
+  if (input.payments) {
+    for (const payment of input.payments) {
+      addTo(cashByCurrency, currencyOf(payment.currency), Number(payment.amount) || 0);
+    }
+  } else {
+    for (const inv of input.invoices) {
+      if (inv.status !== "PAID") continue;
+      addTo(cashByCurrency, currencyOf(inv.currency), Number(inv.amount) || 0);
+    }
   }
 
   const leads = input.businesses.length;

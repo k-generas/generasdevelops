@@ -139,4 +139,22 @@ describe("computeAnalytics", () => {
     ]);
     expect(snap.range.cash).toBe(200);
   });
+
+  it("prefers the payment ledger so partial payments count as cash", () => {
+    const snap = computeAnalytics({
+      businesses: [],
+      proposals: [],
+      invoices: [{ amount: 500, currency: "USD", status: "PARTIAL", paid_at: null }],
+      payments: [
+        { amount: 150, currency: "USD", received_at: "2026-10-06T00:00:00.000Z" },
+        { amount: 50, currency: "USD", received_at: "2026-10-07T00:00:00.000Z" },
+      ],
+      weeks: 4,
+      now: NOW,
+    });
+
+    expect(snap.range.cash).toBe(200);
+    expect(snap.range.payments).toBe(2);
+    expect(snap.cashByCurrency).toEqual([{ currency: "USD", amount: 200 }]);
+  });
 });

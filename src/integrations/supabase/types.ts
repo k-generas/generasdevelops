@@ -606,6 +606,62 @@ export type Database = {
         }
         Relationships: []
       }
+      expenses: {
+        Row: {
+          amount: number
+          business_id: string | null
+          category: string
+          created_at: string
+          currency: string
+          id: string
+          method: string
+          notes: string | null
+          owner_id: string
+          paid_at: string
+          reference: string | null
+          updated_at: string
+          vendor: string | null
+        }
+        Insert: {
+          amount: number
+          business_id?: string | null
+          category?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          method?: string
+          notes?: string | null
+          owner_id?: string
+          paid_at?: string
+          reference?: string | null
+          updated_at?: string
+          vendor?: string | null
+        }
+        Update: {
+          amount?: number
+          business_id?: string | null
+          category?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          method?: string
+          notes?: string | null
+          owner_id?: string
+          paid_at?: string
+          reference?: string | null
+          updated_at?: string
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investigations: {
         Row: {
           business_id: string
@@ -1068,6 +1124,66 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          business_id: string | null
+          created_at: string
+          currency: string
+          id: string
+          invoice_id: string | null
+          method: string
+          notes: string | null
+          owner_id: string
+          received_at: string
+          reference: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          business_id?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          invoice_id?: string | null
+          method?: string
+          notes?: string | null
+          owner_id?: string
+          received_at?: string
+          reference?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          business_id?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          invoice_id?: string | null
+          method?: string
+          notes?: string | null
+          owner_id?: string
+          received_at?: string
+          reference?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       proposal_versions: {
         Row: {

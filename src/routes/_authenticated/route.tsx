@@ -27,6 +27,7 @@ import {
   ShieldCheck,
   Undo2,
   Users,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -89,6 +90,7 @@ type NavItem = { to: string; label: string; icon: LucideIcon };
 const NAV: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/analytics", label: "Analytics", icon: ChartLine },
+  { to: "/money", label: "Money", icon: Wallet },
   { to: "/updates", label: "Updates", icon: Bell },
   { to: "/leaks", label: "Revenue Leaks", icon: AlertTriangle },
   { to: "/offers", label: "Offer studio", icon: Package },
@@ -113,6 +115,7 @@ const NAV: NavItem[] = [
 // Bottom tabs stay at five; Settings lives in the account menu on mobile.
 const MOBILE_NAV = NAV.filter(
   (n) =>
+    n.to !== "/money" &&
     n.to !== "/leaks" &&
     n.to !== "/offers" &&
     n.to !== "/partners" &&
