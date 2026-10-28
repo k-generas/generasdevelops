@@ -4,7 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
 import { searchPlaces } from "./places.server";
 import { probeWebsite, analyzeWithAI, computeVisibility } from "./investigate.server";
-import { verifyWebsite } from "./website-finder.server";
+import { verifyWebsite, type WebsiteCheck } from "./website-finder.server";
 import { sameBusinessRecord } from "./company-identity";
 import { recordPlaceChanges } from "./signals.server";
 
@@ -14,7 +14,20 @@ import { recordPlaceChanges } from "./signals.server";
 const VERIFY_BUDGET_MS = 15_000;
 const VERIFY_CONCURRENCY = 4;
 const VERIFY_MAX_DOMAINS = 6;
+const VERIFY_MAX_FREE_HOSTS = 4;
 const VERIFY_PER_REQUEST_MS = 4_000;
+
+function websiteCheckJson(check: WebsiteCheck): Json {
+  return {
+    confidence: check.confidence,
+    source: check.source,
+    steps: check.steps,
+    checks: check.checks,
+    candidates_tested: check.candidates_tested,
+    checked_at: check.checked_at,
+    ...(check.truncated ? { truncated: true } : {}),
+  } as unknown as Json;
+}
 
 // Columns added in migration 0003 — stripped on retry if the DB predates them.
 const ACTIVITY_COLUMNS = [
@@ -217,16 +230,13 @@ export const runDiscovery = createServerFn({ method: "POST" })
               },
               {
                 maxDomainCandidates: VERIFY_MAX_DOMAINS,
+                maxFreeHostingCandidates: VERIFY_MAX_FREE_HOSTS,
                 perRequestMs: VERIFY_PER_REQUEST_MS,
                 deadlineMs: deadline,
               },
             );
             const now = new Date().toISOString();
-            const websiteCheck = {
-              confidence: check.confidence,
-              source: check.source,
-              steps: check.steps,
-            } as unknown as Json;
+            const websiteCheck = websiteCheckJson(check);
             if (check.website) {
               await supabase
                 .from("businesses")
@@ -243,8 +253,8 @@ export const runDiscovery = createServerFn({ method: "POST" })
                 event_type: "website_found",
                 summary: `Website found during discovery (${check.source}): ${check.website}`,
               });
-            } else if (check.confidence === "none_found" && !check.truncated) {
-              verifiedNoWebsite += 1;
+            } else if (check.confidence === "none_found") {
+              if (!check.truncated) verifiedNoWebsite += 1;
               await supabase
                 .from("businesses")
                 .update({ website_checked_at: now, website_check: websiteCheck })
@@ -316,7 +326,10 @@ export const investigateBusiness = createServerFn({ method: "POST" })
     if (error || !biz) throw new Error("Business not found");
 
     // Double-check the website before trusting "no website" from the listing.
-    const check = await verifyWebsite(biz);
+    const check = await verifyWebsite({
+      ...biz,
+      aliases: [biz.legal_name, ...(biz.trading_names ?? [])],
+    });
     if (check.website && check.website !== biz.website) {
       biz.website = check.website;
       await supabase.from("business_activity_events").insert({
@@ -340,11 +353,7 @@ export const investigateBusiness = createServerFn({ method: "POST" })
       website_check: _wc,
       ...facts
     } = biz;
-    (facts as unknown as Record<string, unknown>)["website_check"] = {
-      confidence: check.confidence,
-      source: check.source,
-      steps: check.steps,
-    };
+    (facts as unknown as Record<string, unknown>)["website_check"] = websiteCheckJson(check);
     let report;
     try {
       report = await analyzeWithAI(facts, site, visibility, data.provider);
@@ -393,11 +402,7 @@ export const investigateBusiness = createServerFn({ method: "POST" })
         website: check.website,
         website_source: check.source,
         website_checked_at: now,
-        website_check: {
-          confidence: check.confidence,
-          source: check.source,
-          steps: check.steps,
-        } as unknown as Json,
+        website_check: websiteCheckJson(check),
       })
       .eq("id", biz.id);
     await supabase.from("business_activity_events").insert({

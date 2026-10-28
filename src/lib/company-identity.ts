@@ -84,6 +84,78 @@ export type BusinessIdentity = {
   address?: string | null;
 };
 
+const RWANDA_HINT =
+  /\brwanda\b|kigali|gasabo|kicukiro|nyarugenge|musanze|huye|rubavu|rusizi|nyagatare|rwamagana|muhanga|nyanza|karongi/i;
+
+const FOREIGN_COUNTRIES: [string, RegExp][] = [
+  ["kenya", /\bkenya\b|nairobi|mombasa|kisumu|nakuru/i],
+  ["uganda", /\buganda\b|kampala|entebbe|jinja/i],
+  ["tanzania", /\btanzania\b|dar es salaam|arusha|mwanza|dodoma/i],
+  ["burundi", /\bburundi\b|bujumbura|gitega/i],
+  ["nigeria", /\bnigeria\b|lagos|abuja|kano/i],
+  ["south africa", /\bsouth africa\b|johannesburg|cape town|durban|pretoria/i],
+  ["drc", /\bdrc\b|democratic republic of (the )?congo|lubumbashi|kinshasa|goma/i],
+  ["uae", /\buae\b|united arab emirates|dubai|abu dhabi/i],
+  ["china", /\bchina\b|beijing|shanghai|guangzhou|shenzhen/i],
+  ["india", /\bindia\b|mumbai|delhi|bangalore|chennai/i],
+  ["usa", /\busa\b|united states|new york|california|texas/i],
+  ["uk", /\buk\b|united kingdom|london|manchester|birmingham/i],
+];
+
+const RWANDA_CITIES =
+  /\b(kigali|gasabo|kicukiro|nyarugenge|musanze|huye|rubavu|rusizi|nyagatare|rwamagana|muhanga|nyanza|karongi|nyabihu|ngororero|rutsiro|burera|gakenke|gicumbi|kamonyi|kayonza|kirehe|ngoma|nyamagabe|nyamasheke|nyaruguru|ruhango)\b/gi;
+
+type LocationProfile = {
+  country: string | null;
+  cities: Set<string>;
+  normalized: string;
+};
+
+function locationProfile(address: string | null | undefined): LocationProfile | null {
+  const raw = address?.trim();
+  if (!raw) return null;
+  const hay = raw.toLowerCase();
+  const country = RWANDA_HINT.test(hay)
+    ? "rwanda"
+    : (FOREIGN_COUNTRIES.find(([, re]) => re.test(hay))?.[0] ?? null);
+  const cities = new Set(
+    country === "rwanda" ? (hay.match(RWANDA_CITIES) ?? []).map((c) => c.toLowerCase()) : [],
+  );
+  return {
+    country,
+    cities,
+    normalized: hay
+      .replace(/[^a-z0-9 ]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim(),
+  };
+}
+
+// Name similarity is only enough when both records point at the same place.
+// A shared country is enough for the foreign-country guard; for Rwanda, two
+// different named cities rule a match out.
+export function locationsCompatible(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): boolean {
+  const pa = locationProfile(a);
+  const pb = locationProfile(b);
+  if (!pa || !pb) return false;
+  if (pa.country !== pb.country) return false;
+  if (pa.country === "rwanda") {
+    if (pa.cities.size && pb.cities.size) {
+      return [...pa.cities].some((c) => pb.cities.has(c));
+    }
+    return true;
+  }
+  if (pa.country) return true;
+  return (
+    pa.normalized === pb.normalized ||
+    pa.normalized.includes(pb.normalized) ||
+    pb.normalized.includes(pa.normalized)
+  );
+}
+
 export type MatchReason =
   | { kind: "place_id"; value: string }
   | { kind: "domain"; value: string }
@@ -106,7 +178,9 @@ export function matchBusiness(a: BusinessIdentity, b: BusinessIdentity): MatchRe
   if (pa && pb && pa === pb) return { kind: "phone", value: pa };
 
   const sim = nameSimilarity(a.name, b.name);
-  if (sim >= 0.8) return { kind: "name", value: sim };
+  if (sim >= 0.8 && locationsCompatible(a.address, b.address)) {
+    return { kind: "name", value: sim };
+  }
   return null;
 }
 
@@ -131,7 +205,9 @@ export function sameBusinessRecord(
   if (pa && pb && pa === pb) return { kind: "phone", value: pa };
 
   const sim = nameSimilarity(a.name, b.name);
-  if (sim >= nameThreshold) return { kind: "name", value: sim };
+  if (sim >= nameThreshold && locationsCompatible(a.address, b.address)) {
+    return { kind: "name", value: sim };
+  }
   return null;
 }
 

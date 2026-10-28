@@ -17,6 +17,20 @@ Migrations live in `drizzle/migrations/` and are tracked in
 | `0005_invoices.sql` | `invoices` table (invoicing-lite) |
 | `0006_orders_delivery.sql` | `orders` table (orders + delivery checklist) |
 | `0007_business_validation_plan.sql` | `businesses.validation_plan` (low-cost validation planner) |
+| `0008_rwanda_intelligence.sql` | Rwanda company intelligence columns/tables |
+| `0009_rwanda_intelligence.sql` | Rwanda intelligence follow-up |
+| `0010_business_facts_align.sql` | business facts alignment |
+| `0011_monitoring_digests.sql` | `monitoring_settings`, `daily_digests` |
+| `0012_revenue_leaks.sql` | `revenue_leaks` + feasibility defaults |
+| `0013_partners.sql` | `partners`, `partner_handoffs` |
+| `0014_subscriptions.sql` | `subscriptions` |
+| `0015_offer_kits.sql` | `offer_kits` |
+| `0016_referrals.sql` | `referrals` |
+| `0017_early_access.sql` | early-access capture |
+| `0018_admin_console.sql` | admin console tables/columns |
+| `0019_grant_admin_emails.sql` | admin email grants |
+| `0020_outreach_tracker.sql` | outreach tracking columns/events |
+| `0021_payments_expenses.sql` | `payments`, `expenses` + legacy paid-invoice backfill |
 
 ## How migrations get applied
 
@@ -27,9 +41,9 @@ in the hosted environment.
 1. **Preferred — via Lovable.** Publish/sync the project in Lovable; it applies any
    new files under `drizzle/migrations` to the shared database.
 2. **Manual fallback — Supabase SQL editor.** Open the project's SQL editor and run
-   each un-applied file in order. The SQL is plain Postgres and idempotent-safe only
-   if you run each file **once**: the statements are not wrapped in
-   `IF NOT EXISTS`, so re-running a file errors on the objects it already created.
+   each un-applied file in order, **once**. Some newer files use `IF NOT EXISTS`
+   guards, but do not assume a file is safe to re-run: earlier files create objects
+   unconditionally and will error if applied twice.
 
 ## Verifying a migration landed
 
@@ -55,6 +69,12 @@ select to_regclass('public.orders') is not null as orders_exists;
 select column_name from information_schema.columns
 where table_schema = 'public' and table_name = 'businesses'
   and column_name = 'validation_plan';
+
+-- 0021
+select to_regclass('public.payments') is not null as payments_exists,
+       to_regclass('public.expenses') is not null as expenses_exists;
+-- Confirms legacy PAID invoices were backfilled once.
+select count(*) as legacy_payments from public.payments where method = 'legacy';
 ```
 
 ## Graceful behaviour before a migration is applied
@@ -73,6 +93,9 @@ The app is written so an un-migrated database does not hard-fail:
   disables creation.
 - **0007** — reading is safe (`select *` omits the missing column). Saving a
   validation plan fails, and the Validation planner shows the migration hint.
+- **0021** — `usePayments()` / `useExpenses()` fall back to `persisted: false`;
+  `/money` and `/invoices` show a migration banner and disable payment/expense
+  writes. Existing invoice statuses still render.
 
 ## Rules
 

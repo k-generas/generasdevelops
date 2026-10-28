@@ -8,8 +8,10 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { OutreachMessages } from "@/components/OutreachMessages";
+import { ProspectVerificationPanel } from "@/components/ProspectVerificationPanel";
 import { useOffers } from "@/lib/offers.hooks";
 import { activeOfferNames } from "@/lib/offers";
+import type { VerificationFindings } from "@/lib/prospect-verification";
 import { industryLabel } from "@/lib/rwanda";
 import { type MatchExplanation } from "@/lib/service-match";
 import {
@@ -220,6 +222,12 @@ export function BusinessIntelModal({
             </div>
           )}
         </Section>
+
+        <ProspectVerificationPanel
+          business={business}
+          findings={investigation ? (findings as unknown as VerificationFindings) : null}
+          observedAt={investigation?.created_at ?? null}
+        />
 
         {/* Investigation report. */}
         <Section title="Investigation report">

@@ -46,13 +46,46 @@ describe("company identity", () => {
     expect(
       matchBusiness({ name: "A", phone: "+250788111222" }, { name: "B", phone: "0788 111 222" }),
     ).toEqual({ kind: "phone", value: "788111222" });
-    expect(matchBusiness({ name: "Kigali Coffee Ltd" }, { name: "Kigali Coffee Limited" })).toEqual(
-      {
-        kind: "name",
-        value: 1,
-      },
-    );
+    expect(
+      matchBusiness(
+        { name: "Kigali Coffee Ltd", address: "Kigali, Rwanda" },
+        { name: "Kigali Coffee Limited", address: "Gasabo, Kigali, Rwanda" },
+      ),
+    ).toEqual({
+      kind: "name",
+      value: 1,
+    });
     expect(matchBusiness({ name: "Alpha" }, { name: "Beta" })).toBeNull();
+  });
+
+  it("does not merge same-name companies in different countries", () => {
+    expect(
+      matchBusiness(
+        { name: "Kigali Coffee Ltd", address: "Kigali, Rwanda" },
+        { name: "Kigali Coffee Limited", address: "Nairobi, Kenya" },
+      ),
+    ).toBeNull();
+    expect(
+      sameBusinessRecord(
+        { name: "Kigali Coffee Ltd", address: "Kigali, Rwanda" },
+        { name: "Kigali Coffee Limited", address: "Nairobi, Kenya" },
+      ),
+    ).toBeNull();
+  });
+
+  it("does not name-match without a shared location hint", () => {
+    expect(
+      matchBusiness(
+        { name: "Kigali Coffee Ltd" },
+        { name: "Kigali Coffee Limited", address: "Kigali, Rwanda" },
+      ),
+    ).toBeNull();
+    expect(
+      matchBusiness(
+        { name: "Kigali Coffee Ltd", address: "Kigali, Rwanda" },
+        { name: "Kigali Coffee Limited", address: "Musanze, Rwanda" },
+      ),
+    ).toBeNull();
   });
 
   it("dedupes while keeping the first (priority) record", () => {
@@ -87,16 +120,26 @@ describe("company identity", () => {
     });
 
     it("requires a high name similarity to avoid hiding generic names", () => {
-      expect(sameBusinessRecord({ name: "Salon" }, { name: "Shop" })).toBeNull();
-      expect(sameBusinessRecord({ name: "Kigali Coffee" }, { name: "Kigali Coffee Ltd" })).toEqual({
+      expect(
+        sameBusinessRecord(
+          { name: "Salon", address: "Kigali, Rwanda" },
+          { name: "Shop", address: "Kigali, Rwanda" },
+        ),
+      ).toBeNull();
+      expect(
+        sameBusinessRecord(
+          { name: "Kigali Coffee", address: "Kigali, Rwanda" },
+          { name: "Kigali Coffee Ltd", address: "Kigali, Rwanda" },
+        ),
+      ).toEqual({
         kind: "name",
         value: 1,
       });
     });
 
     it("honours the name-similarity threshold", () => {
-      const a = { name: "Alpha Trading" };
-      const b = { name: "Alpha Trading House" };
+      const a = { name: "Alpha Trading", address: "Kigali, Rwanda" };
+      const b = { name: "Alpha Trading House", address: "Kigali, Rwanda" };
       const sim = nameSimilarity(a.name, b.name);
       expect(sim).toBeGreaterThan(0);
       expect(sim).toBeLessThan(0.9);

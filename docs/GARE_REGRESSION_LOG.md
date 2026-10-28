@@ -11,6 +11,50 @@ npm test
 npm run build
 ```
 
+## 2026-10-29 — Prospect verification hardening
+
+Make website/ownership/activity checks explicit, conservative and reviewable, and stop
+evidence gaps from being presented as verified facts. No schema change; verification
+evidence stays in the existing `website_check` JSONB plus the generated findings panel.
+
+### Baseline at start of pass
+- `git` HEAD `85e355c`; working tree already dirty (Money truth + GARE follow-up work)
+- `npx tsc --noEmit` — clean
+- `npm run lint` — 0 errors (7 pre-existing warnings)
+- `npx vitest run` — 42 files / 300 tests passing
+- `npm run build` — succeeded
+
+### Changes
+- **`src/lib/prospect-verification.ts`** (+ 10 tests) — derives per-channel coverage,
+  verification status, evidence records, observed problems, priority reasons and
+  uncertainties from stored checks only. Sources that cannot be checked remain
+  `not_performed`; no absence-of-evidence claims.
+- **`src/lib/website-finder.server.ts`** (+ 3 tests) — bounded alias/domain/free-hosting
+  candidates, structured step results, deadline-aware truncation, and positive /
+  negative / failed / not-performed website outcomes. Max 4 free-host checks per run.
+- **`src/lib/discovery.functions.ts`** — persists the full check object (including
+  truncated checks), counts "no website found" only for complete coverage, and passes
+  aliases to the investigation re-check.
+- **`src/lib/company-identity.ts`** (+ tests) — name-only matches now require compatible
+  locations; same-name foreign companies are not merged.
+- **`src/components/ProspectVerificationPanel.tsx`** — shows coverage, evidence,
+  priority, unknowns and next checks on the business detail page and intel modal.
+- **Guessed websites** — `domain_match` / `free_hosting` are labelled low-confidence,
+  capped at priority B, excluded from multi-channel presence, and require ownership
+  confirmation before gaps are treated as verified. A broken website alone is not
+  evidence that the business is operating.
+
+### Non-breaking design decisions
+- Additive module/UI only; existing website columns and discovery flow are reused.
+- Priority A now requires independent operating evidence even when the site is broken.
+- Parent-company websites are treated as ownership uncertainty, not local digital proof.
+- Paid Maps usage stays bounded and deduped; untestable sources are reported honestly.
+
+### Known limitations / follow-ups
+- Directory, marketplace, social-platform and registry checks remain manual until a
+  real provider is configured.
+- Free-host/domain guesses still need owner confirmation before outreach relies on them.
+
 ## 2026-10-26 — Phase 2: Data & reporting
 
 Adds time-series analytics, CSV/JSON export, safe duplicate merging, and the missing

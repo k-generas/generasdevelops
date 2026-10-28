@@ -32,12 +32,16 @@ Rule: this document records only what exists in the code. Nothing here is aspira
 | `/history` | Discovery run history |
 | `/history/$id` | Results of a past run |
 | `/settings` | Owner offer catalog, pricing floors + integration status |
+| `/analytics` | Weekly activity/cash analytics, funnel, win rate, CSV export |
+| `/money` | Payment/expense ledger, per-currency cash and profit, API usage |
 
 ## Data tables
 
 `discovery_runs`, `search_run_results`, `businesses`, `investigations`,
 `business_activity_events`, `proposals`, `proposal_versions`, `tasks`,
-`business_notes`, `user_preferences`, `offers` (migration `0004_offers_catalog.sql`).
+`business_notes`, `user_preferences`, `offers` (migration `0004_offers_catalog.sql`),
+`invoices`, `orders`, `payments` and `expenses` (migration
+`0021_payments_expenses.sql`).
 
 `businesses` (after migration `0003_business_activity_signals.sql`) also carries
 closure/activity signals: `business_status`, `last_activity_at`, `reviews_last_90d`,
@@ -72,8 +76,8 @@ Legend: **Done** = implemented and wired · **Partial** — exists but limited �
 | Explainable ranking | Partial | `src/lib/ranking.ts` (tested) exists but is not surfaced: needs owner skills/budget profile, so no fabricated scores are shown |
 | Validation planner | Done | `src/lib/validation.ts` + `ValidationPlanner.tsx`; persists `businesses.validation_plan` (migration 0007); outcome logs a `validation_outcome` event |
 | Orders + delivery | Done | Orders UI + checklist + status transitions (migration 0006). |
-| Invoices (invoicing-lite) | Done | owner-scoped `invoices` table (migration 0005), `/invoices` route, create-from-proposal, totals / status / print |
-| Payments | Missing | none — nothing is charged; Settings states this plainly |
+| Invoices (invoicing-lite) | Done | owner-scoped `invoices` table (migration 0005), `/invoices` route, create-from-proposal, totals / status / print; invoice balance is now derived from recorded payments (`PARTIAL`/`PAID`) |
+| Payments | Done | owner-scoped `payments` ledger (migration 0021), `/money` + `/invoices` entry, partial payments, overpayment visibility, delete/undo; no online processing or card charging |
 | Customers / CRM | Missing | businesses serve as leads; no customer records, no lifecycle |
 | Outreach logging | Partial | manual log per proposal (channel, time, response) → `business_activity_events` + business timeline; no automated email/WhatsApp sending |
 | Conversations / inbox | Missing | none |
@@ -81,7 +85,7 @@ Legend: **Done** = implemented and wired · **Partial** — exists but limited �
 | Experiments / A-B | Missing | none |
 | Learning / feedback loop | Missing | proposal outcomes are stored per proposal but not learned from |
 | Jobs / workers / cron | Missing | `cron-auth.ts` exists but is unused; no queue |
-| Cost / budget tracking | Missing | no token or spend accounting |
+| Cost / budget tracking | Partial | manual `expenses` ledger + paid API usage counts/source-scan cost on `/money`; no hard spend caps or per-token AI accounting yet |
 | Automation control center | Missing | discovery is manually triggered only |
 | Analytics / reporting | Done | `/analytics` weekly time-series, funnel, cash by currency, win rate; CSV exports on Leads/Numbers |
 | Backup / data export | Done | Settings JSON backup over 26 owner tables; per-table errors reported |
@@ -156,4 +160,53 @@ implementation. Statuses: **COMPLETE** / **PARTIAL** / **MISSING** / **MOCKED** 
   `limitation`, and `hypothesis` when confidence < 0.6 (`REVENUE_LEAK_RULE`).
 - New tables are owner-scoped `owner_id = auth.uid()`; UI degrades gracefully when migration
   0012 is not yet applied (returns `[]` / `applied:false` instead of throwing).
+
+---
+
+## Addendum 2026-10-26 — Money truth
+
+Money is now recorded as cash, not inferred from invoice status.
+
+- **Payments are the source of truth for collected cash.** `payments` links to an
+  invoice and/or business, stores amount/currency/method/received date/reference,
+  and is owner-scoped (migration `0021_payments_expenses.sql`). Invoices stay as
+  documents; their `PARTIAL`/`PAID` status is synchronized from linked payments.
+  `VOID` is never overwritten.
+- **Legacy invoices are preserved.** Migration 0021 backfills existing `PAID`
+  invoices into `payments` with method `legacy`, guarded against duplicates.
+- **Expenses are recorded manually.** `expenses` stores costs by category, vendor,
+  amount/currency, method, paid date and optional business link.
+- **No FX is applied.** Collected, spent, net and outstanding totals are grouped
+  per currency; the UI never adds different currencies together.
+- **Analytics prefers the ledger.** When payments exist, cash series/won totals use
+  recorded payments; otherwise they fall back to legacy paid invoices.
+- **Cost visibility, not hard caps.** `/money` shows discovery runs, AI
+  investigations, source scans and provider-recorded scan cost for the month.
+- **Outbound sending remains out of scope.** No email/WhatsApp/SMS provider is
+  configured and no online payment is processed; entry is manual.
+
+---
+
+## Addendum 2026-10-29 — Prospect verification
+
+Website, ownership, activity and contact checks are now explicit rather than implied.
+`src/lib/prospect-verification.ts` builds per-channel coverage, verification status,
+evidence records, observed problems, priority reasons and uncertainties from stored
+checks. `ProspectVerificationPanel.tsx` surfaces the result on the business page and
+intel modal.
+
+- **No fabricated coverage.** Sources the app cannot check stay `not_performed` or
+  `blocked`; an empty result is not proof that a website, profile or directory listing
+  does not exist. Paid provider usage remains capped and deduped.
+- **Website checks are structured and bounded.** Aliases, domain guesses and up to four
+  free-hosting candidates are tested with positive/negative/failed/not-performed
+  outcomes. Truncated runs are recorded as truncated and do not count as complete.
+- **Guesses are labelled.** `domain_match` and `free_hosting` websites are low-confidence,
+  capped at priority B, excluded from multi-channel presence, and require ownership
+  confirmation. A broken website alone does not prove the business is operating.
+- **Identity matching is conservative.** Name-only dedupe requires compatible locations,
+  so same-name foreign companies are not merged.
+- **Still manual:** social platforms, directories, marketplaces, WHOIS/registry checks
+  and any outbound contact. No new schema migration was required; evidence reuses the
+  existing `website_check` JSONB.
 

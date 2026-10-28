@@ -9,6 +9,8 @@ import { ValidationPlanner } from "@/components/ValidationPlanner";
 import { OutreachMessages } from "@/components/OutreachMessages";
 import { BusinessIntelModal } from "@/components/BusinessIntelModal";
 import type { IntelBusinessRow, IntelInvestigationRow } from "@/components/BusinessIntelModal";
+import { ProspectVerificationPanel } from "@/components/ProspectVerificationPanel";
+import type { VerificationFindings } from "@/lib/prospect-verification";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { freshnessDays } from "@/lib/evidence";
@@ -253,6 +255,9 @@ function BusinessPage() {
                 {b.website_source === "domain_match" && (
                   <Badge variant="outline">found by double-check · please confirm</Badge>
                 )}
+                {b.website_source === "free_hosting" && (
+                  <Badge variant="outline">found on free hosting - please confirm</Badge>
+                )}
                 {b.website_source === "place_details" && (
                   <Badge variant="outline">found by double-check</Badge>
                 )}
@@ -330,10 +335,16 @@ function BusinessPage() {
       )}
       {err && (
         <p className="rounded border border-destructive bg-card p-3 text-sm text-destructive">
-          {describeError(err, "Investigation").title}: {err} —{" "}
+          {describeError(err, "Investigation").title}: {err} �?"{" "}
           {describeError(err, "Investigation").fix}
         </p>
       )}
+
+      <ProspectVerificationPanel
+        business={b}
+        findings={(inv.data?.findings ?? null) as VerificationFindings | null}
+        observedAt={inv.data?.created_at ?? null}
+      />
 
       {(b.activity_checked_at || recent.length > 0 || hours.weekday_descriptions) && (
         <section className="grid gap-4 sm:grid-cols-2">
