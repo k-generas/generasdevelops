@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { OpportunityClusters } from "@/components/OpportunityClusters";
 import { OpportunityMap } from "@/components/OpportunityMap";
+import { OpportunitySignalsPanel } from \"@/components/OpportunitySignalsPanel\";
 import { downloadCsv, rowsToCsv } from "@/lib/csv";
 import { useOffers } from "@/lib/offers.hooks";
 import { ALL_DISTRICTS, provinceOfDistrict, type IndustryKey } from "@/lib/rwanda";
@@ -90,7 +91,7 @@ function RadarPage() {
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [autoBusy, setAutoBusy] = useState(false);
   const [autoNote, setAutoNote] = useState<string | null>(null);
-  const [view, setView] = useState<"clusters" | "map">("clusters");
+  const [view, setView] = useState<"clusters" | "map" | "signals">("clusters");
   const [gapFilter, setGapFilter] = useState<string | null>(null);
 
   useEffect(() => {
@@ -593,6 +594,7 @@ function RadarPage() {
           onClick={() => setView("clusters")}
         >
           Density clusters
+        <Button size="sm" variant={view === "signals" ? "default" : "outline"} onClick={() => setView("signals")}>Opportunity Signals</Button>
         </Button>
         <Button
           size="sm"
