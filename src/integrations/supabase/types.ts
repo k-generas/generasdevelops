@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_audits: {
+        Row: {
+          id: string
+          owner_id: string
+          business_id: string
+          status: string
+          findings_json: Json
+          evidence_log_json: Json
+          summary_json: Json
+          score_0_100: number | null
+          started_at: string
+          completed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          owner_id?: string
+          business_id: string
+          status?: string
+          findings_json?: Json
+          evidence_log_json?: Json
+          summary_json?: Json
+          score_0_100?: number | null
+          started_at?: string
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          owner_id?: string
+          business_id?: string
+          status?: string
+          findings_json?: Json
+          evidence_log_json?: Json
+          summary_json?: Json
+          score_0_100?: number | null
+          started_at?: string
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_audits_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_activity_events: {
         Row: {
           business_id: string | null

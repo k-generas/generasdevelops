@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { investigateBusiness } from "@/lib/discovery.functions";
+import { runBusinessAuditFn } from "@/lib/business-audit.functions";
 import { BusinessWorkspace } from "@/components/BusinessWorkspace";
 import { ValidationPlanner } from "@/components/ValidationPlanner";
 import { OutreachMessages } from "@/components/OutreachMessages";
@@ -52,7 +53,9 @@ function BusinessPage() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
   const investigate = useServerFn(investigateBusiness);
+  const runAuditFn = useServerFn(runBusinessAuditFn);
   const [busy, setBusy] = useState(false);
+  const [auditBusy, setAuditBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [provider, setProvider] = useState<"auto" | "openai" | "gemini" | "lovable">("auto");
   // Bumped after a successful investigation to trigger outreach drafting.
@@ -112,6 +115,22 @@ function BusinessPage() {
       setErr(e instanceof Error ? e.message : "Investigation failed");
     }
     setBusy(false);
+  }
+
+  async function runAudit() {
+    setAuditBusy(true);
+    setErr(null);
+    try {
+      const r: any = await runAuditFn({ data: { businessId: id } });
+      qc.invalidateQueries({ queryKey: ["business_audits"] });
+      qc.invalidateQueries({ queryKey: ["biz-events", id] });
+      if (r?.auditId) {
+        window.location.href = `/audit/${r.auditId}`;
+      }
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Audit failed");
+    }
+    setAuditBusy(false);
   }
 
   if (biz.isLoading) return <p className="text-sm text-muted-foreground">Loading business…</p>;
@@ -304,7 +323,10 @@ function BusinessPage() {
 
       <div className="flex flex-wrap items-center gap-3">
         <Button onClick={run} disabled={busy}>
-          {busy ? "Investigating… (≈30s)" : inv.data ? "Re-investigate" : "Run investigation"}
+          {busy ? "Investigating�?� (�%^30s)" : inv.data ? "Re-investigate" : "Run investigation"}
+        </Button>
+        <Button onClick={runAudit} disabled={auditBusy} variant="secondary">
+          {auditBusy ? "Running audit..." : "Run Business Audit"}
         </Button>
         <select
           className="rounded border bg-background px-2 py-1.5 text-sm"

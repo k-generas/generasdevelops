@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const BACKUP_TABLES = [
   "businesses",
   "business_facts",
+  "business_audits",
   "business_sources",
   "business_notes",
   "business_activity_events",
