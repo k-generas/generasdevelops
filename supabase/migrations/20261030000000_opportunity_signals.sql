@@ -31,11 +31,12 @@ CREATE INDEX IF NOT EXISTS idx_opportunity_signals_detected ON public.opportunit
 
 ALTER TABLE public.opportunity_signals ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view own opportunity_signals" ON public.opportunity_signals
-  FOR SELECT USING (auth.uid() = owner_id);
-CREATE POLICY "Users can insert own opportunity_signals" ON public.opportunity_signals
-  FOR INSERT WITH CHECK (auth.uid() = owner_id);
-CREATE POLICY "Users can update own opportunity_signals" ON public.opportunity_signals
-  FOR UPDATE USING (auth.uid() = owner_id);
-CREATE POLICY "Users can delete own opportunity_signals" ON public.opportunity_signals
-  FOR DELETE USING (auth.uid() = owner_id);
+DROP POLICY IF EXISTS "Users can view own opportunity_signals" ON public.opportunity_signals;
+DROP POLICY IF EXISTS "Users can insert own opportunity_signals" ON public.opportunity_signals;
+DROP POLICY IF EXISTS "Users can update own opportunity_signals" ON public.opportunity_signals;
+DROP POLICY IF EXISTS "Users can delete own opportunity_signals" ON public.opportunity_signals;
+
+CREATE POLICY "Users can view own opportunity_signals" ON public.opportunity_signals FOR SELECT USING (auth.uid() = owner_id);
+CREATE POLICY "Users can insert own opportunity_signals" ON public.opportunity_signals FOR INSERT WITH CHECK (auth.uid() = owner_id);
+CREATE POLICY "Users can update own opportunity_signals" ON public.opportunity_signals FOR UPDATE USING (auth.uid() = owner_id);
+CREATE POLICY "Users can delete own opportunity_signals" ON public.opportunity_signals FOR DELETE USING (auth.uid() = owner_id);

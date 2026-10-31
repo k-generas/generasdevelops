@@ -33,11 +33,12 @@ CREATE INDEX IF NOT EXISTS idx_opportunities_status ON public.opportunities(vali
 
 ALTER TABLE public.opportunities ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view own opportunities" ON public.opportunities
-  FOR SELECT USING (auth.uid() = owner_id);
-CREATE POLICY "Users can insert own opportunities" ON public.opportunities
-  FOR INSERT WITH CHECK (auth.uid() = owner_id);
-CREATE POLICY "Users can update own opportunities" ON public.opportunities
-  FOR UPDATE USING (auth.uid() = owner_id);
-CREATE POLICY "Users can delete own opportunities" ON public.opportunities
-  FOR DELETE USING (auth.uid() = owner_id);
+DROP POLICY IF EXISTS "Users can view own opportunities" ON public.opportunities;
+DROP POLICY IF EXISTS "Users can insert own opportunities" ON public.opportunities;
+DROP POLICY IF EXISTS "Users can update own opportunities" ON public.opportunities;
+DROP POLICY IF EXISTS "Users can delete own opportunities" ON public.opportunities;
+
+CREATE POLICY "Users can view own opportunities" ON public.opportunities FOR SELECT USING (auth.uid() = owner_id);
+CREATE POLICY "Users can insert own opportunities" ON public.opportunities FOR INSERT WITH CHECK (auth.uid() = owner_id);
+CREATE POLICY "Users can update own opportunities" ON public.opportunities FOR UPDATE USING (auth.uid() = owner_id);
+CREATE POLICY "Users can delete own opportunities" ON public.opportunities FOR DELETE USING (auth.uid() = owner_id);
