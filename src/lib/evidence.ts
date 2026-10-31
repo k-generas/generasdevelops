@@ -62,3 +62,7 @@ export function isFresh(lastChecked: string, maxAgeDays = 30): boolean {
 export function createEvidenceId(): string {
   return `ev_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
+
+export function isStale(lastChecked: string, maxAgeDays = 30): boolean { return !isFresh(lastChecked, maxAgeDays); }
+export function normalizeConfidence(c: number): number { return Math.max(0, Math.min(1, c)); }
+export function freshnessDays(lastChecked: string): number { const checked = new Date(lastChecked).getTime(); const now = Date.now(); return Math.floor((now - checked)/(1000*60*60*24)); }
