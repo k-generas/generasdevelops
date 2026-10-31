@@ -1,5 +1,4 @@
-﻿-- Business Digital Audit (evidence-based). Every row owner-scoped via RLS.
--- No fabricated findings; statuses/severities per spec; partial results allowed.
+﻿-- Business Digital Audit (evidence-based)
 CREATE TABLE IF NOT EXISTS public.business_audits (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id uuid NOT NULL DEFAULT auth.uid(),
