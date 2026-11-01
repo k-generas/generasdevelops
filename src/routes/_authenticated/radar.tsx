@@ -5,4 +5,5 @@ export const Route = createFileRoute('/_authenticated/radar')({
 })
 
 function RouteComponent() {
+  return <div>Hello "/_authenticated/radar"!</div>
 }
