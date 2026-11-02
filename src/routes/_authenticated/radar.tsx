@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { OpportunityClusters } from "@/components/OpportunityClusters";
 import { OpportunityMap } from "@/components/OpportunityMap";
-import { OpportunitySignalsPanel } from \"@/components/OpportunitySignalsPanel\";
+import { OpportunitySignalsPanel } from "@/components/OpportunitySignalsPanel";
 import { downloadCsv, rowsToCsv } from "@/lib/csv";
 import { useOffers } from "@/lib/offers.hooks";
 import { ALL_DISTRICTS, provinceOfDistrict, type IndustryKey } from "@/lib/rwanda";
@@ -50,7 +50,7 @@ import {
 export const Route = createFileRoute("/_authenticated/radar")({
   head: () => ({
     meta: [
-      { title: "Opportunity Radar — GARE" },
+      { title: "Opportunity Radar â€” GARE" },
       {
         name: "description",
         content:
@@ -115,12 +115,12 @@ function RadarPage() {
         }));
         if (row.last_run_at) {
           setAutoNote(
-            `Daily target saved · last run ${new Date(row.last_run_at).toLocaleString()}`,
+            `Daily target saved Â· last run ${new Date(row.last_run_at).toLocaleString()}`,
           );
         }
       })
       .catch(() => {
-        /* not signed in or offline — local settings still work */
+        /* not signed in or offline â€” local settings still work */
       });
     return () => {
       cancelled = true;
@@ -139,7 +139,7 @@ function RadarPage() {
           maxQueries: 10,
         },
       }).catch(() => {
-        /* best effort — the toggle already reports hard failures */
+        /* best effort â€” the toggle already reports hard failures */
       });
     }, 800);
     return () => clearTimeout(t);
@@ -257,7 +257,7 @@ function RadarPage() {
 
   async function runScan() {
     if (!settings.district) {
-      setNote({ ok: false, text: "Pick a district first — each run is bounded to one district." });
+      setNote({ ok: false, text: "Pick a district first â€” each run is bounded to one district." });
       return;
     }
     setScanBusy(true);
@@ -270,11 +270,11 @@ function RadarPage() {
           industries,
           districts: [settings.district],
           maxQueries: 10,
-          title: `Radar scan · ${settings.district}`,
+          title: `Radar scan Â· ${settings.district}`,
         },
       });
       setScanResult(
-        `Ran ${result.queries} ${result.queries === 1 ? "query" : "queries"} · ${result.found} found · ${result.added} new · est. $${result.estimatedCostUsd}${result.truncated ? " (capped)" : ""}${result.failedQueries ? ` · ${result.failedQueries} failed` : ""}`,
+        `Ran ${result.queries} ${result.queries === 1 ? "query" : "queries"} Â· ${result.found} found Â· ${result.added} new Â· est. $${result.estimatedCostUsd}${result.truncated ? " (capped)" : ""}${result.failedQueries ? ` Â· ${result.failedQueries} failed` : ""}`,
       );
       qc.invalidateQueries({ queryKey: ["radar-businesses"] });
     } catch (e) {
@@ -303,7 +303,7 @@ function RadarPage() {
       });
       setAutoNote(
         key === "daily"
-          ? `Daily automatic scan on · ${row.district ?? "all districts"} · ${categoryLabel(settings.category)}`
+          ? `Daily automatic scan on Â· ${row.district ?? "all districts"} Â· ${categoryLabel(settings.category)}`
           : "Automatic daily scan off.",
       );
     } catch (e) {
@@ -326,7 +326,7 @@ function RadarPage() {
         setAutoNote(`Daily scan failed: ${out.error}`);
       } else {
         setAutoNote(
-          `Daily scan finished · ${out.result?.found ?? 0} found · ${out.added} new · see Updates.`,
+          `Daily scan finished Â· ${out.result?.found ?? 0} found Â· ${out.added} new Â· see Updates.`,
         );
         qc.invalidateQueries({ queryKey: ["radar-businesses"] });
       }
@@ -345,7 +345,7 @@ function RadarPage() {
     setNote(null);
     try {
       await investigate({ data: { businessId: id, provider: "auto" } });
-      setNote({ ok: true, text: "Investigation complete — evidence refreshed." });
+      setNote({ ok: true, text: "Investigation complete â€” evidence refreshed." });
       qc.invalidateQueries({ queryKey: ["radar-businesses"] });
       qc.invalidateQueries({ queryKey: ["radar-investigations"] });
     } catch (e) {
@@ -412,10 +412,10 @@ function RadarPage() {
         <h1 className="text-2xl font-semibold">Local Opportunity Radar</h1>
         <p className="text-sm text-muted-foreground">
           Businesses near your chosen area whose unmet needs are already visible in the evidence we
-          hold — scored, and ready to hand into your pipeline.
+          hold â€” scored, and ready to hand into your pipeline.
         </p>
         <p className="text-xs text-muted-foreground">
-          Sources: {coverage.active.length} live · {coverage.pending.length} pending ·{" "}
+          Sources: {coverage.active.length} live Â· {coverage.pending.length} pending Â·{" "}
           {coverage.blocked.length} blocked. {coverage.note}
         </p>
       </header>
@@ -516,7 +516,7 @@ function RadarPage() {
         <div className="space-y-2 rounded-md border bg-background/40 p-3">
           <p className="text-sm font-medium">Automatic daily scan</p>
           <p className="text-xs text-muted-foreground">
-            Set <span className="font-medium">Monitoring</span> to “Daily scan” above to save this
+            Set <span className="font-medium">Monitoring</span> to â€œDaily scanâ€ above to save this
             target (area + industry focus). Once the daily job is scheduled, it is scanned every day
             and what it found appears in Updates. You can also run it right now.
           </p>
@@ -528,7 +528,7 @@ function RadarPage() {
               disabled={autoBusy || !settings.district}
               onClick={runDailyScanNow}
             >
-              {autoBusy ? "Working…" : "Run daily scan now"}
+              {autoBusy ? "Workingâ€¦" : "Run daily scan now"}
             </Button>
             <Button type="button" size="sm" variant="ghost" asChild>
               <Link to="/updates">View updates</Link>
@@ -539,11 +539,11 @@ function RadarPage() {
 
         <div className="flex flex-wrap items-center gap-3">
           <Button type="button" disabled={scanBusy} onClick={runScan}>
-            {scanBusy ? "Scanning…" : "Run radar scan"}
+            {scanBusy ? "Scanningâ€¦" : "Run radar scan"}
           </Button>
           <span className="text-xs text-muted-foreground">
             {settings.district
-              ? `One district · ${categoryLabel(settings.category)} · up to 10 paid Google queries`
+              ? `One district Â· ${categoryLabel(settings.category)} Â· up to 10 paid Google queries`
               : "Pick a district to enable a bounded scan."}
           </span>
         </div>
@@ -582,8 +582,8 @@ function RadarPage() {
         <span className="text-xs text-muted-foreground">
           Centre:{" "}
           {center
-            ? `${center.lat.toFixed(3)}, ${center.lng.toFixed(3)} · ${settings.radiusKm} km`
-            : "none yet — no stored coordinates in this area"}
+            ? `${center.lat.toFixed(3)}, ${center.lng.toFixed(3)} Â· ${settings.radiusKm} km`
+            : "none yet â€” no stored coordinates in this area"}
         </span>
       </div>
 
@@ -646,7 +646,7 @@ function RadarPage() {
         </h2>
 
         <p className="text-xs text-muted-foreground">
-          Service filter: {serviceLabel(settings.service)} · {monitoring.label} — {monitoring.note}
+          Service filter: {serviceLabel(settings.service)} Â· {monitoring.label} â€” {monitoring.note}
         </p>
 
         {businesses.isError ? (
@@ -656,14 +656,14 @@ function RadarPage() {
             onRetry={() => void businesses.refetch()}
           />
         ) : businesses.isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading businesses…</p>
+          <p className="text-sm text-muted-foreground">Loading businessesâ€¦</p>
         ) : shown.length === 0 ? (
           <EmptyState
             title="No opportunities match these filters"
-            why="A lead only appears when there is an observable gap in the evidence we hold — never just because it is nearby. Try a wider radius, a different industry focus, or run a radar scan for this district to gather evidence first."
+            why="A lead only appears when there is an observable gap in the evidence we hold â€” never just because it is nearby. Try a wider radius, a different industry focus, or run a radar scan for this district to gather evidence first."
             action={
               <Button size="sm" variant="outline" disabled={scanBusy} onClick={runScan}>
-                {scanBusy ? "Scanning…" : "Run radar scan now"}
+                {scanBusy ? "Scanningâ€¦" : "Run radar scan now"}
               </Button>
             }
           />
@@ -712,16 +712,16 @@ function OpportunityCard({
       </div>
 
       <p className="text-xs text-muted-foreground">
-        {o.industryLabel} · {o.district ?? "Unknown district"}
-        {o.province ? ` · ${provinceOfDistrict(o.district ?? "") ?? o.province}` : ""} ·{" "}
+        {o.industryLabel} Â· {o.district ?? "Unknown district"}
+        {o.province ? ` Â· ${provinceOfDistrict(o.district ?? "") ?? o.province}` : ""} Â·{" "}
         {freshness.label}
-        {best ? ` · best fit: ${best.offer}` : " · no offer match yet"}
+        {best ? ` Â· best fit: ${best.offer}` : " Â· no offer match yet"}
       </p>
 
       <div className="flex flex-wrap gap-1">
         {o.gaps.map((g) => (
           <Badge key={g.key} variant="outline" title={g.evidence}>
-            {g.label} · {g.severity}
+            {g.label} Â· {g.severity}
           </Badge>
         ))}
       </div>
@@ -730,20 +730,20 @@ function OpportunityCard({
         <ul className="space-y-0.5 text-xs text-muted-foreground">
           {o.matches.slice(0, 3).map((m) => (
             <li key={m.offer}>
-              {m.offer} · {(m.confidence * 100).toFixed(0)}%{m.recurring ? " · recurring" : ""}
-              {m.hypothesis ? " · hypothesis" : ""}
+              {m.offer} Â· {(m.confidence * 100).toFixed(0)}%{m.recurring ? " Â· recurring" : ""}
+              {m.hypothesis ? " Â· hypothesis" : ""}
             </li>
           ))}
         </ul>
       )}
 
       {o.reasons.length > 0 && (
-        <p className="text-xs text-muted-foreground">Why: {o.reasons.slice(0, 2).join(" · ")}</p>
+        <p className="text-xs text-muted-foreground">Why: {o.reasons.slice(0, 2).join(" Â· ")}</p>
       )}
 
       <div className="flex flex-wrap items-center gap-2">
         <Button size="sm" variant="outline" disabled={busy} onClick={() => onInvestigate(o.id)}>
-          {busy ? "Working…" : "Investigate"}
+          {busy ? "Workingâ€¦" : "Investigate"}
         </Button>
         <Button size="sm" variant="outline" asChild>
           <Link to="/businesses/$id" params={{ id: o.id }}>
@@ -752,7 +752,7 @@ function OpportunityCard({
         </Button>
         {best && (
           <Button size="sm" disabled={busy} onClick={() => onDraft(o)}>
-            {busy ? "Working…" : `Draft outreach`}
+            {busy ? "Workingâ€¦" : `Draft outreach`}
           </Button>
         )}
       </div>
