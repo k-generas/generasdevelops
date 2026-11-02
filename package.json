@@ -9,6 +9,8 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "db:fix-pgcrypto": "node scripts/fix-pgcrypto-search-path.mjs",
+    "db:migrate": "node scripts/db-migrate.mjs",
+    "db:verify": "node scripts/db-verify.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",

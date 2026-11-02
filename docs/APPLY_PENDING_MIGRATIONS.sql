@@ -1,10 +1,10 @@
 -- GARE - apply ALL pending migrations in one pass
--- Generated from drizzle/migrations/0011..0019. Every statement is idempotent-safe
--- (CREATE TABLE IF NOT EXISTS / ADD COLUMN IF NOT EXISTS / DROP POLICY IF EXISTS),
--- so it is safe to run even if some of these already landed.
+-- Covers drizzle/migrations/0011..0025 and supabase/migrations/20261022..20261102.
+-- Every statement is idempotent-safe (CREATE TABLE IF NOT EXISTS / ADD COLUMN IF NOT EXISTS /
+-- DROP POLICY IF EXISTS), so it is safe to run even if some of these already landed.
 --
--- How to run: Supabase dashboard -> SQL Editor -> New query -> paste ALL of this -> Run.
--- Then restart your dev server.
+-- How to run: Lovable -> Database -> Manage -> SQL editor -> New query -> paste ALL of this -> Run.
+-- (Or Supabase dashboard -> SQL Editor.) Then restart your dev server.
 
 
 -- ============================================================================
@@ -802,3 +802,154 @@ ALTER TABLE public.businesses
 
 CREATE INDEX IF NOT EXISTS businesses_owner_stage_idx
   ON public.businesses (owner_id, outreach_stage);
+
+
+-- ============================================================================
+-- REMAINING HOSTED MIGRATIONS
+-- Appended so this bundle is complete. Every statement below is idempotent.
+-- Covers: outreach columns, business_audits, opportunity_signals, opportunities.
+-- ============================================================================
+
+-- ==== 20261022223809035_outreach_stage_force.sql ==== (and 20261102 repair)
+ALTER TABLE public.businesses ADD COLUMN IF NOT EXISTS outreach_stage text DEFAULT 'not_contacted';
+ALTER TABLE public.businesses ADD COLUMN IF NOT EXISTS last_contacted_at timestamptz;
+ALTER TABLE public.businesses ADD COLUMN IF NOT EXISTS outreach_note text;
+UPDATE public.businesses SET outreach_stage = 'not_contacted' WHERE outreach_stage IS NULL;
+ALTER TABLE public.businesses ALTER COLUMN outreach_stage SET DEFAULT 'not_contacted';
+ALTER TABLE public.businesses ALTER COLUMN outreach_stage SET NOT NULL;
+ALTER TABLE public.businesses DROP CONSTRAINT IF EXISTS businesses_outreach_stage_check;
+ALTER TABLE public.businesses ADD CONSTRAINT businesses_outreach_stage_check CHECK (outreach_stage IN ('not_contacted','messaged','replied','negotiating','won','lost'));
+CREATE INDEX IF NOT EXISTS businesses_owner_stage_idx ON public.businesses (owner_id, outreach_stage);
+GRANT SELECT, INSERT, UPDATE ON public.businesses TO authenticated;
+GRANT ALL ON public.businesses TO service_role;
+NOTIFY pgrst, 'reload schema';
+
+
+-- ==== 20261029000000_business_audits.sql ====
+-- Business Digital Audit (evidence-based)
+CREATE TABLE IF NOT EXISTS public.business_audits (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id uuid NOT NULL DEFAULT auth.uid(),
+  business_id uuid NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
+  status text NOT NULL DEFAULT 'running' CHECK (status IN ('running','completed','failed','partial')),
+  findings_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  evidence_log_json jsonb NOT NULL DEFAULT '[]'::jsonb,
+  summary_json jsonb NOT NULL DEFAULT '{}'::jsonb,
+  score_0_100 integer,
+  started_at timestamptz NOT NULL DEFAULT now(),
+  completed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.business_audits TO authenticated;
+GRANT ALL ON public.business_audits TO service_role;
+
+ALTER TABLE public.business_audits ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "own business_audits" ON public.business_audits;
+CREATE POLICY "own business_audits" ON public.business_audits FOR ALL TO authenticated
+  USING (owner_id = auth.uid()) WITH CHECK (owner_id = auth.uid());
+
+CREATE INDEX IF NOT EXISTS business_audits_owner_business_idx ON public.business_audits (owner_id, business_id, created_at DESC);
+NOTIFY pgrst, 'reload schema';
+
+
+-- ==== 20261030000000_opportunity_signals.sql ====
+CREATE TABLE IF NOT EXISTS public.opportunity_signals (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  business_id uuid NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
+  category text NOT NULL,
+  description text NOT NULL,
+  evidence_source text NOT NULL,
+  source_url text,
+  published_at timestamptz,
+  detected_at timestamptz NOT NULL DEFAULT now(),
+  last_verification_date timestamptz,
+  confidence_level numeric NOT NULL DEFAULT 0.5 CHECK (confidence_level >= 0 AND confidence_level <= 1),
+  possible_business_need text NOT NULL,
+  relevant_generas_service jsonb NOT NULL DEFAULT '[]'::jsonb,
+  suggested_investigation text NOT NULL,
+  suggested_validation_question text NOT NULL,
+  priority text NOT NULL DEFAULT 'medium' CHECK (priority IN ('low','medium','high','critical')),
+  status text NOT NULL DEFAULT 'NEW' CHECK (status IN ('NEW','UNDER_REVIEW','CONFIRMED','NEEDS_VALIDATION','EXPIRED','DISMISSED','CONVERTED_TO_OPPORTUNITY')),
+  industry text,
+  location text,
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_opportunity_signals_owner ON public.opportunity_signals(owner_id);
+CREATE INDEX IF NOT EXISTS idx_opportunity_signals_business ON public.opportunity_signals(business_id);
+CREATE INDEX IF NOT EXISTS idx_opportunity_signals_status ON public.opportunity_signals(status);
+CREATE INDEX IF NOT EXISTS idx_opportunity_signals_category ON public.opportunity_signals(category);
+CREATE INDEX IF NOT EXISTS idx_opportunity_signals_detected ON public.opportunity_signals(detected_at DESC);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.opportunity_signals TO authenticated;
+GRANT ALL ON public.opportunity_signals TO service_role;
+
+ALTER TABLE public.opportunity_signals ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own opportunity_signals" ON public.opportunity_signals;
+DROP POLICY IF EXISTS "Users can insert own opportunity_signals" ON public.opportunity_signals;
+DROP POLICY IF EXISTS "Users can update own opportunity_signals" ON public.opportunity_signals;
+DROP POLICY IF EXISTS "Users can delete own opportunity_signals" ON public.opportunity_signals;
+
+CREATE POLICY "Users can view own opportunity_signals" ON public.opportunity_signals FOR SELECT USING (auth.uid() = owner_id);
+CREATE POLICY "Users can insert own opportunity_signals" ON public.opportunity_signals FOR INSERT WITH CHECK (auth.uid() = owner_id);
+CREATE POLICY "Users can update own opportunity_signals" ON public.opportunity_signals FOR UPDATE USING (auth.uid() = owner_id);
+CREATE POLICY "Users can delete own opportunity_signals" ON public.opportunity_signals FOR DELETE USING (auth.uid() = owner_id);
+NOTIFY pgrst, 'reload schema';
+
+
+-- ==== 20261031000000_opportunities_qualification.sql ====
+CREATE TABLE IF NOT EXISTS public.opportunities (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  business_id uuid NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
+  investigation_id uuid REFERENCES public.investigations(id) ON DELETE SET NULL,
+  audit_id uuid REFERENCES public.business_audits(id) ON DELETE SET NULL,
+  signal_id uuid REFERENCES public.opportunity_signals(id) ON DELETE SET NULL,
+  leak_id uuid REFERENCES public.revenue_leaks(id) ON DELETE SET NULL,
+  title text NOT NULL,
+  identified_problem text NOT NULL,
+  evidence jsonb NOT NULL DEFAULT '[]'::jsonb,
+  potential_solution text NOT NULL,
+  relevant_service text,
+  business_impact_hypothesis text,
+  confidence numeric NOT NULL DEFAULT 0.3 CHECK (confidence >= 0 AND confidence <= 1),
+  urgency text NOT NULL DEFAULT 'medium' CHECK (urgency IN ('low','medium','high','critical')),
+  estimated_project_value numeric,
+  validation_status text NOT NULL DEFAULT 'UNKNOWN' CHECK (validation_status IN ('UNKNOWN','CONFIRMED','DENIED','PARTIAL')),
+  qualification_stage text NOT NULL DEFAULT 'DISCOVERED' CHECK (qualification_stage IN ('DISCOVERED','RESEARCHING','NEEDS_VALIDATION','VALIDATION_IN_PROGRESS','QUALIFIED','READY_TO_PROPOSE','PROPOSAL_SENT','WON','LOST','DISQUALIFIED')),
+  next_action text,
+  assigned_owner uuid,
+  validation_questions jsonb NOT NULL DEFAULT '[]'::jsonb,
+  qualification_assessment jsonb NOT NULL DEFAULT '{}'::jsonb,
+  priority_factors jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_opportunities_owner ON public.opportunities(owner_id);
+CREATE INDEX IF NOT EXISTS idx_opportunities_business ON public.opportunities(business_id);
+CREATE INDEX IF NOT EXISTS idx_opportunities_stage ON public.opportunities(qualification_stage);
+CREATE INDEX IF NOT EXISTS idx_opportunities_status ON public.opportunities(validation_status);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.opportunities TO authenticated;
+GRANT ALL ON public.opportunities TO service_role;
+
+ALTER TABLE public.opportunities ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own opportunities" ON public.opportunities;
+DROP POLICY IF EXISTS "Users can insert own opportunities" ON public.opportunities;
+DROP POLICY IF EXISTS "Users can update own opportunities" ON public.opportunities;
+DROP POLICY IF EXISTS "Users can delete own opportunities" ON public.opportunities;
+
+CREATE POLICY "Users can view own opportunities" ON public.opportunities FOR SELECT USING (auth.uid() = owner_id);
+CREATE POLICY "Users can insert own opportunities" ON public.opportunities FOR INSERT WITH CHECK (auth.uid() = owner_id);
+CREATE POLICY "Users can update own opportunities" ON public.opportunities FOR UPDATE USING (auth.uid() = owner_id);
+CREATE POLICY "Users can delete own opportunities" ON public.opportunities FOR DELETE USING (auth.uid() = owner_id);
+NOTIFY pgrst, 'reload schema';

@@ -24,3 +24,5 @@ CREATE POLICY "own business_audits" ON public.business_audits FOR ALL TO authent
   USING (owner_id = auth.uid()) WITH CHECK (owner_id = auth.uid());
 
 CREATE INDEX IF NOT EXISTS business_audits_owner_business_idx ON public.business_audits (owner_id, business_id, created_at DESC);
+
+NOTIFY pgrst, 'reload schema';

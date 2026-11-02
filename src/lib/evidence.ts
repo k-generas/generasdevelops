@@ -64,5 +64,9 @@ export function createEvidenceId(): string {
 }
 
 export function isStale(lastChecked: string, maxAgeDays = 30): boolean { return !isFresh(lastChecked, maxAgeDays); }
-export function normalizeConfidence(c: number): number { return Math.max(0, Math.min(1, c)); }
+export function normalizeConfidence(c: number | string): number {
+  const value = typeof c === "number" ? c : Number(c);
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(1, value));
+}
 export function freshnessDays(lastChecked: string): number { const checked = new Date(lastChecked).getTime(); const now = Date.now(); return Math.floor((now - checked)/(1000*60*60*24)); }

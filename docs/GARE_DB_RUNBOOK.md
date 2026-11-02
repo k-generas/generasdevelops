@@ -4,8 +4,12 @@ The app (localhost) and the hosted Lovable site share **one** Supabase project
 (`lfhzponzmkdconaovolq`). A migration applied once affects both, so there is no
 "local database" to reset — always treat migrations as production changes.
 
-Migrations live in `drizzle/migrations/` and are tracked in
-`drizzle/migrations/meta/_journal.json`.
+Lovable can apply either set, depending on which migration mechanism the project
+uses. Keep both in sync:
+
+- `supabase/migrations/` — timestamped files for Lovable Cloud / Supabase.
+- `drizzle/migrations/` — Lovable's Drizzle history. A migration is only applied
+  by Drizzle when it has an entry in `drizzle/migrations/meta/_journal.json`.
 
 | File | Adds |
 | --- | --- |
@@ -31,19 +35,67 @@ Migrations live in `drizzle/migrations/` and are tracked in
 | `0019_grant_admin_emails.sql` | admin email grants |
 | `0020_outreach_tracker.sql` | outreach tracking columns/events |
 | `0021_payments_expenses.sql` | `payments`, `expenses` + legacy paid-invoice backfill |
+| `0022_business_audits.sql` | `business_audits` |
+| `0023_opportunity_signals.sql` | `opportunity_signals` |
+| `0024_opportunities_qualification.sql` | `opportunities` |
+| `0025_outreach_columns_repair.sql` | forward-only repair for the outreach columns |
+
+Lovable Cloud migrations (`supabase/migrations/`, newest first):
+
+| File | Adds |
+| --- | --- |
+| `20261102000000_outreach_columns_repair.sql` | forward-only outreach column repair |
+| `20261031000000_opportunities_qualification.sql` | `opportunities` |
+| `20261030000000_opportunity_signals.sql` | `opportunity_signals` |
+| `20261029000000_business_audits.sql` | `business_audits` |
+| `20261026000000_payments_expenses.sql` | `payments`, `expenses` |
+| `20261022223809035_outreach_stage_force.sql` | outreach columns + constraint |
+| `20261022205533_outreach_tracker.sql` | outreach index |
+| `20261016120000_gare_growth_engine.sql` | monitoring, digests, leaks, partners, subscriptions, kits, referrals |
 
 ## How migrations get applied
 
-The repository has **no** service-role key and no direct database URL. Migrations
-run through Lovable using the `LOVABLE_DB_MIGRATION_URL` secret, which only exists
-in the hosted environment.
+Pushing to `main` syncs the files, but sync alone does not run
+externally-authored migrations. Use one of these, in order of preference:
 
-1. **Preferred — via Lovable.** Publish/sync the project in Lovable; it applies any
-   new files under `drizzle/migrations` to the shared database.
-2. **Manual fallback — Supabase SQL editor.** Open the project's SQL editor and run
-   each un-applied file in order, **once**. Some newer files use `IF NOT EXISTS`
-   guards, but do not assume a file is safe to re-run: earlier files create objects
-   unconditionally and will error if applied twice.
+1. **Lovable SQL editor (guaranteed):** More → Database → Manage → SQL editor,
+   paste all of `docs/APPLY_PENDING_MIGRATIONS.sql`, and run it.
+2. **Lovable chat:** ask "apply the pending migrations in `supabase/migrations/`
+   and `drizzle/migrations/`, then verify the tables exist."
+3. **Local, when a database URL is available:**
+
+```sh
+LOVABLE_DB_MIGRATION_URL="postgres://..." npm run db:migrate
+npm run db:verify
+```
+
+`npm run db:migrate` applies every file in order and is safe to re-run.
+`npm run db:verify` checks the hosted schema and live site and exits non-zero on
+any missing table/column.
+
+### Why the outreach columns were skipped
+
+Drizzle applies journal entries newer than the last applied migration. The hosted
+database recorded `0021_payments_expenses` but not `0020_outreach_tracker`, so
+Drizzle considers `0020` already passed and will never run it. That is why
+`0025_outreach_columns_repair.sql` (and
+`supabase/migrations/20261102000000_outreach_columns_repair.sql`) exists: it is
+newer than `0021` and idempotently re-adds the columns, constraint, and index.
+
+The same mistake must not be repeated: every new `drizzle/migrations/*.sql` file
+needs a matching entry in `drizzle/migrations/meta/_journal.json`, and new entries
+must have a `when` timestamp greater than the newest already-applied entry.
+
+### Current hosted status (checked 2026-11-02)
+
+The hosted database (`lfhzponzmkdconaovolq`) is missing:
+
+- `business_audits`
+- `opportunity_signals`
+- `opportunities`
+- `businesses.outreach_stage`, `businesses.last_contacted_at`, `businesses.outreach_note`
+
+Paste-ready fallback: `docs/APPLY_PENDING_MIGRATIONS.sql`.
 
 ## Verifying a migration landed
 
@@ -75,7 +127,19 @@ select to_regclass('public.payments') is not null as payments_exists,
        to_regclass('public.expenses') is not null as expenses_exists;
 -- Confirms legacy PAID invoices were backfilled once.
 select count(*) as legacy_payments from public.payments where method = 'legacy';
+
+-- 20261029 / 20261030 / 20261031
+select to_regclass('public.business_audits') is not null as business_audits_exists,
+       to_regclass('public.opportunity_signals') is not null as opportunity_signals_exists,
+       to_regclass('public.opportunities') is not null as opportunities_exists;
+
+-- outreach columns
+select column_name from information_schema.columns
+where table_schema = 'public' and table_name = 'businesses'
+  and column_name in ('outreach_stage','last_contacted_at','outreach_note');
 ```
+
+Or simply run `npm run db:verify`.
 
 ## Graceful behaviour before a migration is applied
 

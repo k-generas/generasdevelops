@@ -31,7 +31,15 @@ CREATE INDEX IF NOT EXISTS idx_opportunities_business ON public.opportunities(bu
 CREATE INDEX IF NOT EXISTS idx_opportunities_stage ON public.opportunities(qualification_stage);
 CREATE INDEX IF NOT EXISTS idx_opportunities_status ON public.opportunities(validation_status);
 
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.opportunities TO authenticated;
+GRANT ALL ON public.opportunities TO service_role;
+
 ALTER TABLE public.opportunities ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own opportunities" ON public.opportunities;
+DROP POLICY IF EXISTS "Users can insert own opportunities" ON public.opportunities;
+DROP POLICY IF EXISTS "Users can update own opportunities" ON public.opportunities;
+DROP POLICY IF EXISTS "Users can delete own opportunities" ON public.opportunities;
 
 CREATE POLICY "Users can view own opportunities" ON public.opportunities
   FOR SELECT USING (auth.uid() = owner_id);
@@ -41,3 +49,5 @@ CREATE POLICY "Users can update own opportunities" ON public.opportunities
   FOR UPDATE USING (auth.uid() = owner_id);
 CREATE POLICY "Users can delete own opportunities" ON public.opportunities
   FOR DELETE USING (auth.uid() = owner_id);
+
+NOTIFY pgrst, 'reload schema';

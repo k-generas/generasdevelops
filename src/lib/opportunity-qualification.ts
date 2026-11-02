@@ -106,7 +106,7 @@ export function assessQualification(assessment: QualificationAssessment): {
     canQualify,
     canPropose,
     blockers,
-    readyForProposal: canPropose && assessment.purchasing_readiness === "yes",
+    readyForProposal: canPropose && assessment.plausible_budget_willingness === "yes",
   };
 }
 

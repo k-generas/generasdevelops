@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS public.payments (
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.payments TO authenticated;
 GRANT ALL ON public.payments TO service_role;
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own payments" ON public.payments;
 CREATE POLICY "own payments" ON public.payments FOR ALL TO authenticated
   USING (owner_id = auth.uid()) WITH CHECK (owner_id = auth.uid());
 CREATE INDEX IF NOT EXISTS payments_owner_received_idx
@@ -44,6 +45,7 @@ CREATE TABLE IF NOT EXISTS public.expenses (
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.expenses TO authenticated;
 GRANT ALL ON public.expenses TO service_role;
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "own expenses" ON public.expenses;
 CREATE POLICY "own expenses" ON public.expenses FOR ALL TO authenticated
   USING (owner_id = auth.uid()) WITH CHECK (owner_id = auth.uid());
 CREATE INDEX IF NOT EXISTS expenses_owner_paid_idx

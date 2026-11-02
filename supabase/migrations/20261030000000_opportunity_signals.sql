@@ -29,6 +29,9 @@ CREATE INDEX IF NOT EXISTS idx_opportunity_signals_status ON public.opportunity_
 CREATE INDEX IF NOT EXISTS idx_opportunity_signals_category ON public.opportunity_signals(category);
 CREATE INDEX IF NOT EXISTS idx_opportunity_signals_detected ON public.opportunity_signals(detected_at DESC);
 
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.opportunity_signals TO authenticated;
+GRANT ALL ON public.opportunity_signals TO service_role;
+
 ALTER TABLE public.opportunity_signals ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can view own opportunity_signals" ON public.opportunity_signals;
@@ -40,3 +43,5 @@ CREATE POLICY "Users can view own opportunity_signals" ON public.opportunity_sig
 CREATE POLICY "Users can insert own opportunity_signals" ON public.opportunity_signals FOR INSERT WITH CHECK (auth.uid() = owner_id);
 CREATE POLICY "Users can update own opportunity_signals" ON public.opportunity_signals FOR UPDATE USING (auth.uid() = owner_id);
 CREATE POLICY "Users can delete own opportunity_signals" ON public.opportunity_signals FOR DELETE USING (auth.uid() = owner_id);
+
+NOTIFY pgrst, 'reload schema';
