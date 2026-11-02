@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-export const Route = createFileRoute("/_authenticated/audit")({
+export const Route = createFileRoute("/_authenticated/audit/")({
   head: () => ({ meta: [{ title: "Business Audits | GARE" }] }),
   component: AuditIndex,
 });

@@ -14,7 +14,6 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
-import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDiscoverRouteImport } from './routes/_authenticated/discover'
 import { Route as AuthenticatedIntentRouteImport } from './routes/_authenticated/intent'
@@ -33,6 +32,7 @@ import { Route as AuthenticatedRwandaRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedUpdatesRouteImport } from './routes/_authenticated/updates'
+import { Route as AuthenticatedAuditIndexRouteImport } from './routes/_authenticated/audit.index'
 import { Route as AuthenticatedAuditAuditIdRouteImport } from './routes/_authenticated/audit.$auditId'
 import { Route as AuthenticatedBusinessesIndexRouteImport } from './routes/_authenticated/businesses.index'
 import { Route as AuthenticatedBusinessesIdRouteImport } from './routes/_authenticated/businesses.$id'
@@ -63,11 +63,6 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
 const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
-  id: '/audit',
-  path: '/audit',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -160,11 +155,16 @@ const AuthenticatedUpdatesRoute = AuthenticatedUpdatesRouteImport.update({
   path: '/updates',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAuditIndexRoute = AuthenticatedAuditIndexRouteImport.update({
+  id: '/audit/',
+  path: '/audit/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAuditAuditIdRoute =
   AuthenticatedAuditAuditIdRouteImport.update({
-    id: '/$auditId',
-    path: '/$auditId',
-    getParentRoute: () => AuthenticatedAuditRoute,
+    id: '/audit/$auditId',
+    path: '/audit/$auditId',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedBusinessesIndexRoute =
   AuthenticatedBusinessesIndexRouteImport.update({
@@ -207,7 +207,6 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
-  '/audit': typeof AuthenticatedAuditRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/discover': typeof AuthenticatedDiscoverRoute
   '/intent': typeof AuthenticatedIntentRoute
@@ -230,6 +229,7 @@ export interface FileRoutesByFullPath {
   '/businesses/$id': typeof AuthenticatedBusinessesIdRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
   '/proposals/$id': typeof AuthenticatedProposalsIdRoute
+  '/audit/': typeof AuthenticatedAuditIndexRoute
   '/businesses/': typeof AuthenticatedBusinessesIndexRoute
   '/history/': typeof AuthenticatedHistoryIndexRoute
   '/proposals/': typeof AuthenticatedProposalsIndexRoute
@@ -239,7 +239,6 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
-  '/audit': typeof AuthenticatedAuditRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/discover': typeof AuthenticatedDiscoverRoute
   '/intent': typeof AuthenticatedIntentRoute
@@ -262,6 +261,7 @@ export interface FileRoutesByTo {
   '/businesses/$id': typeof AuthenticatedBusinessesIdRoute
   '/history/$id': typeof AuthenticatedHistoryIdRoute
   '/proposals/$id': typeof AuthenticatedProposalsIdRoute
+  '/audit': typeof AuthenticatedAuditIndexRoute
   '/businesses': typeof AuthenticatedBusinessesIndexRoute
   '/history': typeof AuthenticatedHistoryIndexRoute
   '/proposals': typeof AuthenticatedProposalsIndexRoute
@@ -273,7 +273,6 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
-  '/_authenticated/audit': typeof AuthenticatedAuditRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/discover': typeof AuthenticatedDiscoverRoute
   '/_authenticated/intent': typeof AuthenticatedIntentRoute
@@ -296,6 +295,7 @@ export interface FileRoutesById {
   '/_authenticated/businesses/$id': typeof AuthenticatedBusinessesIdRoute
   '/_authenticated/history/$id': typeof AuthenticatedHistoryIdRoute
   '/_authenticated/proposals/$id': typeof AuthenticatedProposalsIdRoute
+  '/_authenticated/audit/': typeof AuthenticatedAuditIndexRoute
   '/_authenticated/businesses/': typeof AuthenticatedBusinessesIndexRoute
   '/_authenticated/history/': typeof AuthenticatedHistoryIndexRoute
   '/_authenticated/proposals/': typeof AuthenticatedProposalsIndexRoute
@@ -307,7 +307,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/admin'
     | '/analytics'
-    | '/audit'
     | '/dashboard'
     | '/discover'
     | '/intent'
@@ -330,6 +329,7 @@ export interface FileRouteTypes {
     | '/businesses/$id'
     | '/history/$id'
     | '/proposals/$id'
+    | '/audit/'
     | '/businesses/'
     | '/history/'
     | '/proposals/'
@@ -339,7 +339,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/admin'
     | '/analytics'
-    | '/audit'
     | '/dashboard'
     | '/discover'
     | '/intent'
@@ -362,6 +361,7 @@ export interface FileRouteTypes {
     | '/businesses/$id'
     | '/history/$id'
     | '/proposals/$id'
+    | '/audit'
     | '/businesses'
     | '/history'
     | '/proposals'
@@ -372,7 +372,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/admin'
     | '/_authenticated/analytics'
-    | '/_authenticated/audit'
     | '/_authenticated/dashboard'
     | '/_authenticated/discover'
     | '/_authenticated/intent'
@@ -395,6 +394,7 @@ export interface FileRouteTypes {
     | '/_authenticated/businesses/$id'
     | '/_authenticated/history/$id'
     | '/_authenticated/proposals/$id'
+    | '/_authenticated/audit/'
     | '/_authenticated/businesses/'
     | '/_authenticated/history/'
     | '/_authenticated/proposals/'
@@ -441,13 +441,6 @@ declare module '@tanstack/react-router' {
       path: '/analytics'
       fullPath: '/analytics'
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/audit': {
-      id: '/_authenticated/audit'
-      path: '/audit'
-      fullPath: '/audit'
-      preLoaderRoute: typeof AuthenticatedAuditRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard': {
@@ -576,12 +569,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUpdatesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/audit/': {
+      id: '/_authenticated/audit/'
+      path: '/audit'
+      fullPath: '/audit/'
+      preLoaderRoute: typeof AuthenticatedAuditIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/audit/$auditId': {
       id: '/_authenticated/audit/$auditId'
-      path: '/$auditId'
+      path: '/audit/$auditId'
       fullPath: '/audit/$auditId'
       preLoaderRoute: typeof AuthenticatedAuditAuditIdRouteImport
-      parentRoute: typeof AuthenticatedAuditRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/businesses/': {
       id: '/_authenticated/businesses/'
@@ -628,21 +628,9 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthenticatedAuditRouteChildren {
-  AuthenticatedAuditAuditIdRoute: typeof AuthenticatedAuditAuditIdRoute
-}
-
-const AuthenticatedAuditRouteChildren: AuthenticatedAuditRouteChildren = {
-  AuthenticatedAuditAuditIdRoute: AuthenticatedAuditAuditIdRoute,
-}
-
-const AuthenticatedAuditRouteWithChildren =
-  AuthenticatedAuditRoute._addFileChildren(AuthenticatedAuditRouteChildren)
-
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
-  AuthenticatedAuditRoute: typeof AuthenticatedAuditRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDiscoverRoute: typeof AuthenticatedDiscoverRoute
   AuthenticatedIntentRoute: typeof AuthenticatedIntentRoute
@@ -661,9 +649,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedUpdatesRoute: typeof AuthenticatedUpdatesRoute
+  AuthenticatedAuditAuditIdRoute: typeof AuthenticatedAuditAuditIdRoute
   AuthenticatedBusinessesIdRoute: typeof AuthenticatedBusinessesIdRoute
   AuthenticatedHistoryIdRoute: typeof AuthenticatedHistoryIdRoute
   AuthenticatedProposalsIdRoute: typeof AuthenticatedProposalsIdRoute
+  AuthenticatedAuditIndexRoute: typeof AuthenticatedAuditIndexRoute
   AuthenticatedBusinessesIndexRoute: typeof AuthenticatedBusinessesIndexRoute
   AuthenticatedHistoryIndexRoute: typeof AuthenticatedHistoryIndexRoute
   AuthenticatedProposalsIndexRoute: typeof AuthenticatedProposalsIndexRoute
@@ -672,7 +662,6 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
-  AuthenticatedAuditRoute: AuthenticatedAuditRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDiscoverRoute: AuthenticatedDiscoverRoute,
   AuthenticatedIntentRoute: AuthenticatedIntentRoute,
@@ -691,9 +680,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedUpdatesRoute: AuthenticatedUpdatesRoute,
+  AuthenticatedAuditAuditIdRoute: AuthenticatedAuditAuditIdRoute,
   AuthenticatedBusinessesIdRoute: AuthenticatedBusinessesIdRoute,
   AuthenticatedHistoryIdRoute: AuthenticatedHistoryIdRoute,
   AuthenticatedProposalsIdRoute: AuthenticatedProposalsIdRoute,
+  AuthenticatedAuditIndexRoute: AuthenticatedAuditIndexRoute,
   AuthenticatedBusinessesIndexRoute: AuthenticatedBusinessesIndexRoute,
   AuthenticatedHistoryIndexRoute: AuthenticatedHistoryIndexRoute,
   AuthenticatedProposalsIndexRoute: AuthenticatedProposalsIndexRoute,
