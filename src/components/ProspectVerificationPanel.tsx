@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   buildProspectVerification,
   type CommercialPriority,
+  type PlatformSearch,
   type ProspectVerification,
   type VerificationBusiness,
   type VerificationFindings,
@@ -50,17 +51,20 @@ export function ProspectVerificationPanel({
   business,
   findings,
   observedAt,
+  socialSearch,
   className = "",
 }: {
   business: VerificationBusiness;
   findings?: VerificationFindings | null;
   observedAt?: string | null;
+  socialSearch?: PlatformSearch | undefined;
   className?: string;
 }) {
   const v = buildProspectVerification({
     business,
     findings: findings ?? null,
     observedAt: observedAt ?? null,
+    ...(socialSearch ? { socialSearch } : {}),
   });
   const industry = v.manufacturing_evidence.industry;
 

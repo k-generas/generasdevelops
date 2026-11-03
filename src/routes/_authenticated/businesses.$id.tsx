@@ -11,7 +11,10 @@ import { OutreachMessages } from "@/components/OutreachMessages";
 import { BusinessIntelModal } from "@/components/BusinessIntelModal";
 import type { IntelBusinessRow, IntelInvestigationRow } from "@/components/BusinessIntelModal";
 import { ProspectVerificationPanel } from "@/components/ProspectVerificationPanel";
+import { SocialProfilesPanel } from "@/components/SocialProfilesPanel";
 import type { VerificationFindings } from "@/lib/prospect-verification";
+import { socialSearchFromProfiles } from "@/lib/social-profiles";
+import { useSocialProfiles } from "@/lib/use-social-profiles";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { freshnessDays } from "@/lib/evidence";
@@ -54,6 +57,7 @@ function BusinessPage() {
   const qc = useQueryClient();
   const investigate = useServerFn(investigateBusiness);
   const runAuditFn = useServerFn(runBusinessAuditFn);
+  const socialsQuery = useSocialProfiles(id);
   const [busy, setBusy] = useState(false);
   const [auditBusy, setAuditBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -121,7 +125,7 @@ function BusinessPage() {
     setAuditBusy(true);
     setErr(null);
     try {
-      const r: any = await runAuditFn({ data: { businessId: id } });
+      const r = await runAuditFn({ data: { businessId: id } });
       qc.invalidateQueries({ queryKey: ["business_audits"] });
       qc.invalidateQueries({ queryKey: ["biz-events", id] });
       if (r?.auditId) {
@@ -169,10 +173,9 @@ function BusinessPage() {
   const hours = (b.opening_hours ?? {}) as { weekday_descriptions?: string[] | null };
   const report = inv.data?.report as Report | null | undefined;
   const raw = (inv.data?.findings ?? {}) as {
-    socials?: Record<string, string>;
     visibility?: { score: number; breakdown: { label: string; points: number; max: number }[] };
   };
-  const socials = Object.entries(raw.socials ?? {});
+  const socialSearch = socialSearchFromProfiles(socialsQuery.data ?? []);
   const vis = raw.visibility;
   const f = (inv.data?.findings ?? {}) as { [k: string]: unknown } & Partial<
     Record<
@@ -366,7 +369,10 @@ function BusinessPage() {
         business={b}
         findings={(inv.data?.findings ?? null) as VerificationFindings | null}
         observedAt={inv.data?.created_at ?? null}
+        socialSearch={socialSearch}
       />
+
+      <SocialProfilesPanel businessId={id} />
 
       {(b.activity_checked_at || recent.length > 0 || hours.weekday_descriptions) && (
         <section className="grid gap-4 sm:grid-cols-2">
@@ -502,32 +508,6 @@ function BusinessPage() {
                 </p>
               </div>
             )}
-            <div className="rounded-lg border bg-card p-5 space-y-2 text-sm">
-              <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
-                Social presence
-              </p>
-              {socials.length === 0 ? (
-                <p className="text-muted-foreground">
-                  {b.website
-                    ? "No social profiles linked on their website."
-                    : "No website to check for social links."}
-                </p>
-              ) : (
-                socials.map(([k, url]) => (
-                  <div key={k} className="flex justify-between gap-2">
-                    <span className="capitalize text-muted-foreground">{k}</span>
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="font-mono text-primary underline"
-                    >
-                      {url.replace(/^https?:\/\/(www\.)?/, "")}
-                    </a>
-                  </div>
-                ))
-              )}
-            </div>
             <div className="rounded-lg border bg-card p-5 space-y-2 text-sm">
               <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">Estimates</p>
               <Row k="Confidence" v={report?.confidence} />
