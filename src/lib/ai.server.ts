@@ -109,8 +109,8 @@ function isTransient(status: number): boolean {
 }
 
 function geminiModels(): string[] {
-  const primary = process.env["GEMINI_MODEL"] || "gemini-2.5-flash";
-  const fallback = "gemini-2.5-flash-lite";
+  const primary = process.env["GEMINI_MODEL"] || "gemini-3.5-flash";
+  const fallback = "gemini-3.5-flash-lite";
   return primary === fallback ? [primary] : [primary, fallback];
 }
 
@@ -149,6 +149,10 @@ async function callGemini(
       const body = await res.text().catch(() => "");
       if (res.status === 400 && /API key not valid/i.test(body))
         throw new Error("Gemini rejected the key. Check GEMINI_API_KEY.");
+      if (res.status === 404) {
+        lastError = new Error(`Gemini model ${model} is unavailable [404]: ${body.slice(0, 160)}`);
+        break;
+      }
       if (!isTransient(res.status))
         throw new Error(`Gemini request failed [${res.status}]: ${body.slice(0, 300)}`);
       lastError = new Error(
