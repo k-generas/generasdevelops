@@ -30,6 +30,7 @@ import { Route as AuthenticatedReferralsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticated/revenue'
 import { Route as AuthenticatedRwandaRouteImport } from './routes/_authenticated/rwanda'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedSocialpresenceRouteImport } from './routes/_authenticated/socialpresence'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedUpdatesRouteImport } from './routes/_authenticated/updates'
 import { Route as AuthenticatedAuditIndexRouteImport } from './routes/_authenticated/audit.index'
@@ -145,6 +146,12 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSocialpresenceRoute =
+  AuthenticatedSocialpresenceRouteImport.update({
+    id: '/socialpresence',
+    path: '/socialpresence',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
@@ -223,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/revenue': typeof AuthenticatedRevenueRoute
   '/rwanda': typeof AuthenticatedRwandaRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/socialpresence': typeof AuthenticatedSocialpresenceRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/updates': typeof AuthenticatedUpdatesRoute
   '/audit/$auditId': typeof AuthenticatedAuditAuditIdRoute
@@ -255,6 +263,7 @@ export interface FileRoutesByTo {
   '/revenue': typeof AuthenticatedRevenueRoute
   '/rwanda': typeof AuthenticatedRwandaRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/socialpresence': typeof AuthenticatedSocialpresenceRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/updates': typeof AuthenticatedUpdatesRoute
   '/audit/$auditId': typeof AuthenticatedAuditAuditIdRoute
@@ -289,6 +298,7 @@ export interface FileRoutesById {
   '/_authenticated/revenue': typeof AuthenticatedRevenueRoute
   '/_authenticated/rwanda': typeof AuthenticatedRwandaRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/socialpresence': typeof AuthenticatedSocialpresenceRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/updates': typeof AuthenticatedUpdatesRoute
   '/_authenticated/audit/$auditId': typeof AuthenticatedAuditAuditIdRoute
@@ -323,6 +333,7 @@ export interface FileRouteTypes {
     | '/revenue'
     | '/rwanda'
     | '/settings'
+    | '/socialpresence'
     | '/tasks'
     | '/updates'
     | '/audit/$auditId'
@@ -355,6 +366,7 @@ export interface FileRouteTypes {
     | '/revenue'
     | '/rwanda'
     | '/settings'
+    | '/socialpresence'
     | '/tasks'
     | '/updates'
     | '/audit/$auditId'
@@ -388,6 +400,7 @@ export interface FileRouteTypes {
     | '/_authenticated/revenue'
     | '/_authenticated/rwanda'
     | '/_authenticated/settings'
+    | '/_authenticated/socialpresence'
     | '/_authenticated/tasks'
     | '/_authenticated/updates'
     | '/_authenticated/audit/$auditId'
@@ -555,6 +568,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/socialpresence': {
+      id: '/_authenticated/socialpresence'
+      path: '/socialpresence'
+      fullPath: '/socialpresence'
+      preLoaderRoute: typeof AuthenticatedSocialpresenceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/tasks': {
       id: '/_authenticated/tasks'
       path: '/tasks'
@@ -647,6 +667,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRevenueRoute: typeof AuthenticatedRevenueRoute
   AuthenticatedRwandaRoute: typeof AuthenticatedRwandaRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSocialpresenceRoute: typeof AuthenticatedSocialpresenceRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedUpdatesRoute: typeof AuthenticatedUpdatesRoute
   AuthenticatedAuditAuditIdRoute: typeof AuthenticatedAuditAuditIdRoute
@@ -678,6 +699,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRevenueRoute: AuthenticatedRevenueRoute,
   AuthenticatedRwandaRoute: AuthenticatedRwandaRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSocialpresenceRoute: AuthenticatedSocialpresenceRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedUpdatesRoute: AuthenticatedUpdatesRoute,
   AuthenticatedAuditAuditIdRoute: AuthenticatedAuditAuditIdRoute,
