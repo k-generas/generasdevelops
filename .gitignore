@@ -30,3 +30,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local secrets and backups
+.env.new
+vercel_env.txt
+*.backup
