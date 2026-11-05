@@ -28,6 +28,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmptyState, ErrorBanner } from "@/components/ErrorBanner";
+import { SocialBusinessMatchPanel } from "@/components/SocialBusinessMatchPanel";
 import { downloadCsv, rowsToCsv } from "@/lib/csv";
 import type { Database } from "@/integrations/supabase/types";
 import {
@@ -49,6 +50,7 @@ import {
   type SocialLeadStoreStatus,
   type SocialLeadWebsiteStatus,
 } from "@/lib/social-leads";
+import { socialAccountTypeLabel } from "@/lib/social-business-match";
 
 export const Route = createFileRoute("/_authenticated/social-leads")({
   head: () => ({
@@ -806,6 +808,23 @@ function SocialLeadsPage() {
                 <div className="space-y-3">
                   <div className="rounded-lg border p-3 text-sm">
                     <p className="font-medium">Contact & store</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Badge variant="outline">{socialAccountTypeLabel(detail.account_type)}</Badge>
+                      {detail.business_id ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            void navigate({
+                              to: "/businesses/$id",
+                              params: { id: detail.business_id! },
+                            })
+                          }
+                        >
+                          Open linked business
+                        </Button>
+                      ) : null}
+                    </div>
                     <div className="mt-2 space-y-1 text-xs">
                       <p>
                         <span className="text-muted-foreground">Website:</span>{" "}
@@ -927,6 +946,8 @@ function SocialLeadsPage() {
                   </div>
                 </div>
               </div>
+
+              <SocialBusinessMatchPanel socialLeadId={detail.id} />
             </>
           ) : null}
         </DialogContent>

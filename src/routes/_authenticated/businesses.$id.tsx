@@ -12,6 +12,7 @@ import { BusinessIntelModal } from "@/components/BusinessIntelModal";
 import type { IntelBusinessRow, IntelInvestigationRow } from "@/components/BusinessIntelModal";
 import { ProspectVerificationPanel } from "@/components/ProspectVerificationPanel";
 import { SocialProfilesPanel } from "@/components/SocialProfilesPanel";
+import { SocialBusinessMatchPanel } from "@/components/SocialBusinessMatchPanel";
 import type { VerificationFindings } from "@/lib/prospect-verification";
 import { socialSearchFromProfiles } from "@/lib/social-profiles";
 import { useSocialProfiles } from "@/lib/use-social-profiles";
@@ -373,6 +374,8 @@ function BusinessPage() {
       />
 
       <SocialProfilesPanel businessId={id} />
+
+      <SocialBusinessMatchPanel businessId={id} />
 
       {(b.activity_checked_at || recent.length > 0 || hours.weekday_descriptions) && (
         <section className="grid gap-4 sm:grid-cols-2">

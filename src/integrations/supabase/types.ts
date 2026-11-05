@@ -966,6 +966,286 @@ export type Database = {
         }
         Relationships: []
       }
+      opportunities: {
+        Row: {
+          assigned_owner: string | null
+          audit_id: string | null
+          business_id: string
+          business_impact_hypothesis: string | null
+          confidence: number
+          created_at: string
+          dedupe_key: string | null
+          dismissed_reason: string | null
+          estimated_effort: string | null
+          estimated_project_value: number | null
+          evidence: Json
+          gaps: Json
+          id: string
+          identified_problem: string
+          investigation_id: string | null
+          last_outreach_at: string | null
+          last_response_at: string | null
+          last_verified_at: string | null
+          leak_id: string | null
+          next_action: string | null
+          outreach_count: number
+          owner_id: string
+          owner_notes: string | null
+          potential_solution: string
+          priority: string
+          priority_factors: Json
+          qualification_assessment: Json
+          qualification_stage: string
+          recurring: boolean
+          relevant_service: string | null
+          score: number
+          score_factors: Json
+          score_reasons: Json
+          signal_id: string | null
+          social_lead_id: string | null
+          social_match_id: string | null
+          solution_details: Json
+          solution_fits: Json
+          source: string
+          source_confidence: number | null
+          source_status: string | null
+          title: string
+          updated_at: string
+          urgency: string
+          validation_questions: Json
+          validation_status: string
+        }
+        Insert: {
+          assigned_owner?: string | null
+          audit_id?: string | null
+          business_id: string
+          business_impact_hypothesis?: string | null
+          confidence?: number
+          created_at?: string
+          dedupe_key?: string | null
+          dismissed_reason?: string | null
+          estimated_effort?: string | null
+          estimated_project_value?: number | null
+          evidence?: Json
+          gaps?: Json
+          id?: string
+          identified_problem: string
+          investigation_id?: string | null
+          last_outreach_at?: string | null
+          last_response_at?: string | null
+          last_verified_at?: string | null
+          leak_id?: string | null
+          next_action?: string | null
+          outreach_count?: number
+          owner_id: string
+          owner_notes?: string | null
+          potential_solution: string
+          priority?: string
+          priority_factors?: Json
+          qualification_assessment?: Json
+          qualification_stage?: string
+          recurring?: boolean
+          relevant_service?: string | null
+          score?: number
+          score_factors?: Json
+          score_reasons?: Json
+          signal_id?: string | null
+          social_lead_id?: string | null
+          social_match_id?: string | null
+          solution_details?: Json
+          solution_fits?: Json
+          source?: string
+          source_confidence?: number | null
+          source_status?: string | null
+          title: string
+          updated_at?: string
+          urgency?: string
+          validation_questions?: Json
+          validation_status?: string
+        }
+        Update: {
+          assigned_owner?: string | null
+          audit_id?: string | null
+          business_id?: string
+          business_impact_hypothesis?: string | null
+          confidence?: number
+          created_at?: string
+          dedupe_key?: string | null
+          dismissed_reason?: string | null
+          estimated_effort?: string | null
+          estimated_project_value?: number | null
+          evidence?: Json
+          gaps?: Json
+          id?: string
+          identified_problem?: string
+          investigation_id?: string | null
+          last_outreach_at?: string | null
+          last_response_at?: string | null
+          last_verified_at?: string | null
+          leak_id?: string | null
+          next_action?: string | null
+          outreach_count?: number
+          owner_id?: string
+          owner_notes?: string | null
+          potential_solution?: string
+          priority?: string
+          priority_factors?: Json
+          qualification_assessment?: Json
+          qualification_stage?: string
+          recurring?: boolean
+          relevant_service?: string | null
+          score?: number
+          score_factors?: Json
+          score_reasons?: Json
+          signal_id?: string | null
+          social_lead_id?: string | null
+          social_match_id?: string | null
+          solution_details?: Json
+          solution_fits?: Json
+          source?: string
+          source_confidence?: number | null
+          source_status?: string | null
+          title?: string
+          updated_at?: string
+          urgency?: string
+          validation_questions?: Json
+          validation_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunities_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "business_audits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_investigation_id_fkey"
+            columns: ["investigation_id"]
+            isOneToOne: false
+            referencedRelation: "investigations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_leak_id_fkey"
+            columns: ["leak_id"]
+            isOneToOne: false
+            referencedRelation: "revenue_leaks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_signal_id_fkey"
+            columns: ["signal_id"]
+            isOneToOne: false
+            referencedRelation: "opportunity_signals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_social_lead_id_fkey"
+            columns: ["social_lead_id"]
+            isOneToOne: false
+            referencedRelation: "social_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_social_match_id_fkey"
+            columns: ["social_match_id"]
+            isOneToOne: false
+            referencedRelation: "social_business_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opportunity_signals: {
+        Row: {
+          business_id: string
+          category: string
+          confidence_level: number
+          created_at: string
+          description: string
+          detected_at: string
+          evidence_source: string
+          id: string
+          industry: string | null
+          last_verification_date: string | null
+          location: string | null
+          metadata: Json
+          owner_id: string
+          possible_business_need: string
+          priority: string
+          published_at: string | null
+          relevant_generas_service: Json
+          source_url: string | null
+          status: string
+          suggested_investigation: string
+          suggested_validation_question: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          category: string
+          confidence_level?: number
+          created_at?: string
+          description: string
+          detected_at?: string
+          evidence_source: string
+          id?: string
+          industry?: string | null
+          last_verification_date?: string | null
+          location?: string | null
+          metadata?: Json
+          owner_id: string
+          possible_business_need: string
+          priority?: string
+          published_at?: string | null
+          relevant_generas_service?: Json
+          source_url?: string | null
+          status?: string
+          suggested_investigation: string
+          suggested_validation_question: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          category?: string
+          confidence_level?: number
+          created_at?: string
+          description?: string
+          detected_at?: string
+          evidence_source?: string
+          id?: string
+          industry?: string | null
+          last_verification_date?: string | null
+          location?: string | null
+          metadata?: Json
+          owner_id?: string
+          possible_business_need?: string
+          priority?: string
+          published_at?: string | null
+          relevant_generas_service?: Json
+          source_url?: string | null
+          status?: string
+          suggested_investigation?: string
+          suggested_validation_question?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opportunity_signals_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           amount: number
@@ -1289,6 +1569,7 @@ export type Database = {
           language: string
           mode: string
           offer: string | null
+          opportunity_id: string | null
           outcome: string | null
           owner_id: string
           price: number | null
@@ -1312,6 +1593,7 @@ export type Database = {
           language?: string
           mode: string
           offer?: string | null
+          opportunity_id?: string | null
           outcome?: string | null
           owner_id?: string
           price?: number | null
@@ -1335,6 +1617,7 @@ export type Database = {
           language?: string
           mode?: string
           offer?: string | null
+          opportunity_id?: string | null
           outcome?: string | null
           owner_id?: string
           price?: number | null
@@ -1359,6 +1642,13 @@ export type Database = {
             columns: ["investigation_id"]
             isOneToOne: false
             referencedRelation: "investigations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
             referencedColumns: ["id"]
           },
         ]
@@ -1542,8 +1832,82 @@ export type Database = {
           },
         ]
       }
+      social_business_matches: {
+        Row: {
+          business_id: string
+          confidence: number
+          created_at: string
+          evidence: Json
+          id: string
+          matched_at: string
+          opportunity_gaps: Json
+          owner_id: string
+          reason: string
+          review_note: string | null
+          reviewed_at: string | null
+          signals: Json
+          social_lead_id: string
+          solution_fits: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          id?: string
+          matched_at?: string
+          opportunity_gaps?: Json
+          owner_id?: string
+          reason?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          signals?: Json
+          social_lead_id: string
+          solution_fits?: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          id?: string
+          matched_at?: string
+          opportunity_gaps?: Json
+          owner_id?: string
+          reason?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          signals?: Json
+          social_lead_id?: string
+          solution_fits?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_business_matches_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_business_matches_social_lead_id_fkey"
+            columns: ["social_lead_id"]
+            isOneToOne: false
+            referencedRelation: "social_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_leads: {
         Row: {
+          account_type: string
+          account_type_evidence: Json
           biography: string | null
           business_id: string | null
           category: string | null
@@ -1561,6 +1925,7 @@ export type Database = {
           last_checked_at: string | null
           last_post_at: string | null
           lead_score: number
+          match_checked_at: string | null
           media_count: number | null
           needs: Json
           owner_id: string
@@ -1575,6 +1940,8 @@ export type Database = {
           website_status: string
         }
         Insert: {
+          account_type?: string
+          account_type_evidence?: Json
           biography?: string | null
           business_id?: string | null
           category?: string | null
@@ -1592,6 +1959,7 @@ export type Database = {
           last_checked_at?: string | null
           last_post_at?: string | null
           lead_score?: number
+          match_checked_at?: string | null
           media_count?: number | null
           needs?: Json
           owner_id?: string
@@ -1606,6 +1974,8 @@ export type Database = {
           website_status?: string
         }
         Update: {
+          account_type?: string
+          account_type_evidence?: Json
           biography?: string | null
           business_id?: string | null
           category?: string | null
@@ -1623,6 +1993,7 @@ export type Database = {
           last_checked_at?: string | null
           last_post_at?: string | null
           lead_score?: number
+          match_checked_at?: string | null
           media_count?: number | null
           needs?: Json
           owner_id?: string

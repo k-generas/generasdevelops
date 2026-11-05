@@ -11,6 +11,129 @@ npm test
 npm run build
 ```
 
+## 2026-11-05 — Social commerce intelligence, Phases 2–6
+
+Turn recorded social matches and business audits into evidence-backed opportunities with
+explainable scoring, solution mapping, conservative stage rules, manual outreach logging and
+linked proposal drafting. No scraping, automated outreach, business merging or invented
+commercial facts.
+
+### Baseline at start of pass
+- `git` HEAD `d9181b2`; working tree dirty from the Phase 1 social-matching work
+- `npx tsc --noEmit` — clean
+- Full `npm test` — 46 files / 341 tests passing
+- Full `npm run lint` already failed on pre-existing CRLF/Prettier issues in untouched files
+
+### Changes
+- **`src/lib/opportunity-engine.ts`** (+ 12 tests) — pure engine: usable-gap filtering,
+  evidence merge, solution catalogue and gap-to-solution mapping, explainable scoring through
+  `rankOpportunity`, audit-finding conversion, allowed stage transitions, confirmed-problem
+  rules and workspace summaries. Confidence is capped by source status; stale or non-factual
+  evidence lowers signal strength and adds uncertainty reasons.
+- **`src/lib/opportunity.functions.ts`** — authenticated server functions: owner-scoped
+  listing with summary/filters, idempotent generation from confirmed or high-confidence
+  social matches, optional website verification + audit refresh, guarded stage/validation
+  updates, manual outreach logging and proposal drafting.
+- **`supabase/migrations/20261106000000_opportunities_engine.sql`** + Drizzle parity — additive
+  source/scoring/evidence/workflow columns on `opportunities`, `proposals.opportunity_id`,
+  a partial owner/dedupe unique index and owner/priority/source/social-lead indexes. Existing
+  opportunities, stages and owner decisions are preserved.
+- **`src/integrations/supabase/types.ts`** — generated-style types for `opportunities`,
+  `opportunity_signals`, the new columns and the proposal relationship.
+- **`src/routes/_authenticated/opportunities.tsx`** + nav — summary cards, filters, generation,
+  review dialog, evidence refresh, stage moves, problem confirmation, qualification, manual
+  outreach and proposal drafting.
+- **`docs/GARE_OPPORTUNITY_ENGINE.md`** — scope, lifecycle, scoring rules, API cost, rollout,
+  verification and rollback notes.
+- **Production migrations** — Phase 1 social-matching and Phase 2–6 opportunity-engine
+  migrations applied through Lovable MCP; new columns, indexes, RLS and the proposal link were
+  verified in the production schema.
+
+### Non-breaking design decisions
+- Additive schema, UI and server functions only; no existing route, table, column or function
+  was removed or renamed.
+- Generation reads stored social matches only and reports zero request cost. Evidence refresh
+  reuses the existing bounded website-check and audit flows.
+- Only confirmed or high-confidence matches with recorded gaps generate opportunities.
+- Stage and confirmation rules prevent qualification or proposal drafting without a confirmed
+  problem.
+- Proposal generation is explicit, keeps price `null`, forbids invented metrics/prices and
+  links back through `proposals.opportunity_id`.
+- Missing tables/migrations return clear setup messages instead of throwing opaque errors.
+
+### Verification
+- `npx tsc --noEmit` — clean after this pass
+- `npm test` — 47 files / 353 tests passing (29 targeted engine/matcher tests)
+- `npm run build` — succeeded; generated `/opportunities`
+- Targeted ESLint/Prettier on all changed/new files — clean
+- Full `npm run lint` — still fails on pre-existing CRLF/Prettier errors in untouched files
+
+### Known limitations / follow-ups
+- Production currently has no social leads, matches or opportunities, so generation and the
+  full workspace flow still need exercising with real owner data.
+- Meta live discovery remains blocked by missing production credentials/permissions.
+- Scores prioritise recorded evidence; they are not revenue or purchase forecasts.
+- Generation is bounded to 1,000 eligible matches per request; reads show up to 300 rows after
+  filters.
+
+## 2026-11-05 — Social commerce intelligence, Phase 1
+
+Add evidence-backed matching between existing public social leads and existing Google
+Places businesses, with owner review and conservative account/opportunity classification.
+No new paid API calls, scraping, outreach or automatic business creation.
+
+### Baseline at start of pass
+- `git` HEAD `d9181b2`; working tree already dirty from the prior social-lead work
+- `npx tsc --noEmit` — clean
+- Targeted social-matching tests — 17 passing
+- Full `npm run lint` already failed on pre-existing CRLF/Prettier issues in untouched files
+
+### Changes
+- **`src/lib/social-business-match.ts`** (+ 17 tests) — pure matching using normalised
+  phone, website domain (excluding shared/link-hub hosts), name similarity and supporting
+  location evidence. Produces high-confidence, possible and conflicting candidates,
+  conservative social-account classification, evidence-backed opportunity gaps and
+  DukaLinka/GENERAS/Custom software hypotheses. Name similarity alone cannot link.
+- **`src/lib/social-business-match.functions.ts`** — authenticated listing, bounded scan
+  (max 1,000 leads per request), safe unique high-confidence auto-link, stale-candidate
+  cleanup, and owner confirm/reject review. Existing confirmed/rejected rows are preserved.
+- **`supabase/migrations/20261105000000_social_business_matches.sql`** + Drizzle parity —
+  additive `social_leads` classification columns and owner-scoped
+  `social_business_matches` table with evidence JSONB, unique candidate constraint, indexes
+  and four RLS policies.
+- **`src/integrations/supabase/types.ts`** — generated-style types for the new columns and
+  table.
+- **`src/components/SocialBusinessMatchPanel.tsx`** — review UI showing evidence, signals,
+  confidence, gaps, solution fits and explicit confirm/reject actions. Integrated on
+  `businesses.$id.tsx` and the social-lead dialog.
+- **`src/routes/_authenticated/social-leads.tsx`** — shows account classification and the
+  linked-business action without removing existing profile data.
+- **`docs/GARE_SOCIAL_COMMERCE_PHASE_1.md`** — scope, data model, matching rules,
+  verification, rollout and rollback notes.
+
+### Non-breaking design decisions
+- Additive schema and UI only; existing business, social-lead, source and website records
+  are unchanged. The migration has since been applied to production.
+- Matching reads stored records only: no Maps, Meta, website-fetch or AI calls in this flow.
+- Auto-link requires one unique high-confidence candidate, no conflict and an unlinked lead.
+- Missing evidence stays unknown; no revenue, customer-count, budget or order-volume claims.
+- Owner reviews are reversible; rejecting a linked candidate unlinks it.
+
+### Verification
+- `npx tsc --noEmit` — clean after this pass
+- `npm test` — 46 files / 341 tests passing (17 social-matching tests)
+- `npm run build` — succeeded
+- Targeted ESLint/Prettier on all touched files — clean
+- Full `npm run lint` — still fails on pre-existing CRLF/Prettier errors in untouched files
+
+### Known limitations / follow-ups
+- Production has no social leads or matches yet, so the panel still needs exercising with
+  real candidates.
+- Meta live discovery remains blocked by missing production credentials/permissions.
+- Candidates without independent phone/domain evidence remain `possible` by design.
+- Global scans are capped at 1,000 social leads per request; use scoped scans for large
+  datasets.
+
 ## 2026-10-29 — Prospect verification hardening
 
 Make website/ownership/activity checks explicit, conservative and reviewable, and stop

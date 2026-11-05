@@ -22,6 +22,7 @@ import { Route as AuthenticatedLeaksRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedMoneyRouteImport } from './routes/_authenticated/money'
 import { Route as AuthenticatedNumbersRouteImport } from './routes/_authenticated/numbers'
 import { Route as AuthenticatedOffersRouteImport } from './routes/_authenticated/offers'
+import { Route as AuthenticatedOpportunitiesRouteImport } from './routes/_authenticated/opportunities'
 import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
 import { Route as AuthenticatedPartnersRouteImport } from './routes/_authenticated/partners'
 import { Route as AuthenticatedRadarRouteImport } from './routes/_authenticated/radar'
@@ -107,6 +108,12 @@ const AuthenticatedOffersRoute = AuthenticatedOffersRouteImport.update({
   path: '/offers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOpportunitiesRoute =
+  AuthenticatedOpportunitiesRouteImport.update({
+    id: '/opportunities',
+    path: '/opportunities',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -229,6 +236,7 @@ export interface FileRoutesByFullPath {
   '/money': typeof AuthenticatedMoneyRoute
   '/numbers': typeof AuthenticatedNumbersRoute
   '/offers': typeof AuthenticatedOffersRoute
+  '/opportunities': typeof AuthenticatedOpportunitiesRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/partners': typeof AuthenticatedPartnersRoute
   '/radar': typeof AuthenticatedRadarRoute
@@ -263,6 +271,7 @@ export interface FileRoutesByTo {
   '/money': typeof AuthenticatedMoneyRoute
   '/numbers': typeof AuthenticatedNumbersRoute
   '/offers': typeof AuthenticatedOffersRoute
+  '/opportunities': typeof AuthenticatedOpportunitiesRoute
   '/orders': typeof AuthenticatedOrdersRoute
   '/partners': typeof AuthenticatedPartnersRoute
   '/radar': typeof AuthenticatedRadarRoute
@@ -299,6 +308,7 @@ export interface FileRoutesById {
   '/_authenticated/money': typeof AuthenticatedMoneyRoute
   '/_authenticated/numbers': typeof AuthenticatedNumbersRoute
   '/_authenticated/offers': typeof AuthenticatedOffersRoute
+  '/_authenticated/opportunities': typeof AuthenticatedOpportunitiesRoute
   '/_authenticated/orders': typeof AuthenticatedOrdersRoute
   '/_authenticated/partners': typeof AuthenticatedPartnersRoute
   '/_authenticated/radar': typeof AuthenticatedRadarRoute
@@ -335,6 +345,7 @@ export interface FileRouteTypes {
     | '/money'
     | '/numbers'
     | '/offers'
+    | '/opportunities'
     | '/orders'
     | '/partners'
     | '/radar'
@@ -369,6 +380,7 @@ export interface FileRouteTypes {
     | '/money'
     | '/numbers'
     | '/offers'
+    | '/opportunities'
     | '/orders'
     | '/partners'
     | '/radar'
@@ -404,6 +416,7 @@ export interface FileRouteTypes {
     | '/_authenticated/money'
     | '/_authenticated/numbers'
     | '/_authenticated/offers'
+    | '/_authenticated/opportunities'
     | '/_authenticated/orders'
     | '/_authenticated/partners'
     | '/_authenticated/radar'
@@ -523,6 +536,13 @@ declare module '@tanstack/react-router' {
       path: '/offers'
       fullPath: '/offers'
       preLoaderRoute: typeof AuthenticatedOffersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/opportunities': {
+      id: '/_authenticated/opportunities'
+      path: '/opportunities'
+      fullPath: '/opportunities'
+      preLoaderRoute: typeof AuthenticatedOpportunitiesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/orders': {
@@ -679,6 +699,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMoneyRoute: typeof AuthenticatedMoneyRoute
   AuthenticatedNumbersRoute: typeof AuthenticatedNumbersRoute
   AuthenticatedOffersRoute: typeof AuthenticatedOffersRoute
+  AuthenticatedOpportunitiesRoute: typeof AuthenticatedOpportunitiesRoute
   AuthenticatedOrdersRoute: typeof AuthenticatedOrdersRoute
   AuthenticatedPartnersRoute: typeof AuthenticatedPartnersRoute
   AuthenticatedRadarRoute: typeof AuthenticatedRadarRoute
@@ -712,6 +733,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMoneyRoute: AuthenticatedMoneyRoute,
   AuthenticatedNumbersRoute: AuthenticatedNumbersRoute,
   AuthenticatedOffersRoute: AuthenticatedOffersRoute,
+  AuthenticatedOpportunitiesRoute: AuthenticatedOpportunitiesRoute,
   AuthenticatedOrdersRoute: AuthenticatedOrdersRoute,
   AuthenticatedPartnersRoute: AuthenticatedPartnersRoute,
   AuthenticatedRadarRoute: AuthenticatedRadarRoute,
