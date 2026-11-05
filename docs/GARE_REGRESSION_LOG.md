@@ -1055,6 +1055,10 @@ external access), with strict cost bounds and durable scan records.
 - **Production schema** - migration applied through the Lovable database tool on 2026-11-05.
   Verified all three tables, columns, indexes, RLS flags, owner policies, restricted authenticated
   grants and zero anon grants.
+- **Production deployment** - commit `01461ce` pushed to `main` and published. Verified production
+  returned 200 for `/maintenance`, `maintenance-D7_aRMWj.js`, `solution-builder-aOt1jgGW.js` and
+  `BusinessIntelModal-D2ELU9PR.js`; the chunks contain the maintenance workspace, solution builder
+  controls and report integration strings.
 - **Updated** - `src/components/BusinessIntelModal.tsx`, `src/routes/_authenticated/route.tsx`,
   `src/integrations/supabase/types.ts`, `src/lib/ai.server.ts` and generated
   `src/routeTree.gen.ts`.
@@ -1085,8 +1089,8 @@ external access), with strict cost bounds and durable scan records.
 
 ### Known limitations / follow-ups
 - Full repository lint still reports pre-existing CRLF/Prettier issues in untouched files.
-- The production schema is applied; the application deployment and production route/panel
-  verification still follow the checklist in `docs/GARE_SOLUTION_BUILDER_IMPLEMENTATION.md`.
+- Production schema, deployment and route/assets are verified. An owner-authenticated interaction
+  smoke test for building recommendations and generating prompts remains.
 - Live AI prompt generation was not exercised because this environment has no application
   session.
 - Failed prompt history is retained in the database but not shown in the UI.

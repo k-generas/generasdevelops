@@ -1,7 +1,7 @@
 # GARE Solution Builder - Phase 7 Implementation
 
 Date: 2026-11-05
-Status: implemented and locally verified; production schema applied; application deployment pending.
+Status: implemented, locally verified, deployed and verified in production on 2026-11-05.
 
 ## Files
 
@@ -130,20 +130,25 @@ flags and restricted grants. Verification confirmed there are no anon grants.
 
 1. Confirm the three tables, indexes, restricted grants and RLS policies exist in production.
    Completed 2026-11-05 through the Lovable database tool.
-2. Commit the source, migration and documentation.
-3. Push to the Lovable-connected branch.
-4. Deploy and verify `/maintenance` plus the new solution builder chunks are present.
-5. Open one real business report, build recommendations and confirm persistence.
+2. Commit the source, migration and documentation. Completed in `01461ce`.
+3. Push to the Lovable-connected branch. Completed.
+4. Deploy and verify `/maintenance` plus the new solution builder chunks are present. Completed;
+   production returned 200 for `/maintenance`, `maintenance-D7_aRMWj.js`,
+   `solution-builder-aOt1jgGW.js` and `BusinessIntelModal-D2ELU9PR.js`.
+5. Open one real business report, build recommendations and confirm persistence. Requires the
+   owner session and recorded investigation data.
 6. Generate one prompt set with a configured AI provider and verify a failed prompt remains hidden.
+   Requires the owner session and an available AI provider.
 
 ## Known limitations
 
-- The production schema is applied, but live AI prompt generation could not be exercised from this
-  environment because there is no application session.
+- The production schema and application are live, but live AI prompt generation could not be
+  exercised from this environment because there is no application session.
 - AI prompt language quality depends on the configured provider; the validator only enforces
   structure and safety rules.
 - Recommendations are scoped to a specific investigation, so a later investigation can create a
   new recommendation with newer evidence.
 - The UI does not show failed prompt history; failed records are retained in the database for
   diagnosis and future admin tooling.
-- Production route, report panel and prompt-generation verification remain after deployment.
+- Production route and asset verification passed. Live report interaction and prompt generation
+  remain for an owner-authenticated smoke test.

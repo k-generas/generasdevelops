@@ -1,7 +1,7 @@
 # GARE Solution Builder - Phase 7 Audit
 
 Date: 2026-11-05
-Status: implemented; production schema applied; application deployment and production verification pending.
+Status: implemented, deployed and verified in production on 2026-11-05.
 
 ## Objective
 
@@ -84,8 +84,9 @@ quality result. Missing evidence produces no recommendation rather than a generi
   recommendation of the same solution type with newer evidence.
 - Live AI prompt generation was not exercised in this environment because no application
   database/session is available. The pure engine, validator and build were verified locally.
-- The production schema is applied. The application still needs the connected-branch deployment
-  and production route verification.
+- The production schema and application are deployed. `/maintenance`, the solution-builder
+  route chunk and the report integration chunk responded successfully. A live prompt-generation
+  run still requires an authenticated owner session.
 
 ## Acceptance mapping
 
