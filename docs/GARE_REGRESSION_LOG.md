@@ -1108,14 +1108,18 @@ external access), with strict cost bounds and durable scan records.
   values (comma-separated supported), then `gemini-3.5-flash`, `gemini-3.1-flash-lite`,
   `gemini-2.5-flash` and `gemini-flash-lite-latest`. Each model gets one short transient retry.
 - `aiModelLabel` reports the first model in the same chain.
-- The final auto-provider error now names every provider failure and asks for
-  `OPENAI_API_KEY` as the production fallback instead of incorrectly implying Gemini is unset.
+- The final auto-provider error now names every provider failure and asks for billing/credits or a
+  verified `OPENAI_API_KEY`, instead of incorrectly implying Gemini is unset or that a key alone is
+  enough.
 
 ### Verified providers
-- Local `GEMINI_API_KEY` and `OPENAI_API_KEY` are valid.
+- Local `GEMINI_API_KEY` is present and a real structured `callResponsesJSON` call succeeded through
+  Gemini in 21.6 seconds.
 - Direct Gemini calls succeeded on `gemini-3.5-flash`, `gemini-3.1-flash-lite`,
   `gemini-2.5-flash` and `gemini-flash-lite-latest`; `gemini-flash-latest` was temporarily 503.
-- Direct OpenAI model listing succeeded.
+- Local `OPENAI_API_KEY` is present and OpenAI model listing succeeded, but a real Responses API call
+  failed with `insufficient_quota`: the key has no credits remaining. Adding the same key to
+  production would not provide a working fallback until OpenAI billing/credits are added.
 
 ### Verification
 - `npx tsc --noEmit` - clean
@@ -1124,8 +1128,9 @@ external access), with strict cost bounds and durable scan records.
 - `npm run build` - succeeded
 
 ### Deployment note
-- Production still needs `OPENAI_API_KEY` set in Lovable project environment variables to avoid
-  depending on Gemini availability and exhausted Lovable credits.
+- Production still depends on Gemini because Lovable credits are exhausted and the local OpenAI key
+  has no quota. To restore a second live provider, add OpenAI billing/credits or top up Lovable, then
+  set/verify `OPENAI_API_KEY` in Lovable project environment variables.
 
 ## How to use this log
 
