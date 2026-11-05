@@ -1021,6 +1021,76 @@ external access), with strict cost bounds and durable scan records.
 - `npm test` — 20 files / 108 tests passing (ranking §8 tests added)
 - `npm run build` — succeeded
 
+## 2026-11-05 - Phase 7: evidence-backed solution builder and maintenance
+
+### Baseline before changes
+- `npx tsc --noEmit` - clean
+- `npm test` - 47 files / 353 tests passing (prior Phase 6 baseline)
+- `npm run build` - succeeded before Phase 7 changes
+
+### Changes
+- **`src/lib/solution-builder.ts`** (+ 23 tests) - pure recommendation engine for new website,
+  website repair, ordering, booking, custom system and maintenance. It stores verified facts,
+  evidence-backed findings and hypotheses separately, builds grouped requirements and acceptance
+  criteria, validates prompt structure/evidence/measurability/security/platform fit/contradictions,
+  selects the latest prompt version per platform and enforces maintenance transitions plus
+  completion evidence.
+- **`src/lib/solution.server.ts`** - loads the selected or latest investigation and opportunity,
+  persists deduped recommendations, generates all four platform prompts in one AI call, validates
+  and versions each prompt, records ready/failed status, creates maintenance records and updates
+  maintenance schedule/status.
+- **`src/lib/solution.functions.ts`** - authenticated zod-validated server functions for build,
+  generate, recommendation status, maintenance creation, maintenance status and maintenance
+  schedule.
+- **`src/components/SolutionBuilderPanel.tsx`** - integrated into the existing
+  `BusinessIntelModal` full report. Shows evidence, requirements, accept/dismiss, prompt
+  generation/copy/version/quality and maintenance creation.
+- **`src/routes/_authenticated/maintenance.tsx`** - new `/maintenance` workspace with active /
+  completed / all filters, schedule editing, lifecycle transitions and required completion note.
+- **Schema** - additive `supabase/migrations/20261107000000_solution_builder.sql` and
+  `drizzle/migrations/0029_solution_builder.sql` add `solution_recommendations`,
+  `solution_prompts` and `maintenance_records`, owner RLS, indexes and a partial unique active
+  maintenance index. Both migrations revoke inherited `PUBLIC`/`anon`/`authenticated` privileges
+  before granting authenticated DML, preventing anonymous or signed-in `TRUNCATE` access.
+- **Production schema** - migration applied through the Lovable database tool on 2026-11-05.
+  Verified all three tables, columns, indexes, RLS flags, owner policies, restricted authenticated
+  grants and zero anon grants.
+- **Updated** - `src/components/BusinessIntelModal.tsx`, `src/routes/_authenticated/route.tsx`,
+  `src/integrations/supabase/types.ts`, `src/lib/ai.server.ts` and generated
+  `src/routeTree.gen.ts`.
+- **Docs** - added `docs/GARE_SOLUTION_BUILDER_AUDIT.md`,
+  `docs/GARE_SOLUTION_BUILDER_ARCHITECTURE.md` and
+  `docs/GARE_SOLUTION_BUILDER_IMPLEMENTATION.md`.
+
+### Non-breaking design decisions
+- Recommendations and prompt validation are deterministic and pure; AI is used only to write
+  prompt prose from the stored evidence package.
+- New website recommendations require a double-checked `none_found` website state. Repair
+  recommendations require a measured site issue or an investigation report problem. An unrelated
+  opportunity gap cannot become a website repair.
+- Category-based ordering, booking and maintenance suggestions stay labelled as hypotheses.
+- Prompt regeneration inserts a new version instead of overwriting history. Failed prompts are
+  stored but never shown as successful.
+- Maintenance completion requires a note, and only one non-cancelled record can link to a
+  recommendation.
+- All three tables are additive and owner-scoped; existing investigations, opportunities,
+  proposals, tasks and reports are not rewritten.
+
+### Verification after changes
+- `npx tsc --noEmit` - clean
+- Targeted ESLint on all changed/new TypeScript files - clean
+- Targeted Prettier check - clean
+- `npm test -- --run` - 48 files / 376 tests passing
+- `npm run build` - succeeded and generated the `/maintenance` route
+
+### Known limitations / follow-ups
+- Full repository lint still reports pre-existing CRLF/Prettier issues in untouched files.
+- The production schema is applied; the application deployment and production route/panel
+  verification still follow the checklist in `docs/GARE_SOLUTION_BUILDER_IMPLEMENTATION.md`.
+- Live AI prompt generation was not exercised because this environment has no application
+  session.
+- Failed prompt history is retained in the database but not shown in the UI.
+
 ## How to use this log
 
 Add a dated section for each change set with: the baseline results, the changes, any

@@ -7,6 +7,13 @@ export type AiProvider = "auto" | "openai" | "gemini" | "lovable";
 
 export const AI_PROVIDERS: AiProvider[] = ["auto", "openai", "gemini", "lovable"];
 
+export function aiModelLabel(provider: AiProvider): string {
+  if (provider === "openai") return process.env["OPENAI_MODEL"] || "gpt-4.1";
+  if (provider === "gemini") return process.env["GEMINI_MODEL"] || "gemini-3.5-flash";
+  if (provider === "lovable") return "openai/gpt-6-astra";
+  return "auto (gemini → openai → lovable)";
+}
+
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 const LOVABLE_URL = "https://ai.gateway.lovable.dev/v1/responses";

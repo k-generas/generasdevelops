@@ -31,6 +31,7 @@ import {
   Undo2,
   Users,
   Wallet,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -111,6 +112,7 @@ const NAV: NavItem[] = [
   { to: "/socialpresence", label: "Social Presence", icon: Share2 },
   { to: "/social-leads", label: "Social Leads", icon: Store },
   { to: "/opportunities", label: "Opportunities", icon: Target },
+  { to: "/maintenance", label: "Maintenance", icon: Wrench },
   { to: "/audit", label: "Business Audit", icon: ShieldCheck },
   { to: "/numbers", label: "Numbers", icon: Phone },
   { to: "/rwanda", label: "Rwanda Intel", icon: Factory },

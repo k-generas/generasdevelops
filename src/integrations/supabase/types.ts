@@ -771,6 +771,72 @@ export type Database = {
           },
         ]
       }
+      maintenance_records: {
+        Row: {
+          business_id: string
+          cadence: string | null
+          completed_at: string | null
+          completion_note: string | null
+          created_at: string
+          description: string | null
+          id: string
+          next_due_at: string | null
+          owner_id: string
+          recommendation_id: string | null
+          source: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          cadence?: string | null
+          completed_at?: string | null
+          completion_note?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          next_due_at?: string | null
+          owner_id?: string
+          recommendation_id?: string | null
+          source?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          cadence?: string | null
+          completed_at?: string | null
+          completion_note?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          next_due_at?: string | null
+          owner_id?: string
+          recommendation_id?: string | null
+          source?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_records_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_records_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "solution_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount: number
@@ -2013,6 +2079,166 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solution_prompts: {
+        Row: {
+          created_at: string
+          error: string | null
+          evidence_refs: Json
+          id: string
+          model: string | null
+          owner_id: string
+          platform: string
+          prompt: string
+          provider: string | null
+          quality: Json
+          recommendation_id: string
+          status: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          evidence_refs?: Json
+          id?: string
+          model?: string | null
+          owner_id?: string
+          platform: string
+          prompt: string
+          provider?: string | null
+          quality?: Json
+          recommendation_id: string
+          status?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          evidence_refs?: Json
+          id?: string
+          model?: string | null
+          owner_id?: string
+          platform?: string
+          prompt?: string
+          provider?: string | null
+          quality?: Json
+          recommendation_id?: string
+          status?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solution_prompts_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "solution_recommendations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solution_recommendations: {
+        Row: {
+          assumptions: Json
+          audit_id: string | null
+          business_id: string
+          confidence: number
+          created_at: string
+          dedupe_key: string
+          evidence: Json
+          hypothesis: boolean
+          id: string
+          investigation_id: string | null
+          maintenance_required: boolean
+          opportunity_id: string | null
+          owner_id: string
+          requirements: Json
+          solution_type: string
+          source: string
+          status: string
+          summary: string
+          title: string
+          unknowns: Json
+          updated_at: string
+          why_recommended: string
+        }
+        Insert: {
+          assumptions?: Json
+          audit_id?: string | null
+          business_id: string
+          confidence?: number
+          created_at?: string
+          dedupe_key: string
+          evidence?: Json
+          hypothesis?: boolean
+          id?: string
+          investigation_id?: string | null
+          maintenance_required?: boolean
+          opportunity_id?: string | null
+          owner_id?: string
+          requirements?: Json
+          solution_type: string
+          source?: string
+          status?: string
+          summary: string
+          title: string
+          unknowns?: Json
+          updated_at?: string
+          why_recommended: string
+        }
+        Update: {
+          assumptions?: Json
+          audit_id?: string | null
+          business_id?: string
+          confidence?: number
+          created_at?: string
+          dedupe_key?: string
+          evidence?: Json
+          hypothesis?: boolean
+          id?: string
+          investigation_id?: string | null
+          maintenance_required?: boolean
+          opportunity_id?: string | null
+          owner_id?: string
+          requirements?: Json
+          solution_type?: string
+          source?: string
+          status?: string
+          summary?: string
+          title?: string
+          unknowns?: Json
+          updated_at?: string
+          why_recommended?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solution_recommendations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solution_recommendations_investigation_id_fkey"
+            columns: ["investigation_id"]
+            isOneToOne: false
+            referencedRelation: "investigations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solution_recommendations_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solution_recommendations_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "business_audits"
             referencedColumns: ["id"]
           },
         ]

@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { OutreachMessages } from "@/components/OutreachMessages";
 import { ProspectVerificationPanel } from "@/components/ProspectVerificationPanel";
+import { SolutionBuilderPanel } from "@/components/SolutionBuilderPanel";
 import { useOffers } from "@/lib/offers.hooks";
 import { activeOfferNames } from "@/lib/offers";
 import type { VerificationFindings } from "@/lib/prospect-verification";
@@ -396,6 +397,14 @@ export function BusinessIntelModal({
             </ul>
           )}
         </Section>
+
+        {business.id && (
+          <SolutionBuilderPanel
+            businessId={business.id}
+            hasInvestigation={!!investigation}
+            provider={provider}
+          />
+        )}
 
         {/* Outreach messages (renders its own titled section). */}
         <OutreachMessages
