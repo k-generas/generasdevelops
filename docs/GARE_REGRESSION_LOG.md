@@ -1095,6 +1095,38 @@ external access), with strict cost bounds and durable scan records.
   session.
 - Failed prompt history is retained in the database but not shown in the UI.
 
+## 2026-11-05 - AI provider fallback hardening
+
+### Problem
+- Investigate failed when `gemini-3.5-flash-lite` returned 503 during a demand spike, OpenAI
+  had no production key, and Lovable credits were exhausted.
+- Gemini only had two hard-coded models, so a spike on both failed the whole request. The final
+  error also implied the Gemini key was missing even when it was configured.
+
+### Changes
+- **`src/lib/ai.server.ts`** - Gemini now tries a de-duplicated chain: configured `GEMINI_MODEL`
+  values (comma-separated supported), then `gemini-3.5-flash`, `gemini-3.1-flash-lite`,
+  `gemini-2.5-flash` and `gemini-flash-lite-latest`. Each model gets one short transient retry.
+- `aiModelLabel` reports the first model in the same chain.
+- The final auto-provider error now names every provider failure and asks for
+  `OPENAI_API_KEY` as the production fallback instead of incorrectly implying Gemini is unset.
+
+### Verified providers
+- Local `GEMINI_API_KEY` and `OPENAI_API_KEY` are valid.
+- Direct Gemini calls succeeded on `gemini-3.5-flash`, `gemini-3.1-flash-lite`,
+  `gemini-2.5-flash` and `gemini-flash-lite-latest`; `gemini-flash-latest` was temporarily 503.
+- Direct OpenAI model listing succeeded.
+
+### Verification
+- `npx tsc --noEmit` - clean
+- Targeted ESLint and Prettier - clean
+- `npm test -- --run` - 48 files / 376 tests passing
+- `npm run build` - succeeded
+
+### Deployment note
+- Production still needs `OPENAI_API_KEY` set in Lovable project environment variables to avoid
+  depending on Gemini availability and exhausted Lovable credits.
+
 ## How to use this log
 
 Add a dated section for each change set with: the baseline results, the changes, any
