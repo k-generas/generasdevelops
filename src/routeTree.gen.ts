@@ -30,6 +30,7 @@ import { Route as AuthenticatedReferralsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedRevenueRouteImport } from './routes/_authenticated/revenue'
 import { Route as AuthenticatedRwandaRouteImport } from './routes/_authenticated/rwanda'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedSocialLeadsRouteImport } from './routes/_authenticated/social-leads'
 import { Route as AuthenticatedSocialpresenceRouteImport } from './routes/_authenticated/socialpresence'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedUpdatesRouteImport } from './routes/_authenticated/updates'
@@ -146,6 +147,12 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSocialLeadsRoute =
+  AuthenticatedSocialLeadsRouteImport.update({
+    id: '/social-leads',
+    path: '/social-leads',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSocialpresenceRoute =
   AuthenticatedSocialpresenceRouteImport.update({
     id: '/socialpresence',
@@ -230,6 +237,7 @@ export interface FileRoutesByFullPath {
   '/revenue': typeof AuthenticatedRevenueRoute
   '/rwanda': typeof AuthenticatedRwandaRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/social-leads': typeof AuthenticatedSocialLeadsRoute
   '/socialpresence': typeof AuthenticatedSocialpresenceRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/updates': typeof AuthenticatedUpdatesRoute
@@ -263,6 +271,7 @@ export interface FileRoutesByTo {
   '/revenue': typeof AuthenticatedRevenueRoute
   '/rwanda': typeof AuthenticatedRwandaRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/social-leads': typeof AuthenticatedSocialLeadsRoute
   '/socialpresence': typeof AuthenticatedSocialpresenceRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/updates': typeof AuthenticatedUpdatesRoute
@@ -298,6 +307,7 @@ export interface FileRoutesById {
   '/_authenticated/revenue': typeof AuthenticatedRevenueRoute
   '/_authenticated/rwanda': typeof AuthenticatedRwandaRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/social-leads': typeof AuthenticatedSocialLeadsRoute
   '/_authenticated/socialpresence': typeof AuthenticatedSocialpresenceRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/updates': typeof AuthenticatedUpdatesRoute
@@ -333,6 +343,7 @@ export interface FileRouteTypes {
     | '/revenue'
     | '/rwanda'
     | '/settings'
+    | '/social-leads'
     | '/socialpresence'
     | '/tasks'
     | '/updates'
@@ -366,6 +377,7 @@ export interface FileRouteTypes {
     | '/revenue'
     | '/rwanda'
     | '/settings'
+    | '/social-leads'
     | '/socialpresence'
     | '/tasks'
     | '/updates'
@@ -400,6 +412,7 @@ export interface FileRouteTypes {
     | '/_authenticated/revenue'
     | '/_authenticated/rwanda'
     | '/_authenticated/settings'
+    | '/_authenticated/social-leads'
     | '/_authenticated/socialpresence'
     | '/_authenticated/tasks'
     | '/_authenticated/updates'
@@ -568,6 +581,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/social-leads': {
+      id: '/_authenticated/social-leads'
+      path: '/social-leads'
+      fullPath: '/social-leads'
+      preLoaderRoute: typeof AuthenticatedSocialLeadsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/socialpresence': {
       id: '/_authenticated/socialpresence'
       path: '/socialpresence'
@@ -667,6 +687,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRevenueRoute: typeof AuthenticatedRevenueRoute
   AuthenticatedRwandaRoute: typeof AuthenticatedRwandaRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedSocialLeadsRoute: typeof AuthenticatedSocialLeadsRoute
   AuthenticatedSocialpresenceRoute: typeof AuthenticatedSocialpresenceRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedUpdatesRoute: typeof AuthenticatedUpdatesRoute
@@ -699,6 +720,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRevenueRoute: AuthenticatedRevenueRoute,
   AuthenticatedRwandaRoute: AuthenticatedRwandaRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedSocialLeadsRoute: AuthenticatedSocialLeadsRoute,
   AuthenticatedSocialpresenceRoute: AuthenticatedSocialpresenceRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedUpdatesRoute: AuthenticatedUpdatesRoute,

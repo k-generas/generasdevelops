@@ -1542,6 +1542,110 @@ export type Database = {
           },
         ]
       }
+      social_leads: {
+        Row: {
+          biography: string | null
+          business_id: string | null
+          category: string | null
+          contact_phone: string | null
+          contact_whatsapp: string | null
+          created_at: string
+          discovery_run_id: string | null
+          display_name: string | null
+          district: string | null
+          engagement_rate: number | null
+          evidence: Json
+          followers_count: number | null
+          handle: string
+          id: string
+          last_checked_at: string | null
+          last_post_at: string | null
+          lead_score: number
+          media_count: number | null
+          needs: Json
+          owner_id: string
+          platform: string
+          profile_url: string
+          score_factors: Json
+          source: string
+          status: string
+          store_status: string
+          updated_at: string
+          website: string | null
+          website_status: string
+        }
+        Insert: {
+          biography?: string | null
+          business_id?: string | null
+          category?: string | null
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
+          created_at?: string
+          discovery_run_id?: string | null
+          display_name?: string | null
+          district?: string | null
+          engagement_rate?: number | null
+          evidence?: Json
+          followers_count?: number | null
+          handle: string
+          id?: string
+          last_checked_at?: string | null
+          last_post_at?: string | null
+          lead_score?: number
+          media_count?: number | null
+          needs?: Json
+          owner_id?: string
+          platform?: string
+          profile_url: string
+          score_factors?: Json
+          source?: string
+          status?: string
+          store_status?: string
+          updated_at?: string
+          website?: string | null
+          website_status?: string
+        }
+        Update: {
+          biography?: string | null
+          business_id?: string | null
+          category?: string | null
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
+          created_at?: string
+          discovery_run_id?: string | null
+          display_name?: string | null
+          district?: string | null
+          engagement_rate?: number | null
+          evidence?: Json
+          followers_count?: number | null
+          handle?: string
+          id?: string
+          last_checked_at?: string | null
+          last_post_at?: string | null
+          lead_score?: number
+          media_count?: number | null
+          needs?: Json
+          owner_id?: string
+          platform?: string
+          profile_url?: string
+          score_factors?: Json
+          source?: string
+          status?: string
+          store_status?: string
+          updated_at?: string
+          website?: string | null
+          website_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_leads_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       source_scans: {
         Row: {
           cost_usd: number
