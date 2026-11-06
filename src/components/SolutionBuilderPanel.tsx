@@ -489,7 +489,8 @@ export function SolutionBuilderPanel({
               {readyPrompts.length === 0 ? (
                 <p className="mt-2 text-xs text-muted-foreground">
                   Only prompts that pass validation are shown. Generate prompts for OpenCode,
-                  Lovable, Google AI Studio and a developer specification.
+                  Lovable, Google AI Studio and a developer specification. AI requests retry and
+                  fall back across available models automatically.
                 </p>
               ) : (
                 <>

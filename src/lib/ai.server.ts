@@ -285,6 +285,6 @@ export async function callResponsesJSON(
     throw new Error("AI is not configured (missing key).");
   }
   throw new Error(
-    `AI request failed. Tried: ${errors.join(" | ")}. Gemini may be overloaded. Add billing/credits to OpenAI or Lovable, or verify OPENAI_API_KEY in Lovable project Settings → Environment variables, then retry.`,
+    `AI request failed [ai-v2]. Tried: ${errors.join(" | ")}. Gemini may be overloaded. Add billing/credits to OpenAI or Lovable, or verify OPENAI_API_KEY in Lovable project Settings → Environment variables, then retry.`,
   );
 }
