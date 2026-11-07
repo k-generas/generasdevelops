@@ -1,4 +1,5 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -7,8 +8,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { OutreachMessages } from "@/components/OutreachMessages";
 import { ProspectVerificationPanel } from "@/components/ProspectVerificationPanel";
+import { ReportDownloadDialog } from "@/components/ReportDownloadDialog";
 import { SolutionBuilderPanel } from "@/components/SolutionBuilderPanel";
 import { useOffers } from "@/lib/offers.hooks";
 import { activeOfferNames } from "@/lib/offers";
@@ -96,6 +99,7 @@ export function BusinessIntelModal({
   investigating?: boolean;
   error?: string | null;
 }) {
+  const [reportOpen, setReportOpen] = useState(false);
   const offersQ = useOffers();
   const offerNames = useMemo(
     () => activeOfferNames(offersQ.data?.offers ?? []),
@@ -130,13 +134,26 @@ export function BusinessIntelModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
-        <DialogHeader className="pr-6">
+        <DialogHeader className="pr-10">
           <DialogTitle>{business.name}</DialogTitle>
           <DialogDescription>
-            {[business.category, business.address].filter(Boolean).join(" · ") || "Business report"}
-            {business.score != null ? ` · opportunity score ${business.score}` : ""}
+            {[business.category, business.address].filter(Boolean).join(" | ") || "Business report"}
+            {business.score != null ? ` | opportunity score ${business.score}` : ""}
           </DialogDescription>
         </DialogHeader>
+
+        <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-background/95 p-3 shadow-sm backdrop-blur">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">Full report</p>
+            <p className="text-xs text-muted-foreground">
+              Download every section, or choose what to include before downloading.
+            </p>
+          </div>
+          <Button type="button" size="sm" onClick={() => setReportOpen(true)}>
+            <Download className="mr-1 h-4 w-4" />
+            Download full report
+          </Button>
+        </div>
 
         {/* Business profile — everything we hold. */}
         <Section title="Business profile">
@@ -409,6 +426,15 @@ export function BusinessIntelModal({
           enabled={outreachEnabled}
           generateToken={0}
           auto={false}
+        />
+
+        <ReportDownloadDialog
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          business={business}
+          investigation={investigation}
+          findings={findings}
+          recommendations={recommendations}
         />
       </DialogContent>
     </Dialog>
