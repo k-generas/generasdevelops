@@ -1,7 +1,8 @@
 # GARE Solution Builder - Phase 7 Implementation
 
 Date: 2026-11-06
-Status: website-generation upgrade implemented, migration applied and locally verified; deployment pending.
+Status: website-generation upgrade implemented, migration applied, deployed and verified in
+production on 2026-11-06.
 
 ## Files
 
@@ -107,8 +108,8 @@ opportunity and audit.
 
 ### `solution_prompts`
 
-Stores platform prompt versions, quality result, evidence references, provider/model and failure
-detail. Ready and failed versions share the table but are separated by status.
+Stores platform prompt versions, quality result, evidence references and the deterministic
+`solution-prompt-v2` model marker. A new set is written only when all four prompts pass.
 
 ### `maintenance_records`
 
@@ -165,8 +166,11 @@ flags and restricted grants. Verification confirmed there are no anon grants.
 1. Apply `supabase/migrations/20261108000000_solution_intent.sql` in production. Completed
    2026-11-06; both columns are non-null with defaults, both enum checks exist and all existing
    recommendations were backfilled.
-2. Commit and push the source, migrations and documentation.
-3. Deploy and verify production serves the upgraded solution-builder chunks.
+2. Commit and push the source, migrations and documentation. Completed in `2f4888b`.
+3. Deploy and verify production serves the upgraded solution-builder chunks. Completed in Lovable
+   deployment `cc52b946-c9fd-4faa-8cbf-21ee9ed048e4`; production root and `/maintenance` returned
+   200 with `index-DCUTCc5X.js`, `solution-builder-DZONSvVa.js` and
+   `BusinessIntelModal-BJxC_zll.js`.
 4. Open one real business report, enter the construction-materials request and confirm the prompt
    stays a customer-facing website brief. Requires the owner session.
 5. Confirm an ambiguous request is rejected with a clarification message.
@@ -178,6 +182,6 @@ flags and restricted grants. Verification confirmed there are no anon grants.
 - A live owner-authenticated UI smoke test requires a production session.
 - Recommendations are scoped to a specific investigation, so a later investigation can create a
   new recommendation with newer evidence.
-- The UI does not show failed prompt history; failed records are retained in the database for
-  diagnosis and future admin tooling.
-- Production route and asset verification still requires the deployment step below.
+- Invalid prompt sets are rejected before insert, so failed records are not kept in prompt history.
+- Production route and asset verification passed. Live report interaction and prompt generation
+  remain for an owner-authenticated smoke test.

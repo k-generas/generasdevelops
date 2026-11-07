@@ -1291,12 +1291,16 @@ external access), with strict cost bounds and durable scan records.
   `BusinessIntelModal-4_wITYg1.js`
 - Production intent migration — applied and verified: both columns are non-null with defaults and
   both enum checks exist
-- Public production root and `/maintenance` — pending deployment verification
+- Commit `2f4888b` pushed to `main`; Lovable deployment `cc52b946-c9fd-4faa-8cbf-21ee9ed048e4`
+  published the new build.
+- Production root and `/maintenance` returned 200; production served updated
+  `index-DCUTCc5X.js`, `solution-builder-DZONSvVa.js` and
+  `BusinessIntelModal-BJxC_zll.js`.
+- The deployed report chunk contains the new client-request/intent prompt controls.
 
 ### Known limitations / follow-ups
 
 - Full repository lint still reports pre-existing CRLF/Prettier issues in untouched files.
-- The production migration and deployed application remain to be verified.
 - An owner-authenticated UI smoke test still requires a production session.
 
 ## How to use this log

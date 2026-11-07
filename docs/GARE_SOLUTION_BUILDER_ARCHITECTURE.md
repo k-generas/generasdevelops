@@ -263,6 +263,7 @@ is stored as the completion evidence alongside `completed_at`.
 - Prompt generation is local template assembly: no AI call, provider credits or Maps request.
 - Regeneration creates new versions instead of overwriting history.
 - If validation fails, no new version is saved and the previous valid prompts remain available.
-- Missing investigation, empty evidence, AI failure or invalid prompt returns a clear error or a
-  failed prompt record rather than a fabricated recommendation.
-- Existing prompts remain available when a later generation fails.
+- Missing investigation, empty evidence or invalid prompt returns a clear error rather than a
+  fabricated recommendation.
+- Existing prompts remain available when a later generation fails because no partial version set
+  is written.
