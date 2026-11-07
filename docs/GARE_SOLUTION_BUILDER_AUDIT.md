@@ -1,7 +1,8 @@
 # GARE Solution Builder - Phase 7 Audit
 
-Date: 2026-11-05
-Status: implemented, deployed and verified in production on 2026-11-05.
+Date: 2026-11-06
+Status: Phase 7 implemented; website-generation intelligence upgrade implemented, migration
+applied and deployment pending.
 
 ## Objective
 
@@ -90,15 +91,36 @@ quality result. Missing evidence produces no recommendation rather than a generi
 
 ## Acceptance mapping
 
-| Requirement | Implementation |
-| --- | --- |
-| Evidence-based recommendations | `buildSolutionRecommendations` plus stored evidence |
-| Report integration | `SolutionBuilderPanel` inside `BusinessIntelModal` |
-| Implementation requirements | Grouped must/should/could requirements with acceptance criteria |
-| Four prompt targets | OpenCode, Lovable, Google AI Studio, developer spec |
-| Prompt quality validation | `validatePromptQuality` and stored quality JSON |
-| Prompt versioning | `solution_prompts` version per recommendation/platform |
-| Accept/dismiss | `setSolutionRecommendationStatusFn` |
-| Maintenance lifecycle | `maintenance_records` and `/maintenance` |
-| Completion evidence | Required `completion_note` before completion |
-| Owner-scoped security | RLS on all three new tables and authenticated server functions |
+| Requirement                    | Implementation                                                  |
+| ------------------------------ | --------------------------------------------------------------- |
+| Evidence-based recommendations | `buildSolutionRecommendations` plus stored evidence             |
+| Report integration             | `SolutionBuilderPanel` inside `BusinessIntelModal`              |
+| Implementation requirements    | Grouped must/should/could requirements with acceptance criteria |
+| Four prompt targets            | OpenCode, Lovable, Google AI Studio, developer spec             |
+| Prompt quality validation      | `validatePromptQuality` and stored quality JSON                 |
+| Prompt versioning              | `solution_prompts` version per recommendation/platform          |
+| Accept/dismiss                 | `setSolutionRecommendationStatusFn`                             |
+| Maintenance lifecycle          | `maintenance_records` and `/maintenance`                        |
+| Completion evidence            | Required `completion_note` before completion                    |
+| Owner-scoped security          | RLS on all three new tables and authenticated server functions  |
+
+## 2026-11-06 website-generation upgrade
+
+The original Phase 7 prompt path used one AI call to write all four prompts. That allowed the
+Google AI Studio prompt for a construction-materials business to become an AI copy-auditing
+application instead of the requested website. The upgrade removes AI from prompt assembly and
+adds:
+
+- mandatory intent classification (`CREATE`, `REPAIR`, `IMPROVE`, `MAINTAIN`, `ANALYZE`,
+  `AUTOMATE`)
+- an explicit client-request override, with ambiguous requests rejected for clarification
+- persisted intent and requested deliverable
+- deterministic A-L website prompts for website deliverables
+- a general prompt for analysis, maintenance, automation and internal business systems
+- Google AI Studio guardrails that forbid substituting the website with an audit app, dashboard,
+  compliance checker, prompt generator, reporting tool or internal GARE feature
+- all-or-nothing validation before a prompt version set is saved
+
+The historical decision "Use AI only for prose prompt generation" is superseded: prompt assembly
+is now deterministic and costs no provider credits. AI remains in the investigation layer for
+interpreting collected evidence.

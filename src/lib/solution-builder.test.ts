@@ -3,6 +3,7 @@ import {
   allowedMaintenanceTransitions,
   buildSolutionRecommendations,
   canTransitionMaintenance,
+  classifySolutionRequest,
   latestPromptPerPlatform,
   maintenanceCompletionError,
   validatePromptQuality,
@@ -10,6 +11,7 @@ import {
   type SolutionInput,
   type SolutionRecommendationDraft,
 } from "./solution-builder";
+import { buildPlatformPrompt } from "./solution-prompts";
 
 const AT = "2026-11-05T10:00:00.000Z";
 
@@ -33,86 +35,11 @@ function input(over: Partial<SolutionInput> = {}): SolutionInput {
   };
 }
 
-function platformLine(platform: PromptPlatform): string {
-  if (platform === "opencode")
-    return "OpenCode: inspect this repository first, read the existing code, keep the diff focused, run the project tests and typecheck, and report anything unverified.";
-  if (platform === "lovable")
-    return "Lovable: build the pages and components in the Lovable workspace, use the preview to verify, then publish only after the checks pass.";
-  if (platform === "google_ai_studio")
-    return "Google AI Studio: use Gemini with a server-side API key, a structured model response, and an evaluation check for malformed output.";
-  return "Developer implementation specification: give the developer the interfaces, data contracts, deliverables and acceptance tests.";
-}
-
-function completePrompt(platform: PromptPlatform): string {
-  return `# Implementation brief
-
-## Objective
-Build the smallest confirmed solution for Kigali Salon.
-
-## Business context
-Kigali Salon is a beauty salon in Kigali with phone +250788000000.
-
-## Verified facts
-- The business name and phone were recorded in the business evidence.
-- A double-checked website search found no website.
-
-## Problem and evidence
-- Verified fact: no website was found after the double-check.
-
-## Users
-- Local customers looking for salon services.
-- The owner or staff member who receives enquiries.
-
-## Requirements
-- Must show the verified business name and phone.
-- Must provide a mobile-ready contact action.
-- Should include an empty state when no content is configured.
-- Could add a location map only when the owner confirms the address.
-
-## Pages and components
-- Home page, contact page and enquiry component.
-
-## User journeys
-- A customer opens the home page, reviews the service context and contacts the business.
-- A customer on a phone can complete the same path without signing in.
-
-## Data and backend
-- Store only validated enquiry fields and timestamps.
-- No business fact is inferred by the backend.
-
-## Frontend
-- Build accessible forms with labels, focus states and visible validation errors.
-
-## Integrations
-- Use the verified phone link; no unconfirmed payment or booking integration.
-
-## Auth, security and privacy
-- Validate all input, sanitize displayed content and never expose a secret.
-- The public flow requires no account; any owner view must enforce authentication and authorisation.
-
-## Responsive design
-- The layout must work at 360px and 1280px viewport widths.
-
-## Error and empty states
-- Show an empty state when no services are configured and a retryable error when submission fails.
-
-## Tests
-- Run the project tests and typecheck. Test the missing-field path and the successful enquiry path.
-
-## Acceptance criteria
-- The home page returns HTTP 200 in production.
-- The layout works at 360px and 1280px.
-- Invalid input shows an error and is not stored.
-- Every displayed business fact is traceable to the evidence.
-
-## Deployment
-- Document environment variables and publish only after the checks pass.
-
-## Assumptions and unknowns
-- The owner's brand assets and budget are unknown.
-- Services and prices must be supplied by the owner.
-
-${platformLine(platform)}`;
+function completePrompt(
+  platform: PromptPlatform,
+  recommendation = buildSolutionRecommendations(input())[0]!,
+): string {
+  return buildPlatformPrompt({ business: input().business, recommendation }, platform);
 }
 
 describe("buildSolutionRecommendations", () => {
@@ -430,7 +357,7 @@ describe("prompt quality validator", () => {
         findings: { url: "https://salon.rw", reachable: false, status: 500 },
       }),
     ).find((row) => row.solution_type === "website_repair")!;
-    const prompt = `${completePrompt("opencode")}\nRebuild the site from scratch and replace the existing website.`;
+    const prompt = `${completePrompt("opencode", repair)}\nRebuild the site from scratch and replace the existing website.`;
     const quality = validatePromptQuality(prompt, "opencode", repair);
     expect(quality.pass).toBe(false);
     expect(quality.checks.find((check) => check.key === "contradiction")!.status).toBe("fail");
@@ -468,9 +395,147 @@ describe("prompt quality validator", () => {
       }),
     );
     const ordering = rows.find((row) => row.solution_type === "ordering_ecommerce")!;
-    const quality = validatePromptQuality(completePrompt("lovable"), "lovable", ordering);
+    const quality = validatePromptQuality(completePrompt("lovable", ordering), "lovable", ordering);
     expect(quality.checks.find((check) => check.key === "evidence")!.status).toBe("warn");
     expect(quality.pass).toBe(true);
+  });
+});
+
+describe("intent classification and website generation", () => {
+  function websiteRecommendation(
+    over: Partial<SolutionRecommendationDraft> = {},
+  ): SolutionRecommendationDraft {
+    return { ...buildSolutionRecommendations(input())[0]!, ...over };
+  }
+
+  it("classifies a construction materials recommendation as CREATE, not an audit app", () => {
+    const business = {
+      ...input().business,
+      name: "Kigali Construction Materials",
+      category: "Building materials supplier",
+    };
+    const recommendation = buildSolutionRecommendations(input({ business })).find(
+      (row) => row.solution_type === "website_new",
+    )!;
+    expect(recommendation.intent).toBe("CREATE");
+    expect(recommendation.requested_deliverable).toBe("business_website");
+
+    const prompt = buildPlatformPrompt({ business, recommendation }, "google_ai_studio");
+    expect(prompt).toContain("Build a complete, responsive, customer-facing website");
+    expect(prompt).toContain("Products and materials");
+    expect(prompt).toContain("Intent: CREATE");
+    expect(prompt).toContain("Requested deliverable: Customer-facing business website");
+    expect(prompt).not.toMatch(/use Gemini with a server-side API key/i);
+    expect(validatePromptQuality(prompt, "google_ai_studio", recommendation).pass).toBe(true);
+  });
+
+  it("gives an explicit client website request priority over the recommendation type", () => {
+    const classification = classifySolutionRequest({
+      solution_type: "other",
+      requested_outcome: "Build a customer-facing website demo for this supplier.",
+    });
+    expect(classification.intent).toBe("CREATE");
+    expect(classification.requested_deliverable).toBe("business_website");
+    expect(classification.ambiguous).toBe(false);
+  });
+
+  it("keeps repair prompts focused on the existing website", () => {
+    const rows = buildSolutionRecommendations(
+      input({
+        business: { ...input().business, website: "https://salon.rw" },
+        findings: { url: "https://salon.rw", reachable: false, status: 500 },
+      }),
+    );
+    const repair = rows.find((row) => row.solution_type === "website_repair")!;
+    expect(repair.intent).toBe("REPAIR");
+    const prompt = buildPlatformPrompt(
+      { business: input().business, recommendation: repair },
+      "opencode",
+    );
+    expect(prompt).toContain("Repair the existing website");
+    expect(validatePromptQuality(prompt, "opencode", repair).pass).toBe(true);
+  });
+
+  it("classifies adding ordering to an existing site as IMPROVE", () => {
+    const classification = classifySolutionRequest({
+      solution_type: "ordering_ecommerce",
+      has_website: true,
+    });
+    expect(classification.intent).toBe("IMPROVE");
+    const recommendation = websiteRecommendation({
+      solution_type: "ordering_ecommerce",
+      intent: classification.intent,
+      requested_deliverable: classification.requested_deliverable,
+    });
+    const prompt = buildPlatformPrompt({ business: input().business, recommendation }, "lovable");
+    expect(prompt).toContain("Improve the existing website");
+    expect(validatePromptQuality(prompt, "lovable", recommendation).pass).toBe(true);
+  });
+
+  it.each([
+    ["ANALYZE", "Audit our online presence and prioritise improvements.", "analysis", "analysis"],
+    ["AUTOMATE", "Automate quote follow-up and customer reminders.", "automation", "automation"],
+    ["MAINTAIN", "Maintain the website and keep it secure.", "website_maintenance", "maintenance"],
+  ] as const)(
+    "produces a %s deliverable instead of a website",
+    (intent, outcome, deliverable, expectedText) => {
+      const classification = classifySolutionRequest({
+        solution_type: "other",
+        requested_outcome: outcome,
+      });
+      expect(classification.intent).toBe(intent);
+      expect(classification.requested_deliverable).toBe(deliverable);
+      const recommendation = websiteRecommendation({
+        intent: classification.intent,
+        requested_deliverable: classification.requested_deliverable,
+      });
+      const prompt = buildPlatformPrompt(
+        { business: input().business, recommendation },
+        "developer_spec",
+      );
+      expect(prompt).toContain(`Intent: ${intent}`);
+      expect(prompt.toLowerCase()).toContain(expectedText);
+      expect(validatePromptQuality(prompt, "developer_spec", recommendation).pass).toBe(true);
+    },
+  );
+
+  it("asks for clarification when the client request is ambiguous", () => {
+    const classification = classifySolutionRequest({
+      solution_type: "other",
+      requested_outcome: "Not sure, maybe a website or an audit.",
+    });
+    expect(classification.ambiguous).toBe(true);
+    expect(classification.clarification).toMatch(/clarify/i);
+  });
+
+  it("rejects a website prompt that drifts into an auditing application", () => {
+    const recommendation = websiteRecommendation();
+    const prompt = buildPlatformPrompt(
+      { business: input().business, recommendation },
+      "google_ai_studio",
+    ).replace(
+      "The target deliverable is the website itself.",
+      "Build an AI content auditing application as the primary deliverable.",
+    );
+    const quality = validatePromptQuality(prompt, "google_ai_studio", recommendation);
+    expect(quality.pass).toBe(false);
+    expect(quality.checks.find((check) => check.key === "deliverable")!.status).toBe("fail");
+  });
+
+  it("includes verified facts and missing information without inventing prices", () => {
+    const business = {
+      ...input().business,
+      name: "Kigali Construction Materials",
+      category: "Building materials supplier",
+      phone: null,
+    };
+    const recommendation = buildSolutionRecommendations(input({ business })).find(
+      (row) => row.solution_type === "website_new",
+    )!;
+    const prompt = buildPlatformPrompt({ business, recommendation }, "opencode");
+    expect(prompt).toContain("## J. Missing information");
+    expect(prompt).toContain("prices");
+    expect(prompt).not.toContain("+250788000000");
   });
 });
 

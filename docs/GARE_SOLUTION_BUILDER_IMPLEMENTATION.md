@@ -1,24 +1,29 @@
 # GARE Solution Builder - Phase 7 Implementation
 
-Date: 2026-11-05
-Status: implemented, locally verified, deployed and verified in production on 2026-11-05.
+Date: 2026-11-06
+Status: website-generation upgrade implemented, migration applied and locally verified; deployment pending.
 
 ## Files
 
 ### New
 
-- `src/lib/solution-builder.ts` - pure recommendation, requirement, lifecycle and prompt-quality
-  rules.
-- `src/lib/solution-builder.test.ts` - 23 tests covering recommendation selection, evidence
-  labelling, opportunity-only false positives, maintenance transitions, completion evidence,
-  prompt quality and latest-version selection.
-- `src/lib/solution.server.ts` - database/AI orchestration for recommendations, prompt versions
-  and maintenance records.
+- `src/lib/solution-builder.ts` - pure recommendation, intent classification, requirement,
+  lifecycle and prompt-quality rules.
+- `src/lib/solution-prompts.ts` - deterministic website/general prompt builder for all four
+  platforms.
+- `src/lib/solution-builder.test.ts` - 33 tests covering recommendation selection, evidence
+  labelling, opportunity-only false positives, intent classification, website-generation
+  guardrails, maintenance transitions, completion evidence, prompt quality and latest-version
+  selection.
+- `src/lib/solution.server.ts` - database orchestration for recommendations, prompt versions and
+  maintenance records; no AI call for prompt generation.
 - `src/lib/solution.functions.ts` - authenticated server functions.
 - `src/components/SolutionBuilderPanel.tsx` - report section for recommendations and prompts.
 - `src/routes/_authenticated/maintenance.tsx` - maintenance workspace.
 - `supabase/migrations/20261107000000_solution_builder.sql` - production schema.
 - `drizzle/migrations/0029_solution_builder.sql` - Drizzle parity schema.
+- `supabase/migrations/20261108000000_solution_intent.sql` - additive intent/deliverable migration.
+- `drizzle/migrations/0030_solution_intent.sql` - Drizzle parity migration.
 
 ### Updated
 
@@ -54,14 +59,27 @@ Each card shows:
 
 ### Prompt generation
 
-Selecting **Generate prompts** sends one AI request for all four platforms. Each returned prompt
-is validated independently. Ready prompts are versioned and shown with copy support. Failed
-prompts are stored with their quality result and error but excluded from the ready prompt query,
-so a failure never appears as a successful prompt.
+Before generation the owner can optionally enter the exact client request. The server classifies
+it into `CREATE`, `REPAIR`, `IMPROVE`, `MAINTAIN`, `ANALYZE` or `AUTOMATE`, stores the resulting
+intent and requested deliverable on the recommendation, and rejects ambiguous requests with a
+clarification message.
 
-The prompt panel shows version, provider, model, creation time and quality score. The latest ready
-version per platform is displayed. Regenerating creates the next version rather than deleting
-earlier prompts.
+All four prompts are then assembled locally in `src/lib/solution-prompts.ts`:
+
+- website deliverables use the required A-L website brief
+- analysis, maintenance, automation and internal-system deliverables use the general brief
+- Google AI Studio website prompts explicitly build the website and not an AI auditing app,
+  dashboard, compliance checker, prompt generator, reporting tool or internal GARE feature
+- missing products, prices, stock, hours, policies, photography and brand assets remain labelled
+  missing information
+
+Every prompt is validated independently. All four must pass before a new version set is inserted.
+If validation fails, the request is rejected and the previous valid prompt versions remain in
+place. There is no AI provider call or credit cost for prompt generation.
+
+The prompt panel shows version, quality score, validation checks, intent and requested deliverable.
+The latest ready version per platform is displayed. Regenerating creates the next version rather
+than deleting earlier prompts.
 
 ### Maintenance
 
@@ -83,8 +101,9 @@ The migration is additive and does not modify existing tables.
 
 ### `solution_recommendations`
 
-Stores the interpreted solution, confidence, evidence, requirements, assumptions, unknowns,
-source, status and links to business, investigation, opportunity and audit.
+Stores the interpreted solution, explicit intent, requested deliverable, confidence, evidence,
+requirements, assumptions, unknowns, source, status and links to business, investigation,
+opportunity and audit.
 
 ### `solution_prompts`
 
@@ -111,7 +130,8 @@ flags and restricted grants. Verification confirmed there are no anon grants.
 3. Run or confirm an investigation.
 4. Select **Build recommendations**.
 5. Review evidence and requirements, then accept or dismiss.
-6. Generate the platform prompts and copy the required target.
+6. Optionally enter the exact client request, then generate the platform prompts and copy the
+   required target.
 7. For a maintenance recommendation, create the maintenance record.
 8. Open **Maintenance**, set cadence and next due date, then move it through the lifecycle.
 9. Add completion evidence before completing.
@@ -120,13 +140,17 @@ flags and restricted grants. Verification confirmed there are no anon grants.
 
 - `npx tsc --noEmit` - clean.
 - `npx eslint` on all changed/new TypeScript files - clean.
-- `npx prettier --check` on all changed/new TypeScript files - clean.
-- `npm test -- --run` - 48 test files / 376 tests passing, including 23 solution builder tests.
-- `npm run build` - succeeded and generated the `/maintenance` route and chunks.
+- Prettier on changed TypeScript and Markdown files - clean; no Prettier parser is configured for
+  SQL migrations.
+- `npm test -- --run` - 48 test files / 386 tests passing, including 33 solution builder tests.
+- `npm run build` - succeeded; generated `solution-builder-BDVkzNZf.js` and
+  `BusinessIntelModal-4_wITYg1.js`.
 - Full repository lint still has pre-existing CRLF/Prettier and unrelated warnings in untouched
   files; no new lint errors were introduced in the changed files.
 
 ## Deployment checklist
+
+### Initial Phase 7 deployment
 
 1. Confirm the three tables, indexes, restricted grants and RLS policies exist in production.
    Completed 2026-11-05 through the Lovable database tool.
@@ -135,20 +159,25 @@ flags and restricted grants. Verification confirmed there are no anon grants.
 4. Deploy and verify `/maintenance` plus the new solution builder chunks are present. Completed;
    production returned 200 for `/maintenance`, `maintenance-D7_aRMWj.js`,
    `solution-builder-aOt1jgGW.js` and `BusinessIntelModal-D2ELU9PR.js`.
-5. Open one real business report, build recommendations and confirm persistence. Requires the
-   owner session and recorded investigation data.
-6. Generate one prompt set with a configured AI provider and verify a failed prompt remains hidden.
-   Requires the owner session and an available AI provider.
+
+### Intent and website-generation upgrade
+
+1. Apply `supabase/migrations/20261108000000_solution_intent.sql` in production. Completed
+   2026-11-06; both columns are non-null with defaults, both enum checks exist and all existing
+   recommendations were backfilled.
+2. Commit and push the source, migrations and documentation.
+3. Deploy and verify production serves the upgraded solution-builder chunks.
+4. Open one real business report, enter the construction-materials request and confirm the prompt
+   stays a customer-facing website brief. Requires the owner session.
+5. Confirm an ambiguous request is rejected with a clarification message.
 
 ## Known limitations
 
-- The production schema and application are live, but live AI prompt generation could not be
-  exercised from this environment because there is no application session.
-- AI prompt language quality depends on the configured provider; the validator only enforces
-  structure and safety rules.
+- Prompt generation is deterministic, so prompt language no longer depends on an AI provider; the
+  validator still enforces structure and safety rules.
+- A live owner-authenticated UI smoke test requires a production session.
 - Recommendations are scoped to a specific investigation, so a later investigation can create a
   new recommendation with newer evidence.
 - The UI does not show failed prompt history; failed records are retained in the database for
   diagnosis and future admin tooling.
-- Production route and asset verification passed. Live report interaction and prompt generation
-  remain for an owner-authenticated smoke test.
+- Production route and asset verification still requires the deployment step below.

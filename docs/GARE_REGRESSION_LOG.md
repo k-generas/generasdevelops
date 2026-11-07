@@ -19,12 +19,14 @@ linked proposal drafting. No scraping, automated outreach, business merging or i
 commercial facts.
 
 ### Baseline at start of pass
+
 - `git` HEAD `d9181b2`; working tree dirty from the Phase 1 social-matching work
 - `npx tsc --noEmit` — clean
 - Full `npm test` — 46 files / 341 tests passing
 - Full `npm run lint` already failed on pre-existing CRLF/Prettier issues in untouched files
 
 ### Changes
+
 - **`src/lib/opportunity-engine.ts`** (+ 12 tests) — pure engine: usable-gap filtering,
   evidence merge, solution catalogue and gap-to-solution mapping, explainable scoring through
   `rankOpportunity`, audit-finding conversion, allowed stage transitions, confirmed-problem
@@ -50,6 +52,7 @@ commercial facts.
   verified in the production schema.
 
 ### Non-breaking design decisions
+
 - Additive schema, UI and server functions only; no existing route, table, column or function
   was removed or renamed.
 - Generation reads stored social matches only and reports zero request cost. Evidence refresh
@@ -62,6 +65,7 @@ commercial facts.
 - Missing tables/migrations return clear setup messages instead of throwing opaque errors.
 
 ### Verification
+
 - `npx tsc --noEmit` — clean after this pass
 - `npm test` — 47 files / 353 tests passing (29 targeted engine/matcher tests)
 - `npm run build` — succeeded; generated `/opportunities`
@@ -69,6 +73,7 @@ commercial facts.
 - Full `npm run lint` — still fails on pre-existing CRLF/Prettier errors in untouched files
 
 ### Known limitations / follow-ups
+
 - Production currently has no social leads, matches or opportunities, so generation and the
   full workspace flow still need exercising with real owner data.
 - Meta live discovery remains blocked by missing production credentials/permissions.
@@ -83,12 +88,14 @@ Places businesses, with owner review and conservative account/opportunity classi
 No new paid API calls, scraping, outreach or automatic business creation.
 
 ### Baseline at start of pass
+
 - `git` HEAD `d9181b2`; working tree already dirty from the prior social-lead work
 - `npx tsc --noEmit` — clean
 - Targeted social-matching tests — 17 passing
 - Full `npm run lint` already failed on pre-existing CRLF/Prettier issues in untouched files
 
 ### Changes
+
 - **`src/lib/social-business-match.ts`** (+ 17 tests) — pure matching using normalised
   phone, website domain (excluding shared/link-hub hosts), name similarity and supporting
   location evidence. Produces high-confidence, possible and conflicting candidates,
@@ -112,6 +119,7 @@ No new paid API calls, scraping, outreach or automatic business creation.
   verification, rollout and rollback notes.
 
 ### Non-breaking design decisions
+
 - Additive schema and UI only; existing business, social-lead, source and website records
   are unchanged. The migration has since been applied to production.
 - Matching reads stored records only: no Maps, Meta, website-fetch or AI calls in this flow.
@@ -120,6 +128,7 @@ No new paid API calls, scraping, outreach or automatic business creation.
 - Owner reviews are reversible; rejecting a linked candidate unlinks it.
 
 ### Verification
+
 - `npx tsc --noEmit` — clean after this pass
 - `npm test` — 46 files / 341 tests passing (17 social-matching tests)
 - `npm run build` — succeeded
@@ -127,6 +136,7 @@ No new paid API calls, scraping, outreach or automatic business creation.
 - Full `npm run lint` — still fails on pre-existing CRLF/Prettier errors in untouched files
 
 ### Known limitations / follow-ups
+
 - Production has no social leads or matches yet, so the panel still needs exercising with
   real candidates.
 - Meta live discovery remains blocked by missing production credentials/permissions.
@@ -141,6 +151,7 @@ evidence gaps from being presented as verified facts. No schema change; verifica
 evidence stays in the existing `website_check` JSONB plus the generated findings panel.
 
 ### Baseline at start of pass
+
 - `git` HEAD `85e355c`; working tree already dirty (Money truth + GARE follow-up work)
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (7 pre-existing warnings)
@@ -148,6 +159,7 @@ evidence stays in the existing `website_check` JSONB plus the generated findings
 - `npm run build` — succeeded
 
 ### Changes
+
 - **`src/lib/prospect-verification.ts`** (+ 10 tests) — derives per-channel coverage,
   verification status, evidence records, observed problems, priority reasons and
   uncertainties from stored checks only. Sources that cannot be checked remain
@@ -168,12 +180,14 @@ evidence stays in the existing `website_check` JSONB plus the generated findings
   evidence that the business is operating.
 
 ### Non-breaking design decisions
+
 - Additive module/UI only; existing website columns and discovery flow are reused.
 - Priority A now requires independent operating evidence even when the site is broken.
 - Parent-company websites are treated as ownership uncertainty, not local digital proof.
 - Paid Maps usage stays bounded and deduped; untestable sources are reported honestly.
 
 ### Known limitations / follow-ups
+
 - Directory, marketplace, social-platform and registry checks remain manual until a
   real provider is configured.
 - Free-host/domain guesses still need owner confirmation before outreach relies on them.
@@ -184,6 +198,7 @@ Adds time-series analytics, CSV/JSON export, safe duplicate merging, and the mis
 `company_events` collector. Outbound email/WhatsApp sending stays intentionally out of scope.
 
 ### Baseline at start of pass
+
 - `git` HEAD `d6ec683`; working tree clean before this pass
 - `npx tsc --noEmit` — clean
 - `npx eslint .` — 0 errors (7 pre-existing `react-refresh` warnings)
@@ -191,6 +206,7 @@ Adds time-series analytics, CSV/JSON export, safe duplicate merging, and the mis
 - `npm run build` — succeeded; regenerated `routeTree.gen.ts` for `/analytics`
 
 ### Changes
+
 - **`src/lib/analytics.ts`** (+ `analytics.test.ts`) — pure UTC Monday week bucketing; weekly leads,
   proposals, accepted and collected-cash series; all-time funnel, win rate, average deal, and
   per-currency won/pipeline/cash totals. No blended currencies.
@@ -215,6 +231,7 @@ Adds time-series analytics, CSV/JSON export, safe duplicate merging, and the mis
 - Analytics pagination now uses an `id` tie-breaker; `/analytics` added to the tracked route tree.
 
 ### Non-breaking design decisions
+
 - Additive routes, files and tables only; no schema migration is required for this phase.
 - Duplicate deletion is explicit and per-group; the owner picks the record to keep. Grouping does
   not merge generic names across different districts.
@@ -224,6 +241,7 @@ Adds time-series analytics, CSV/JSON export, safe duplicate merging, and the mis
 - Outbound email/WhatsApp/SMS sending remains skipped by user direction.
 
 ### Known limitations / follow-ups
+
 - Activity signals only refresh businesses revisited by a later discovery/Rwanda scan; there is
   no standalone scheduler yet (Phase 3).
 - Older databases without migration `0008` tables/columns degrade gracefully: scans still work,
@@ -238,6 +256,7 @@ honest buyer-intent board, and adds a referral ledger plus evidence-only partner
 candidates. No invented connections and no new pipeline.
 
 ### Baseline at start of pass
+
 - `git` HEAD `412ab13`; working tree dirty from Phases 1–4 (uncommitted)
 - `npx tsc --noEmit` — clean
 - `npx eslint .` — 0 errors (7 pre-existing `react-refresh` warnings)
@@ -245,6 +264,7 @@ candidates. No invented connections and no new pipeline.
 - `npx vite build` — succeeded
 
 ### Changes
+
 - **`src/lib/intent.ts`** (+ `intent.test.ts`) — pure Buyer Intent scorer: blends measured gaps,
   review/activity recency, activity events (reusing `activity.signalStrength`) and pipeline stage;
   returns score, tier, reasons, uncertainties and an explicit limitation. `rankByIntent`,
@@ -263,6 +283,7 @@ candidates. No invented connections and no new pipeline.
 - **`src/routes/_authenticated/referrals.tsx`** + nav — summary, partnership candidates, referral CRUD.
 
 ### Non-breaking design decisions
+
 - Additive only: no existing route, table, column or server function removed or renamed; mobile
   bottom tabs stay at five (`/intent`, `/referrals` filtered out of `MOBILE_NAV`).
 - Feature D adds **no table** (pure derivation from existing evidence); Feature H adds one ledger.
@@ -272,12 +293,14 @@ candidates. No invented connections and no new pipeline.
   gracefully when `company_events`, `revenue_leaks`, `subscriptions` or `partners` are absent.
 
 ### Verification after changes
+
 - `npx tsc --noEmit` — clean
 - `npx eslint .` — 0 errors (same 7 pre-existing warnings)
 - `npx vitest run` — 33 files / 237 tests passing (added `intent`, `referrals`)
 - `npx vite build` — succeeded (emits `intent` + `referrals` route chunks)
 
 ### Known limitations / follow-ups
+
 - Migration `0016` is applied on the Lovable platform, not from this environment.
 - `company_events` is defined but not yet populated by any collector, so external activity signals
   are currently empty; the scorer handles this honestly (fit/recency drive the score).
@@ -292,6 +315,7 @@ leak's suggested offer be turned into delivery tasks. Templates are starting poi
 the owner edits; nothing is priced or promised automatically.
 
 ### Baseline at start of pass
+
 - `git` HEAD `412ab13`; working tree dirty from Phases 1–3 (uncommitted)
 - `npx tsc --noEmit` — clean
 - `npx eslint .` — 0 errors (7 pre-existing `react-refresh` warnings)
@@ -299,9 +323,10 @@ the owner edits; nothing is priced or promised automatically.
 - `npx vite build` — succeeded
 
 ### Changes
+
 - **`src/lib/offer-kit.ts`** (+ `offer-kit.test.ts`) — pure Repeatable Offer Factory:
   `suggestKit` (category templates mirroring `service-match`'s offer rules), `problemKeysForOffer`,
-  `kitScopeSummary` (states includes *and* excludes honestly), `deliverableTaskTitle` /
+  `kitScopeSummary` (states includes _and_ excludes honestly), `deliverableTaskTitle` /
   `kitTaskKey` (stable per-business dedupe), `normalizeKit` (defensive), `resolveKit`
   (stored kit else suggested starter), `OFFER_KIT_DISCLAIMER`.
 - **Migration `0015_offer_kits.sql`** — additive owner-scoped `offer_kits` table
@@ -317,6 +342,7 @@ the owner edits; nothing is priced or promised automatically.
   **Plan delivery** action that calls `createKitTasks` for that business.
 
 ### Non-breaking design decisions
+
 - Additive only: no existing route, table, column or server function removed or renamed;
   mobile bottom tabs stay at five (`/offers` filtered out of `MOBILE_NAV`).
 - Feature E adds no pipeline: materialised delivery is ordinary `tasks`, deduped so
@@ -325,12 +351,14 @@ the owner edits; nothing is priced or promised automatically.
   offers show a "suggested starter" badge rather than presenting a template as fact.
 
 ### Verification after changes
+
 - `npx tsc --noEmit` — clean
 - `npx eslint .` — 0 errors (same 7 pre-existing warnings)
 - `npx vitest run` — 31 files / 224 tests passing (added `offer-kit`)
 - `npx vite build` — succeeded (emits `offers` route + `offer-kit.functions` chunks)
 
 ### Known limitations / follow-ups
+
 - Migration `0015` is applied on the Lovable platform, not from this environment.
 - `offer_kits.offer` links to offers by name (the catalog has no stable slug) — renaming an
   offer leaves an orphaned kit; a follow-up could reconcile by name.
@@ -345,6 +373,7 @@ pipeline (MRR is a record, not a forecast) and surfaces respectful re-approach p
 for proposals that went quiet or were rejected. Never messages anyone automatically.
 
 ### Baseline at start of pass
+
 - `git` HEAD `412ab13`; working tree dirty from Phases 1–2 (uncommitted)
 - `npx tsc --noEmit` — clean
 - `npx eslint .` — 0 errors (7 pre-existing `react-refresh` warnings)
@@ -352,6 +381,7 @@ for proposals that went quiet or were rejected. Never messages anyone automatica
 - `npx vite build` — succeeded
 
 ### Changes
+
 - **`src/lib/recurring.ts`** (+ `recurring.test.ts`) — pure model: `recurringSnapshot`
   (active MRR/ARR; proposed/paused/churned value tracked separately and never added to MRR;
   `mixedCurrency` flag), `churnRate` (null until a decided subscription exists, never a fake
@@ -376,6 +406,7 @@ for proposals that went quiet or were rejected. Never messages anyone automatica
   recommended approach, "Open lead" and "Create follow-up task".
 
 ### Non-breaking design decisions
+
 - Additive only: no existing route, table, column or server function removed or renamed;
   mobile bottom tabs stay at five (`/leaks`, `/partners`, `/revenue`, `/recovery` filtered
   out of `MOBILE_NAV`).
@@ -385,12 +416,14 @@ for proposals that went quiet or were rejected. Never messages anyone automatica
 - Both pages degrade gracefully when migrations 0012/0014 are not yet applied.
 
 ### Verification after changes
+
 - `npx tsc --noEmit` — clean
 - `npx eslint .` — 0 errors (same 7 pre-existing warnings)
 - `npx vitest run` — 30 files / 212 tests passing (added `recurring`, `recovery`)
 - `npx vite build` — succeeded (emits `revenue` + `recovery` route chunks)
 
 ### Known limitations / follow-ups
+
 - Migrations `0012`–`0014` are applied on the Lovable platform, not from this environment.
 - Subscription `business_id` is entered as a uuid (no business picker yet) — follow-up.
 - Recovery windows are fixed constants (`staleDays:14`, `recentLostDays:30`); making them
@@ -403,6 +436,7 @@ Phase 2 of the Revenue Growth Engine plan. Routes work the owner cannot deliver
 alone to partners the owner recorded; never contacts anyone automatically.
 
 ### Baseline at start of pass
+
 - `git` HEAD `412ab13`; working tree clean; `main == origin/main`
 - `npx tsc --noEmit` — clean
 - `npx eslint .` — 0 errors (7 pre-existing `react-refresh` warnings)
@@ -410,6 +444,7 @@ alone to partners the owner recorded; never contacts anyone automatically.
 - `npx vite build` — succeeded
 
 ### Changes
+
 - **`src/lib/partners.ts`** (+ `partners.test.ts`) — pure Agency Overflow Work Finder:
   `detectOverflow` (capacity / skills / manual) reusing `feasibility.computeCapacity`; keyword
   `serviceOverlap`; `matchPartners` scores active partners on service overlap, industry, region and
@@ -430,6 +465,7 @@ alone to partners the owner recorded; never contacts anyone automatically.
   separated delivery-value / owner-cut totals.
 
 ### Non-breaking design decisions
+
 - Additive only: no existing route, table, column or server function removed or renamed; mobile
   bottom tabs keep their original five (`/leaks` and `/partners` are filtered out of `MOBILE_NAV`).
 - Partner matching never invents reputation/capability: unknown dimensions stay neutral and are
@@ -438,12 +474,14 @@ alone to partners the owner recorded; never contacts anyone automatically.
   no profit is claimed. UI degrades gracefully when migration 0013 is not applied.
 
 ### Verification after changes
+
 - `npx tsc --noEmit` — clean
 - `npx eslint .` — 0 errors (same 7 pre-existing warnings)
 - `npx vitest run` — 28 files / 196 tests passing (added `partners`)
 - `npx vite build` — succeeded (emits `partners` route + `partners.functions` chunks)
 
 ### Known limitations / follow-ups
+
 - Migration `0013` is applied on the Lovable platform, not from this environment.
 - Handoff values are set at creation; editing money on an existing handoff is a follow-up.
 - Phases 3–5 (C+G, E, D+H) remain per `docs/GARE_IMPLEMENTATION_PLAN.md`.
@@ -454,6 +492,7 @@ Start of the "GARE Revenue Growth Engine" work. Phase 1 of the phased plan; audi
 matrix recorded in `docs/GARE_FEATURE_AUDIT.md` (Addendum 2026-10-14).
 
 ### Baseline at start of pass
+
 - `git` HEAD `412ab13`; working tree clean; `main == origin/main`
 - `npx tsc --noEmit` — clean
 - `npx eslint .` — 0 errors (7 pre-existing `react-refresh` warnings)
@@ -461,6 +500,7 @@ matrix recorded in `docs/GARE_FEATURE_AUDIT.md` (Addendum 2026-10-14).
 - `npx vite build` — succeeded
 
 ### Changes
+
 - **`src/lib/feasibility.ts`** (+ `feasibility.test.ts`) — pure Profit & Delivery
   Feasibility Engine: `computeFeasibility` returns best/base/worst scenarios (explicit
   spread, not a forecast), base/best/worst net contribution, margin, profit-per-hour,
@@ -494,6 +534,7 @@ matrix recorded in `docs/GARE_FEATURE_AUDIT.md` (Addendum 2026-10-14).
   (`/leaks` filtered out of `MOBILE_NAV`).
 
 ### Non-breaking design decisions
+
 - Additive only: no existing route, table, column, offer or server function was removed or
   renamed. The lease detector reuses the tested `business-intel` / `service-match` problem
   derivation, so no new matching rules were introduced.
@@ -503,12 +544,14 @@ matrix recorded in `docs/GARE_FEATURE_AUDIT.md` (Addendum 2026-10-14).
   probability is never invented; leak text never asserts an amount lost.
 
 ### Verification after changes
+
 - `npx tsc --noEmit` — clean
 - `npx eslint .` — 0 errors (same 7 pre-existing warnings)
 - `npx vitest run` — 27 files / 183 tests passing (added `feasibility`, `revenue-leaks`)
 - `npx vite build` — succeeded (emits `leaks` route chunk)
 
 ### Known limitations / follow-ups
+
 - Migration `0012` is applied on the Lovable platform, not from this environment. Until
   applied, `/leaks` shows the empty state; "Refresh leaks" reports the migration hint.
 - Feasibility `winProbability` and explicit effort/revenue ranges are supported by the
@@ -518,6 +561,7 @@ matrix recorded in `docs/GARE_FEATURE_AUDIT.md` (Addendum 2026-10-14).
 ## 2026-10-12 — Post-investigation business report modal
 
 ### What changed
+
 - **`src/lib/business-intel.ts`** (new, pure + tested) — `deriveObservedProblems` turns a business +
   its stored website-probe findings + the double-checked "no website" state into explicit
   `ObservedProblem`s (no invented facts); `recommendServices` matches the owner's ACTIVE offers against
@@ -540,12 +584,14 @@ matrix recorded in `docs/GARE_FEATURE_AUDIT.md` (Addendum 2026-10-14).
   and any investigation error, and the whole modal is reachable before an investigation exists.
 
 ### Verification after changes
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (same 7 pre-existing warnings)
 - `npm test` — 22 files / 128 tests passing (added `business-intel`)
 - `npm run build` — succeeded
 
 ### Non-breaking design decisions
+
 - Additive only: the inline report, outreach panel and Proposal Studio are untouched; the modal is an
   extra view over the same data.
 - The modal reads the same React Query cache keys as the page, so opening it costs no extra fetches.
@@ -554,6 +600,7 @@ matrix recorded in `docs/GARE_FEATURE_AUDIT.md` (Addendum 2026-10-14).
 ## 2026-10-12 — AI multi-channel outreach pack (Email / WhatsApp / SMS)
 
 ### What changed
+
 - **`src/lib/proposals.server.ts`** — extracted `loadProposalContext` (business + latest
   investigation + pricing floor + recent context) shared by both generators. `createProposal` is
   unchanged in behaviour and now uses it. Added `createOutreachPack`: one AI call produces 3 Email +
@@ -578,12 +625,14 @@ matrix recorded in `docs/GARE_FEATURE_AUDIT.md` (Addendum 2026-10-14).
   is written after each investigation.
 
 ### Verification after changes
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (same 7 pre-existing warnings)
 - `npm test` — 21 files / 114 tests passing (added `outreach-pack`)
 - `npm run build` — succeeded
 
 ### Non-breaking design decisions
+
 - The pack reuses the `proposals` table, so the existing copy/version/send/outcome workflow is unchanged.
 - The pack `mode` marker is exclusive to the pack, so regeneration can safely replace only its own drafts.
 - `createProposal` and the manual Proposal Studio are untouched.
@@ -591,12 +640,14 @@ matrix recorded in `docs/GARE_FEATURE_AUDIT.md` (Addendum 2026-10-14).
 ## 2026-10-12 — Activity signals, pricing floors, Settings, Tasks, Dashboard
 
 ### Baseline at start of pass
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — clean (see note below)
 - `npm test` — 1 file / 1 test passing
 - `npm run build` — succeeded
 
 ### Changes
+
 - **Migration 0003** adds activity columns to `businesses` (additive, nullable / defaulted).
 - **Places intake** now also requests reviews and hours, and derives `last_activity_at`,
   `reviews_last_90d`, `open_now`, `opening_hours`. If Google rejects the extra fields, the
@@ -616,6 +667,7 @@ matrix recorded in `docs/GARE_FEATURE_AUDIT.md` (Addendum 2026-10-14).
   `@typescript-eslint/no-explicit-any` errors were replaced with real types.
 
 ### Non-breaking design decisions
+
 - Every new column is nullable or has a default, so existing rows remain valid.
 - The discovery layer degrades gracefully when the new columns or the extra Places fields
   are unavailable.
@@ -624,6 +676,7 @@ matrix recorded in `docs/GARE_FEATURE_AUDIT.md` (Addendum 2026-10-14).
   bottom bar intentionally stays at five tabs.
 
 ### Verification after changes
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (7 pre-existing `react-refresh/only-export-components` warnings
   in shadcn UI files and `theme.tsx`; warnings do not fail the lint command)
@@ -632,6 +685,7 @@ matrix recorded in `docs/GARE_FEATURE_AUDIT.md` (Addendum 2026-10-14).
 - Route smoke test while the dev server was running: `/dashboard` and `/settings` both HTTP 200
 
 ### Lint note
+
 The repository is checked out with `core.autocrlf=true`, so every file is CRLF while Prettier
 defaulted to LF. That produced thousands of line-ending-only errors unrelated to this work.
 `.prettierrc` now uses `endOfLine: "auto"` so the file's existing line endings are preserved,
@@ -640,12 +694,14 @@ which removed the noise without reformatting (and without creating a huge, misle
 ## 2026-10-12 — Manual outreach log per proposal
 
 ### Baseline at start of pass
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (7 pre-existing `react-refresh/only-export-components` warnings)
 - `npm test` — 3 files / 11 tests passing
 - `npm run build` — succeeded
 
 ### Changes
+
 - **`src/lib/outreach.ts`** — pure helpers: `OUTREACH_CHANNELS`, `outreachSummary`,
   `readOutreachDetails` (defensive jsonb reader), `nowLocalInput` (datetime-local value).
 - **Proposal detail (`/proposals/$id`)** — replaced the `window.prompt` "Record as sent" flow
@@ -656,6 +712,7 @@ which removed the noise without reformatting (and without creating a huge, misle
   outreach history inline.
 
 ### Non-breaking design decisions
+
 - Uses only existing tables/columns (`proposals`, `business_activity_events`, `tasks`) — no
   migration, so the feature is fully live on the current database.
 - The new `proposal_outreach` event type is additive; the previous `proposal_sent` events are
@@ -664,6 +721,7 @@ which removed the noise without reformatting (and without creating a huge, misle
   tolerates missing/foreign shapes and never throws.
 
 ### Verification after changes
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (same 7 pre-existing warnings)
 - `npm test` — 4 files / 16 tests passing (added `src/lib/outreach.test.ts`)
@@ -672,12 +730,14 @@ which removed the noise without reformatting (and without creating a huge, misle
 ## 2026-10-12 — Offer catalog CRUD (P1) + generated-file cleanup
 
 ### Baseline at start of pass
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (7 pre-existing `react-refresh` warnings)
 - `npm test` — 2 files / 7 tests passing
 - `npm run build` — succeeded
 
 ### Cleanup before the feature
+
 - The Supabase integration files (`src/integrations/supabase/{auth-attacher,auth-middleware,client,client.server,cron-auth,previewAuthStorage,types}.ts`)
   are marked "automatically generated"; Prettier/`eslint --fix` had reflowed them into needless
   churn. They were reverted and added to both `.prettierignore` and the ESLint `ignores` list.
@@ -685,9 +745,10 @@ which removed the noise without reformatting (and without creating a huge, misle
   re-applied, cutting the diff to +18 lines.
 
 ### Changes
+
 - **Migration `0004_offers_catalog.sql`** adds an owner-scoped `offers` table
   (`id, owner_id, name, default_price, currency, deliverables, notes, active, position,
-  created_at, updated_at`) with RLS `owner_id = auth.uid()`, grants, and a `(owner_id, position)`
+created_at, updated_at`) with RLS `owner_id = auth.uid()`, grants, and a `(owner_id, position)`
   index. Additive only — no existing table touched.
 - **`src/lib/offers.ts`** — pure, dependency-free catalog helpers (`Offer`, `DEFAULT_OFFERS`
   seeded from the historical `OFFER_LIST`, `sortOffers`, `activeOfferNames`, `offerNamesForFloors`).
@@ -701,6 +762,7 @@ which removed the noise without reformatting (and without creating a huge, misle
   falling back to the built-in list if the catalog is empty.
 
 ### Non-breaking design decisions
+
 - The static `OFFER_LIST` / `DEFAULT_OFFERS` seed keeps every proposal path working even before
   migration `0004` is applied, so nothing is blocked on the database.
 - `useOffers()` swallows only the "table missing" read error (returns defaults); genuine errors
@@ -708,12 +770,14 @@ which removed the noise without reformatting (and without creating a huge, misle
 - No existing table, route, column or server function was removed or renamed.
 
 ### Verification after changes
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (same 7 pre-existing `react-refresh/only-export-components` warnings)
 - `npm test` — 3 files / 11 tests passing (added `src/lib/offers.test.ts`)
 - `npm run build` — succeeded
 
 ### Known limitation
+
 Migration `0004` cannot be applied from this environment (no service-role key; Lovable-only
 migration URL). Until it is applied, the catalog UI shows built-in defaults read-only and states
 this in the banner. See `docs/GARE_DB_RUNBOOK.md`.
@@ -721,12 +785,14 @@ this in the banner. See `docs/GARE_DB_RUNBOOK.md`.
 ## 2026-10-12 — Channel-aware drafting + proposal outcomes / win rate
 
 ### Baseline at start of pass
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (7 pre-existing `react-refresh` warnings)
 - `npm test` — 4 files / 16 tests passing
 - `npm run build` — succeeded
 
 ### Changes
+
 - **Copy-paste channels (`src/lib/channels.ts`)** — canonical channel list (Email, WhatsApp,
   SMS, LinkedIn, Instagram DM, Facebook Messenger, Phone call script, Formal document) with
   per-channel format rules, fed into drafting so the AI output is ready to paste as-is.
@@ -742,6 +808,7 @@ this in the banner. See `docs/GARE_DB_RUNBOOK.md`.
 - **Dashboard** — new "Win rate" card (won · lost · in progress).
 
 ### Non-breaking design decisions
+
 - Channels are plain strings; unknown/legacy channels still work via a generic fallback
   guidance, so existing proposals and the outreach log are unaffected.
 - No schema change or migration: the outcome reuses `proposals.outcome` and `proposals.status`.
@@ -749,6 +816,7 @@ this in the banner. See `docs/GARE_DB_RUNBOOK.md`.
   misleading 0%.
 
 ### Verification after changes
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (same 7 pre-existing warnings)
 - `npm test` — 6 files / 23 tests passing (added `channels.test.ts`, `outcomes.test.ts`)
@@ -757,12 +825,14 @@ this in the banner. See `docs/GARE_DB_RUNBOOK.md`.
 ## 2026-10-12 — Orders + delivery + CSV exports
 
 ### Baseline at start of pass
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (7 pre-existing warnings)
 - `npm test` — 36 tests passing
 - `npm run build` — succeeded
 
 ### Changes
+
 - **Orders (migration `0006_orders_delivery.sql`)** — owner-scoped `orders` table + Orders page
   (create from proposal/invoice, delivery checklist, status transitions, mark fulfilled), hooks
   and pure helpers (`src/lib/orders.ts`) with tests.
@@ -771,6 +841,7 @@ this in the banner. See `docs/GARE_DB_RUNBOOK.md`.
 - **Quick links** — proposal detail has "Create invoice" / "Create order".
 
 ### Verification after changes
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (same 7 pre-existing warnings)
 - `npm test` — 46 tests passing
@@ -779,12 +850,14 @@ this in the banner. See `docs/GARE_DB_RUNBOOK.md`.
 ## 2026-10-12 — Opportunity intelligence foundations + validation planner
 
 ### Baseline at start of pass
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (7 pre-existing warnings)
 - `npm test` — 46 tests passing
 - `npm run build` — succeeded
 
 ### Changes
+
 - **Evidence integrity (`src/lib/evidence.ts`)** — `freshnessDays`, `isStale`,
   `normalizeConfidence` (pure + tested).
 - **Source registry (`src/lib/sources.ts`)** — `Source` type + `scanHealth()` (pure + tested).
@@ -802,6 +875,7 @@ this in the banner. See `docs/GARE_DB_RUNBOOK.md`.
   adds the nullable column.
 
 ### Non-breaking design decisions
+
 - `0007` adds one nullable jsonb column; reading is safe before it is applied, and saving shows
   the migration hint instead of failing hard.
 - Ranking is NOT surfaced with invented numbers: the app has no owner skills/budget profile, so
@@ -810,6 +884,7 @@ this in the banner. See `docs/GARE_DB_RUNBOOK.md`.
 - Every new pure module has unit tests; no route/table/column removed or renamed.
 
 ### Verification after changes
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (same 7 pre-existing warnings)
 - `npm test` — 47 tests passing
@@ -820,6 +895,7 @@ this in the banner. See `docs/GARE_DB_RUNBOOK.md`.
 Spec: `docs/GARE_RWANDA_INTELLIGENCE_SPEC.md`. Plan + audit: `docs/GARE_RWANDA_PLAN.md`.
 
 ### Baseline at start of pass
+
 - `npx tsc --noEmit` — 2 errors, both in the untracked WIP `src/routes/_authenticated/businesses.tsx`
   (array-of-arrays passed to `rowsToCsv`). Committed code clean.
 - `npm run lint` — 18 errors, all Prettier, all in the untracked `businesses.tsx`; 7 pre-existing
@@ -828,6 +904,7 @@ Spec: `docs/GARE_RWANDA_INTELLIGENCE_SPEC.md`. Plan + audit: `docs/GARE_RWANDA_P
 - `npm run build` — succeeded.
 
 ### Changes
+
 - **`src/lib/rwanda.ts`** — Rwanda taxonomy: 5 provinces / 30 districts, province + Kinyarwanda
   aliases, 14 industry categories, `classifyIndustry`, `normalizeDistrict/Province`,
   `provinceOfDistrict`, `parseLocation` (never guesses), `matchesLocation` (pure + tested).
@@ -852,6 +929,7 @@ Spec: `docs/GARE_RWANDA_INTELLIGENCE_SPEC.md`. Plan + audit: `docs/GARE_RWANDA_P
   current database before `0008` is applied.
 
 ### Non-breaking design decisions
+
 - Migration `0008` is entirely additive (nullable/defaulted columns, new tables only). No existing
   table, column, route or server function was removed or renamed.
 - All new libraries are pure and dependency-free, matching the repo's existing
@@ -862,6 +940,7 @@ Spec: `docs/GARE_RWANDA_INTELLIGENCE_SPEC.md`. Plan + audit: `docs/GARE_RWANDA_P
   migration is not applied; enrichment that writes those columns is Phase 2+.
 
 ### Verification after changes
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (same 7 pre-existing `react-refresh/only-export-components` warnings)
 - `npm test` — 17 files / 71 tests passing (added `rwanda`, `company-identity`, `provenance`,
@@ -869,10 +948,12 @@ Spec: `docs/GARE_RWANDA_INTELLIGENCE_SPEC.md`. Plan + audit: `docs/GARE_RWANDA_P
 - `npm run build` — succeeded
 
 ### Preserved uncommitted user changes
+
 - `src/routes/_authenticated/businesses.tsx` was completed rather than discarded; the nav entry in
   `route.tsx` and generated `routeTree.gen.ts` are untouched in intent.
 
 ### Known limitations / follow-ups
+
 - `drizzle/migrations/0006_orders_delivery.sql` still contains leftover merge-conflict markers
   (pre-existing, committed, already-applied migration — left untouched intentionally). Follow-up.
 - Migration `0008` cannot be applied from this environment (no service-role/migration URL); it is
@@ -886,12 +967,14 @@ User-selected scope for Phase 2: reuse the existing Maps connector only (no new 
 external access), with strict cost bounds and durable scan records.
 
 ### Baseline before changes
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (7 pre-existing `react-refresh` warnings)
 - `npm test` — 17 files / 71 tests passing
 - `npm run build` — succeeded
 
 ### Changes
+
 - **`src/lib/rwanda-scan.ts`** (+ `rwanda-scan.test.ts`) — pure scan planner / cost controller:
   industry → search terms, scope (national / provinces / districts) → plan, hard caps
   `MAX_RESULTS_PER_QUERY = 20`, `MAX_QUERIES_PER_RUN = 10`, `COST_PER_QUERY_USD = 0.032`, and
@@ -908,6 +991,7 @@ external access), with strict cost bounds and durable scan records.
   button, and result summary.
 
 ### Non-breaking design decisions
+
 - Scan cost is bounded in the pure planner before any paid call, and previewed in the UI before
   running (spec §10).
 - New businesses still insert with existing columns; `0008` enrichment columns are written only
@@ -915,24 +999,28 @@ external access), with strict cost bounds and durable scan records.
 - No new external source access; other registry sources remain pending/blocked with reasons.
 
 ### Verification after changes
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (same 7 pre-existing warnings)
 - `npm test` — 18 files / 77 tests passing (added `rwanda-scan` test file)
 - `npm run build` — succeeded
 
 ### Known limitations / follow-ups
+
 - Live Maps calls cannot be exercised here (no `LOVABLE_API_KEY` / `GOOGLE_MAPS_API_KEY`).
 - `source_scans` / `business_*` writes require migration `0008` to be applied (Lovable platform).
 
 ## 2026-10-12 — Phase 3/4 pure libraries: activity signals + service matching
 
 ### Baseline before changes
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (7 pre-existing warnings)
 - `npm test` — 18 files / 77 tests passing
 - `npm run build` — succeeded
 
 ### Changes
+
 - **`src/lib/activity.ts`** (+ `activity.test.ts`) — company activity/hiring monitoring per spec §6:
   explicit statuses (`active`/`closed`/`expired`/`removed`/`unverified`/`unknown`), activity kinds,
   `isGenuinelyNew` / `classifyDiscovery` (distinguishes a newly discovered OLD listing from a real new
@@ -948,6 +1036,7 @@ external access), with strict cost bounds and durable scan records.
   `rwanda.ts` (industry labels).
 
 ### Non-breaking design decisions
+
 - New libraries are pure and dependency-free, matching the repo's `src/lib/*.ts` + `.test.ts` pattern.
 - `signalStrength` and service-match confidence deliberately stay conservative and never assert a
   company need or a verified buyer.
@@ -958,6 +1047,7 @@ external access), with strict cost bounds and durable scan records.
   reuses the existing `report`/findings data, so nothing is fabricated and no extra scan is needed.
 
 ### UI wiring (revised — feature kept on its OWN page)
+
 - **DECISION:** the Rwanda intelligence must live on a dedicated page, not injected into the
   existing Discover flow or the `businesses.$id` detail page. `discover.tsx` and `businesses.$id.tsx`
   were reverted to their committed state (the detail page's "Run investigation" button at
@@ -977,24 +1067,28 @@ external access), with strict cost bounds and durable scan records.
   could not be recovered from git.)
 
 ### Verification after changes
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (same 7 pre-existing warnings)
 - `npm test` — 20 files / 108 tests passing (added `activity`, `service-match`, ranking §8 tests)
 - `npm run build` — succeeded
 
 ### Open follow-ups
+
 - Wire `activity.ts` into list-level filters / activity signals panel (library is ready + tested).
 - Phase 5: pipeline/proposal integration + cost budgets.
 
 ## 2026-10-12 — Phase 4 ranking: extended §8 opportunity model
 
 ### Baseline before changes
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (7 pre-existing warnings)
 - `npm test` — 20 files / 99 tests passing
 - `npm run build` — succeeded
 
 ### Changes
+
 - **`src/lib/ranking.ts`** — added an extended Rwanda ranking model without touching the existing
   `rankScore`/`explainRank`/`Opportunity`/`Weights` API:
   - `ExtraFactors` + `RankedOpportunity` — optional `signal_strength`, `affordability`,
@@ -1010,12 +1104,14 @@ external access), with strict cost bounds and durable scan records.
   - Deliberately excludes size/fame/hiring from scoring per spec §8.
 
 ### Non-breaking design decisions
+
 - The original ranking API is unchanged; the extended model is additive and opt-in.
 - Priority and factual confidence are separate outputs, so a high-priority lead with weak evidence is
   visibly flagged rather than hidden.
 - Preferences adjust weights, not evidence, to avoid preference-driven false precision.
 
 ### Verification after changes
+
 - `npx tsc --noEmit` — clean
 - `npm run lint` — 0 errors (same 7 pre-existing warnings)
 - `npm test` — 20 files / 108 tests passing (ranking §8 tests added)
@@ -1024,11 +1120,13 @@ external access), with strict cost bounds and durable scan records.
 ## 2026-11-05 - Phase 7: evidence-backed solution builder and maintenance
 
 ### Baseline before changes
+
 - `npx tsc --noEmit` - clean
 - `npm test` - 47 files / 353 tests passing (prior Phase 6 baseline)
 - `npm run build` - succeeded before Phase 7 changes
 
 ### Changes
+
 - **`src/lib/solution-builder.ts`** (+ 23 tests) - pure recommendation engine for new website,
   website repair, ordering, booking, custom system and maintenance. It stores verified facts,
   evidence-backed findings and hypotheses separately, builds grouped requirements and acceptance
@@ -1067,6 +1165,7 @@ external access), with strict cost bounds and durable scan records.
   `docs/GARE_SOLUTION_BUILDER_IMPLEMENTATION.md`.
 
 ### Non-breaking design decisions
+
 - Recommendations and prompt validation are deterministic and pure; AI is used only to write
   prompt prose from the stored evidence package.
 - New website recommendations require a double-checked `none_found` website state. Repair
@@ -1081,6 +1180,7 @@ external access), with strict cost bounds and durable scan records.
   proposals, tasks and reports are not rewritten.
 
 ### Verification after changes
+
 - `npx tsc --noEmit` - clean
 - Targeted ESLint on all changed/new TypeScript files - clean
 - Targeted Prettier check - clean
@@ -1088,6 +1188,7 @@ external access), with strict cost bounds and durable scan records.
 - `npm run build` - succeeded and generated the `/maintenance` route
 
 ### Known limitations / follow-ups
+
 - Full repository lint still reports pre-existing CRLF/Prettier issues in untouched files.
 - Production schema, deployment and route/assets are verified. An owner-authenticated interaction
   smoke test for building recommendations and generating prompts remains.
@@ -1098,12 +1199,14 @@ external access), with strict cost bounds and durable scan records.
 ## 2026-11-05 - AI provider fallback hardening
 
 ### Problem
+
 - Investigate failed when `gemini-3.5-flash-lite` returned 503 during a demand spike, OpenAI
   had no production key, and Lovable credits were exhausted.
 - Gemini only had two hard-coded models, so a spike on both failed the whole request. The final
   error also implied the Gemini key was missing even when it was configured.
 
 ### Changes
+
 - **`src/lib/ai.server.ts`** - Gemini now tries a de-duplicated chain: configured `GEMINI_MODEL`
   values (comma-separated supported), then `gemini-3.5-flash`, `gemini-3.1-flash-lite`,
   `gemini-2.5-flash` and `gemini-flash-lite-latest`. Each model gets one short transient retry.
@@ -1113,6 +1216,7 @@ external access), with strict cost bounds and durable scan records.
   enough.
 
 ### Verified providers
+
 - Local `GEMINI_API_KEY` is present and a real structured `callResponsesJSON` call succeeded through
   Gemini in 21.6 seconds.
 - Direct Gemini calls succeeded on `gemini-3.5-flash`, `gemini-3.1-flash-lite`,
@@ -1122,18 +1226,80 @@ external access), with strict cost bounds and durable scan records.
   production would not provide a working fallback until OpenAI billing/credits are added.
 
 ### Verification
+
 - `npx tsc --noEmit` - clean
 - Targeted ESLint and Prettier - clean
 - `npm test -- --run` - 48 files / 376 tests passing
 - `npm run build` - succeeded
 
 ### Deployment note
+
 - Production still depends on Gemini because Lovable credits are exhausted and the local OpenAI key
   has no quota. To restore a second live provider, add OpenAI billing/credits or top up Lovable, then
   set/verify `OPENAI_API_KEY` in Lovable project environment variables.
+
+## 2026-11-06 — Solution Builder intent and website-generation upgrade
+
+### Problem
+
+- The Google AI Studio prompt for a construction-materials business became an AI copy-auditing
+  application instead of the requested customer-facing website.
+- Prompt prose depended on an AI provider, so quota or model behaviour could change the product
+  scope of the generated brief.
+- Recommendations did not record the requested intent or deliverable, so repair/improve/general
+  work could be briefed as a new website.
+
+### Changes
+
+- **`src/lib/solution-builder.ts`** — added `SOLUTION_INTENTS`, requested deliverables,
+  deterministic classification, explicit client-request priority, ambiguity rejection, and
+  intent/deliverable fields on recommendation drafts. Prompt validation now checks A-L website
+  structure, scope alignment and website/product drift.
+- **`src/lib/solution-prompts.ts`** — new deterministic prompt builder for OpenCode, Lovable,
+  Google AI Studio and developer specifications. Website deliverables use the A-L brief; analysis,
+  maintenance, automation and internal systems use the general brief.
+- **`src/lib/solution.server.ts`** — prompt generation no longer calls AI. It classifies and
+  persists intent/deliverable, validates the full set before insert, and never replaces previous
+  valid versions with a failed set. Prompt metadata uses `solution-prompt-v2`.
+- **`src/lib/solution.functions.ts`**, **`src/components/SolutionBuilderPanel.tsx`**,
+  **`src/components/BusinessIntelModal.tsx`** — optional client request input, intent/deliverable
+  badges, assumptions/missing information display, and provider selection removed.
+- **`supabase/migrations/20261108000000_solution_intent.sql`** and
+  **`drizzle/migrations/0030_solution_intent.sql`** — additive `intent` and
+  `requested_deliverable` columns with defaults, checks and backfill.
+- **`src/integrations/supabase/types.ts`** — new recommendation columns.
+- **`src/lib/solution-builder.test.ts`** — added building-materials, explicit-request, repair,
+  improve, analyze, automate, maintain, ambiguity, drift and missing-information tests.
+
+### Non-breaking design decisions
+
+- All schema changes are additive; existing recommendation, prompt, maintenance, investigation and
+  opportunity rows are preserved.
+- Prompt generation is local template assembly: no AI call, provider credits or Maps request.
+- A client request overrides recommendation-derived intent, but ambiguous requests are rejected
+  rather than guessed.
+- Validation is all-or-nothing for a new prompt set; prior valid versions remain available.
+- AI remains in the investigation layer for interpreting collected evidence.
+
+### Verification after changes
+
+- `npx tsc --noEmit` — clean
+- Targeted ESLint — clean
+- Prettier on changed TypeScript and Markdown files — clean
+- `npm test -- --run` — 48 files / 386 tests passing, including 33 solution-builder tests
+- `npm run build` — succeeded; generated `solution-builder-BDVkzNZf.js` and
+  `BusinessIntelModal-4_wITYg1.js`
+- Production intent migration — applied and verified: both columns are non-null with defaults and
+  both enum checks exist
+- Public production root and `/maintenance` — pending deployment verification
+
+### Known limitations / follow-ups
+
+- Full repository lint still reports pre-existing CRLF/Prettier issues in untouched files.
+- The production migration and deployed application remain to be verified.
+- An owner-authenticated UI smoke test still requires a production session.
 
 ## How to use this log
 
 Add a dated section for each change set with: the baseline results, the changes, any
 non-breaking design decisions, and the results of the four verification commands.
-

@@ -399,11 +399,7 @@ export function BusinessIntelModal({
         </Section>
 
         {business.id && (
-          <SolutionBuilderPanel
-            businessId={business.id}
-            hasInvestigation={!!investigation}
-            provider={provider}
-          />
+          <SolutionBuilderPanel businessId={business.id} hasInvestigation={!!investigation} />
         )}
 
         {/* Outreach messages (renders its own titled section). */}

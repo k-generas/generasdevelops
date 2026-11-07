@@ -2150,10 +2150,12 @@ export type Database = {
           evidence: Json
           hypothesis: boolean
           id: string
+          intent: string
           investigation_id: string | null
           maintenance_required: boolean
           opportunity_id: string | null
           owner_id: string
+          requested_deliverable: string
           requirements: Json
           solution_type: string
           source: string
@@ -2174,10 +2176,12 @@ export type Database = {
           evidence?: Json
           hypothesis?: boolean
           id?: string
+          intent?: string
           investigation_id?: string | null
           maintenance_required?: boolean
           opportunity_id?: string | null
           owner_id?: string
+          requested_deliverable?: string
           requirements?: Json
           solution_type: string
           source?: string
@@ -2198,10 +2202,12 @@ export type Database = {
           evidence?: Json
           hypothesis?: boolean
           id?: string
+          intent?: string
           investigation_id?: string | null
           maintenance_required?: boolean
           opportunity_id?: string | null
           owner_id?: string
+          requested_deliverable?: string
           requirements?: Json
           solution_type?: string
           source?: string

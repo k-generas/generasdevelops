@@ -30,6 +30,235 @@ export const SOLUTION_TYPE_LABELS: Record<SolutionType, string> = {
   other: "Other supported digital solution",
 };
 
+export const SOLUTION_INTENTS = [
+  "CREATE",
+  "REPAIR",
+  "IMPROVE",
+  "MAINTAIN",
+  "ANALYZE",
+  "AUTOMATE",
+] as const;
+
+export type SolutionIntent = (typeof SOLUTION_INTENTS)[number];
+
+export const SOLUTION_INTENT_LABELS: Record<SolutionIntent, string> = {
+  CREATE: "Create",
+  REPAIR: "Repair",
+  IMPROVE: "Improve",
+  MAINTAIN: "Maintain",
+  ANALYZE: "Analyze",
+  AUTOMATE: "Automate",
+};
+
+export const REQUESTED_DELIVERABLES = [
+  "business_website",
+  "online_ordering_website",
+  "booking_website",
+  "website_repair",
+  "website_maintenance",
+  "business_system",
+  "automation",
+  "analysis",
+] as const;
+
+export type RequestedDeliverable = (typeof REQUESTED_DELIVERABLES)[number];
+
+export const REQUESTED_DELIVERABLE_LABELS: Record<RequestedDeliverable, string> = {
+  business_website: "Customer-facing business website",
+  online_ordering_website: "Online catalogue and ordering website",
+  booking_website: "Service booking website",
+  website_repair: "Repair of the existing website",
+  website_maintenance: "Website maintenance plan",
+  business_system: "Internal business management system",
+  automation: "Business automation workflow",
+  analysis: "Analysis and scoping deliverable",
+};
+
+const WEBSITE_DELIVERABLES: RequestedDeliverable[] = [
+  "business_website",
+  "online_ordering_website",
+  "booking_website",
+  "website_repair",
+];
+
+export function isWebsiteDeliverable(deliverable: RequestedDeliverable): boolean {
+  return WEBSITE_DELIVERABLES.includes(deliverable);
+}
+
+export type SolutionClassification = {
+  intent: SolutionIntent;
+  requested_deliverable: RequestedDeliverable;
+  ambiguous: boolean;
+  clarification: string | null;
+};
+
+const WEBSITE_TERMS =
+  /(website|web site|webpage|web page|landing page|web app|online store|online shop|e-?commerce|booking site|catalogue site|catalog site|online presence)/i;
+const REPAIR_TERMS = /\b(repair|fix|broken|not working|offline|down|error|slow|bug)\b/i;
+const MAINTAIN_TERMS =
+  /\b(maintain|maintenance|keep .{0,30}(updated|secure|running)|backup|monitor|security update|ongoing support)\b/i;
+const IMPROVE_TERMS = /\b(improve|upgrade|enhance|redesign|moderni[sz]e|optimi[sz]e|add|extend)\b/i;
+const ANALYZE_TERMS =
+  /\b(audit|assess|analysis|analy[sz]e|research|review|report|recommend|strategy|competitor)\b/i;
+const AUTOMATE_TERMS =
+  /\b(automat|workflow|reminder|follow[- ]?up|integration|internal tool|management system|crm|erp)\b/i;
+const CREATE_TERMS = /\b(create|build|launch|design|develop|make|set up|new)\b/i;
+const SYSTEM_TERMS =
+  /\b(dashboard|internal tool|management system|crm|erp|portal|admin panel|database|reporting system)\b/i;
+const AMBIGUOUS_TERMS =
+  /\b(not sure|unsure|clarify|whatever|anything|some kind|maybe|decide for me)\b/i;
+
+function websiteDeliverable(text: string): RequestedDeliverable {
+  if (/\b(order|ordering|shop|store|e-?commerce|cart|checkout|catalogue|catalog)\b/i.test(text)) {
+    return "online_ordering_website";
+  }
+  if (/\b(book|booking|appointment|appointments|reservation|schedule)\b/i.test(text)) {
+    return "booking_website";
+  }
+  return "business_website";
+}
+
+export function defaultSolutionClassification(
+  solutionType: SolutionType,
+  hasWebsite = false,
+): SolutionClassification {
+  const base = {
+    ambiguous: false,
+    clarification: null,
+  } satisfies Pick<SolutionClassification, "ambiguous" | "clarification">;
+  if (solutionType === "website_new") {
+    return { ...base, intent: "CREATE", requested_deliverable: "business_website" };
+  }
+  if (solutionType === "ordering_ecommerce") {
+    return {
+      ...base,
+      intent: hasWebsite ? "IMPROVE" : "CREATE",
+      requested_deliverable: "online_ordering_website",
+    };
+  }
+  if (solutionType === "booking_appointments") {
+    return {
+      ...base,
+      intent: hasWebsite ? "IMPROVE" : "CREATE",
+      requested_deliverable: "booking_website",
+    };
+  }
+  if (solutionType === "website_repair") {
+    return { ...base, intent: "REPAIR", requested_deliverable: "website_repair" };
+  }
+  if (solutionType === "maintenance") {
+    return { ...base, intent: "MAINTAIN", requested_deliverable: "website_maintenance" };
+  }
+  if (solutionType === "custom_system") {
+    return { ...base, intent: "AUTOMATE", requested_deliverable: "business_system" };
+  }
+  if (solutionType === "automation") {
+    return { ...base, intent: "AUTOMATE", requested_deliverable: "automation" };
+  }
+  return { ...base, intent: "ANALYZE", requested_deliverable: "analysis" };
+}
+
+export function classifySolutionRequest(args: {
+  solution_type: SolutionType;
+  requested_outcome?: string | null | undefined;
+  has_website?: boolean;
+}): SolutionClassification {
+  const fallback = defaultSolutionClassification(args.solution_type, args.has_website);
+  const text = (args.requested_outcome ?? "").trim();
+  if (!text) return fallback;
+  if (AMBIGUOUS_TERMS.test(text)) {
+    return {
+      ...fallback,
+      ambiguous: true,
+      clarification:
+        "Please clarify the exact outcome the client wants before generating the implementation prompt.",
+    };
+  }
+
+  const website = WEBSITE_TERMS.test(text);
+  const repair = REPAIR_TERMS.test(text);
+  const maintain = MAINTAIN_TERMS.test(text);
+  const improve = IMPROVE_TERMS.test(text);
+  const analyze = ANALYZE_TERMS.test(text);
+  const automate = AUTOMATE_TERMS.test(text);
+  const create = CREATE_TERMS.test(text);
+  const system = SYSTEM_TERMS.test(text);
+
+  if (website) {
+    if (repair) {
+      return {
+        ...fallback,
+        intent: "REPAIR",
+        requested_deliverable: "website_repair",
+      };
+    }
+    if (maintain) {
+      return {
+        ...fallback,
+        intent: "MAINTAIN",
+        requested_deliverable: "website_maintenance",
+      };
+    }
+    if (improve) {
+      return {
+        ...fallback,
+        intent: "IMPROVE",
+        requested_deliverable: websiteDeliverable(text),
+      };
+    }
+    if (analyze && !create) {
+      return { ...fallback, intent: "ANALYZE", requested_deliverable: "analysis" };
+    }
+    if (create) {
+      return {
+        ...fallback,
+        intent: "CREATE",
+        requested_deliverable: websiteDeliverable(text),
+      };
+    }
+  }
+
+  if (analyze && !create) {
+    return { ...fallback, intent: "ANALYZE", requested_deliverable: "analysis" };
+  }
+  if (maintain) {
+    return {
+      ...fallback,
+      intent: "MAINTAIN",
+      requested_deliverable: fallback.requested_deliverable,
+    };
+  }
+  if (repair) {
+    return {
+      ...fallback,
+      intent: "REPAIR",
+      requested_deliverable: fallback.requested_deliverable,
+    };
+  }
+  if (automate) {
+    return {
+      ...fallback,
+      intent: "AUTOMATE",
+      requested_deliverable: system ? "business_system" : "automation",
+    };
+  }
+  if (improve) {
+    return {
+      ...fallback,
+      intent: "IMPROVE",
+      requested_deliverable: fallback.requested_deliverable,
+    };
+  }
+  if (create) {
+    return {
+      ...fallback,
+      intent: "CREATE",
+      requested_deliverable: system ? "business_system" : fallback.requested_deliverable,
+    };
+  }
+  return fallback;
+}
+
 export const PROMPT_PLATFORMS = [
   "opencode",
   "lovable",
@@ -125,6 +354,8 @@ export type SolutionRequirementGroup = {
 
 export type SolutionRecommendationDraft = {
   solution_type: SolutionType;
+  intent: SolutionIntent;
+  requested_deliverable: RequestedDeliverable;
   title: string;
   summary: string;
   why_recommended: string;
@@ -688,8 +919,14 @@ function recommendation(
 ): SolutionRecommendationDraft {
   const evidence = uniqueEvidence(args.evidence);
   const { assumptions, unknowns } = commonAmbiguities(input.business);
+  const classification = defaultSolutionClassification(
+    type,
+    Boolean(input.business.website?.trim()),
+  );
   return {
     solution_type: type,
+    intent: classification.intent,
+    requested_deliverable: classification.requested_deliverable,
     title: `${input.business.name}: ${SOLUTION_TYPE_LABELS[type].toLowerCase()}`,
     summary: args.summary,
     why_recommended: args.why,
@@ -1034,11 +1271,42 @@ const REQUIRED_SECTION_PATTERNS: { label: string; re: RegExp }[] = [
   { label: "Assumptions and unknowns", re: /^#{1,4}\s*(assumptions|unknowns|open questions)\b/im },
 ];
 
-function platformCheck(platform: PromptPlatform, prompt: string): PromptQualityCheck {
+const WEBSITE_SECTION_PATTERNS: { label: string; re: RegExp }[] = [
+  { label: "A. Build objective", re: /^#{1,4}\s*A\.\s*Build objective\b/im },
+  { label: "B. Business context", re: /^#{1,4}\s*B\.\s*Business context\b/im },
+  { label: "C. Verified information", re: /^#{1,4}\s*C\.\s*Verified information\b/im },
+  {
+    label: "D. Customer problem and website purpose",
+    re: /^#{1,4}\s*D\.\s*Customer problem and website purpose\b/im,
+  },
+  { label: "E. Website structure", re: /^#{1,4}\s*E\.\s*Website structure\b/im },
+  { label: "F. Functional requirements", re: /^#{1,4}\s*F\.\s*Functional requirements\b/im },
+  { label: "G. Design requirements", re: /^#{1,4}\s*G\.\s*Design requirements\b/im },
+  { label: "H. Administration", re: /^#{1,4}\s*H\.\s*Administration\b/im },
+  { label: "I. Technical requirements", re: /^#{1,4}\s*I\.\s*Technical requirements\b/im },
+  { label: "J. Missing information", re: /^#{1,4}\s*J\.\s*Missing information\b/im },
+  {
+    label: "K. Build execution instructions",
+    re: /^#{1,4}\s*K\.\s*Build execution instructions\b/im,
+  },
+  { label: "L. Acceptance criteria", re: /^#{1,4}\s*L\.\s*Acceptance criteria\b/im },
+];
+
+function platformCheck(
+  platform: PromptPlatform,
+  prompt: string,
+  website: boolean,
+): PromptQualityCheck {
   const tests: Record<PromptPlatform, RegExp[]> = {
     opencode: [/opencode|repository|existing code/i, /inspect|read|search/i, /test|verify/i],
     lovable: [/lovable/i, /build|implement/i, /preview|publish|deploy/i],
-    google_ai_studio: [/google ai studio|gemini/i, /api key|model|structured output/i],
+    google_ai_studio: website
+      ? [/google ai studio/i, /build|generate|implement/i, /preview|export|deploy|publish/i]
+      : [
+          /google ai studio|gemini/i,
+          /model|api key|structured output|analysis|automation/i,
+          /preview|export|deploy|publish/i,
+        ],
     developer_spec: [/specification|implementation brief|developer/i, /acceptance|deliverable/i],
   };
   const missing = tests[platform].filter((re) => !re.test(prompt));
@@ -1062,13 +1330,20 @@ export function validatePromptQuality(
   platform: PromptPlatform,
   recommendation: Pick<
     SolutionRecommendationDraft,
-    "solution_type" | "evidence" | "requirements" | "hypothesis"
+    | "solution_type"
+    | "intent"
+    | "requested_deliverable"
+    | "evidence"
+    | "requirements"
+    | "hypothesis"
   >,
 ): PromptQuality {
   const checks: PromptQualityCheck[] = [];
   const trimmed = prompt.trim();
+  const website = isWebsiteDeliverable(recommendation.requested_deliverable);
+  const sectionPatterns = website ? WEBSITE_SECTION_PATTERNS : REQUIRED_SECTION_PATTERNS;
 
-  const missingSections = REQUIRED_SECTION_PATTERNS.filter((section) => !section.re.test(trimmed));
+  const missingSections = sectionPatterns.filter((section) => !section.re.test(trimmed));
   checks.push(
     missingSections.length === 0
       ? {
@@ -1177,7 +1452,94 @@ export function validatePromptQuality(
         },
   );
 
-  checks.push(platformCheck(platform, trimmed));
+  const expectedIntent = `Intent: ${recommendation.intent}`;
+  const expectedDeliverable = `Requested deliverable: ${REQUESTED_DELIVERABLE_LABELS[recommendation.requested_deliverable]}`;
+  const hasIntent = new RegExp(`^${expectedIntent}$`, "im").test(trimmed);
+  const hasDeliverable = new RegExp(`^${expectedDeliverable}$`, "im").test(trimmed);
+  checks.push(
+    hasIntent && hasDeliverable
+      ? {
+          key: "scope",
+          label: "Intent and deliverable alignment",
+          status: "pass",
+          detail: `The prompt states ${SOLUTION_INTENT_LABELS[recommendation.intent]} and ${REQUESTED_DELIVERABLE_LABELS[recommendation.requested_deliverable].toLowerCase()}.`,
+        }
+      : {
+          key: "scope",
+          label: "Intent and deliverable alignment",
+          status: "fail",
+          detail:
+            "The prompt must state the classified intent and the exact requested deliverable near the top.",
+        },
+  );
+
+  const drift =
+    /(build|create|produce|develop|generate|implement)\s+an?\s+.{0,80}(audit(ing)? application|ai content audit|business intelligence dashboard|compliance checker|prompt generator|reporting tool|internal gare feature)/i.test(
+      trimmed,
+    );
+  if (website) {
+    const requestedWebsite =
+      /(build|create|produce)\s+an?\s+(complete,\s*responsive,\s*customer-facing website|online catalogue and ordering website|service booking website)/i.test(
+        trimmed,
+      );
+    const requestedRepair = /repair the existing website/i.test(trimmed);
+    const requestedImprove =
+      /(improve|upgrade|extend|add).{0,80}(existing website|website|online catalogue|booking)/i.test(
+        trimmed,
+      );
+    const positiveRebuild =
+      /(rebuild|start from scratch|delete the existing website|replace the (existing|entire|whole) (website|site))/i.test(
+        trimmed,
+      );
+    const aligned =
+      (recommendation.intent === "REPAIR"
+        ? requestedRepair
+        : recommendation.intent === "IMPROVE"
+          ? requestedImprove
+          : requestedWebsite) &&
+      !drift &&
+      !(recommendation.intent === "REPAIR" && positiveRebuild);
+    checks.push(
+      aligned
+        ? {
+            key: "deliverable",
+            label: "Requested website deliverable",
+            status: "pass",
+            detail:
+              "The prompt asks for the requested website or repair and does not redirect the build to an unrelated product.",
+          }
+        : {
+            key: "deliverable",
+            label: "Requested website deliverable",
+            status: "fail",
+            detail:
+              "A website prompt must build or repair the requested website and must not drift into an audit, dashboard, compliance, prompt-generation, reporting or internal GARE product.",
+          },
+    );
+  } else {
+    const wrongWebsite =
+      /(build|create|produce)\s+an?\s+(complete,\s*responsive,\s*customer-facing website|online catalogue and ordering website|service booking website)/i.test(
+        trimmed,
+      );
+    checks.push(
+      !wrongWebsite && !drift
+        ? {
+            key: "deliverable",
+            label: "Requested deliverable alignment",
+            status: "pass",
+            detail: "The prompt stays within the classified non-website deliverable.",
+          }
+        : {
+            key: "deliverable",
+            label: "Requested deliverable alignment",
+            status: "fail",
+            detail:
+              "The prompt must not replace the classified deliverable with a website or unrelated product.",
+          },
+    );
+  }
+
+  checks.push(platformCheck(platform, trimmed, website));
 
   const contradiction =
     recommendation.solution_type === "website_repair"

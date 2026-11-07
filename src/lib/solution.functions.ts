@@ -11,8 +11,6 @@ import {
 } from "./solution.server";
 import { MAINTENANCE_STATUSES } from "./solution-builder";
 
-const providerSchema = z.enum(["auto", "openai", "gemini", "lovable"]).default("auto");
-
 export const buildSolutionRecommendationsFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) =>
@@ -38,12 +36,14 @@ export const generateSolutionPromptsFn = createServerFn({ method: "POST" })
     z
       .object({
         recommendationId: z.string().uuid(),
-        provider: providerSchema,
+        requestedOutcome: z.string().trim().max(2000).optional(),
       })
       .parse(data),
   )
   .handler(async ({ data, context }) =>
-    generatePromptSet(context.supabase, context.userId, data.recommendationId, data.provider),
+    generatePromptSet(context.supabase, context.userId, data.recommendationId, {
+      requestedOutcome: data.requestedOutcome,
+    }),
   );
 
 export const setSolutionRecommendationStatusFn = createServerFn({ method: "POST" })

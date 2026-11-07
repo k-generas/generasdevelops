@@ -16,22 +16,32 @@ import {
   MAINTENANCE_STATUS_LABELS,
   PROMPT_PLATFORMS,
   PROMPT_PLATFORM_LABELS,
+  REQUESTED_DELIVERABLE_LABELS,
+  SOLUTION_INTENT_LABELS,
   SOLUTION_TYPE_LABELS,
   latestPromptPerPlatform,
   type MaintenanceStatus,
   type PromptPlatform,
   type PromptQuality,
+  type RequestedDeliverable,
   type SolutionEvidence,
+  type SolutionIntent,
   type SolutionRequirementGroup,
   type SolutionType,
 } from "@/lib/solution-builder";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
-type ProviderChoice = "auto" | "openai" | "gemini" | "lovable";
 type RecommendationRow = Database["public"]["Tables"]["solution_recommendations"]["Row"];
 type PromptRow = Database["public"]["Tables"]["solution_prompts"]["Row"];
 type MaintenanceRow = Database["public"]["Tables"]["maintenance_records"]["Row"];
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
 
 function evidenceFrom(value: unknown): SolutionEvidence[] {
   if (!Array.isArray(value)) return [];
@@ -142,11 +152,9 @@ function evidenceBadge(kind: SolutionEvidence["kind"]): "default" | "secondary" 
 export function SolutionBuilderPanel({
   businessId,
   hasInvestigation,
-  provider,
 }: {
   businessId: string;
   hasInvestigation: boolean;
-  provider: ProviderChoice;
 }) {
   const qc = useQueryClient();
   const buildFn = useServerFn(buildSolutionRecommendationsFn);
@@ -157,6 +165,7 @@ export function SolutionBuilderPanel({
   const [buildingMsg, setBuildingMsg] = useState<string | null>(null);
   const [generating, setGenerating] = useState<string | null>(null);
   const [generationErrors, setGenerationErrors] = useState<Record<string, string>>({});
+  const [requestedOutcomes, setRequestedOutcomes] = useState<Record<string, string>>({});
   const [selectedPlatform, setSelectedPlatform] = useState<Record<string, PromptPlatform>>({});
   const [copied, setCopied] = useState<string | null>(null);
   const [maintenanceBusy, setMaintenanceBusy] = useState<string | null>(null);
@@ -245,11 +254,16 @@ export function SolutionBuilderPanel({
       return next;
     });
     try {
+      const requestedOutcome = (requestedOutcomes[recommendation.id] ?? "").trim();
       const result = await generateFn({
-        data: { recommendationId: recommendation.id, provider },
+        data: {
+          recommendationId: recommendation.id,
+          ...(requestedOutcome ? { requestedOutcome } : {}),
+        },
       });
       const ready = result.prompts.filter((prompt) => prompt.status === "ready").length;
       await qc.invalidateQueries({ queryKey: ["solution-prompts", businessId] });
+      await qc.invalidateQueries({ queryKey: ["solution-recommendations", businessId] });
       if (result.failures.length > 0) {
         setGenerationErrors((current) => ({
           ...current,
@@ -258,7 +272,9 @@ export function SolutionBuilderPanel({
             .join(" ")}`,
         }));
       } else {
-        toast.success(`${ready} platform prompts generated.`);
+        toast.success(
+          `${ready} platform prompts generated as ${SOLUTION_INTENT_LABELS[result.intent]}.`,
+        );
       }
     } catch (error) {
       setGenerationErrors((current) => ({
@@ -349,6 +365,8 @@ export function SolutionBuilderPanel({
       {rows.map((recommendation) => {
         const evidence = evidenceFrom(recommendation.evidence);
         const requirements = requirementsFrom(recommendation.requirements);
+        const assumptions = stringList(recommendation.assumptions);
+        const unknowns = stringList(recommendation.unknowns);
         const readyPrompts = latestPromptPerPlatform(
           promptsByRecommendation.get(recommendation.id) ?? [],
         );
@@ -369,6 +387,16 @@ export function SolutionBuilderPanel({
                   <Badge variant="outline">
                     {SOLUTION_TYPE_LABELS[recommendation.solution_type as SolutionType] ??
                       recommendation.solution_type}
+                  </Badge>
+                  <Badge variant="secondary">
+                    Intent:{" "}
+                    {SOLUTION_INTENT_LABELS[recommendation.intent as SolutionIntent] ??
+                      recommendation.intent}
+                  </Badge>
+                  <Badge variant="outline">
+                    {REQUESTED_DELIVERABLE_LABELS[
+                      recommendation.requested_deliverable as RequestedDeliverable
+                    ] ?? recommendation.requested_deliverable}
                   </Badge>
                   <Badge variant={recommendation.hypothesis ? "secondary" : "default"}>
                     {recommendation.hypothesis ? "hypothesis" : "evidence-backed"}
@@ -412,7 +440,7 @@ export function SolutionBuilderPanel({
 
             <div className="space-y-2">
               <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-                Evidence
+                Verified facts and evidence
               </p>
               <ul className="space-y-1.5">
                 {evidence.map((item, index) => (
@@ -427,6 +455,38 @@ export function SolutionBuilderPanel({
                 ))}
               </ul>
             </div>
+
+            <details className="rounded border p-2 text-sm">
+              <summary className="cursor-pointer font-medium">
+                Assumptions and missing information ({assumptions.length + unknowns.length})
+              </summary>
+              <div className="mt-2 grid gap-3 md:grid-cols-2">
+                <div>
+                  <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                    Assumptions
+                  </p>
+                  <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-muted-foreground">
+                    {assumptions.length === 0 ? (
+                      <li>None recorded.</li>
+                    ) : (
+                      assumptions.map((item) => <li key={item}>{item}</li>)
+                    )}
+                  </ul>
+                </div>
+                <div>
+                  <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                    Missing information
+                  </p>
+                  <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-muted-foreground">
+                    {unknowns.length === 0 ? (
+                      <li>None recorded.</li>
+                    ) : (
+                      unknowns.map((item) => <li key={item}>{item}</li>)
+                    )}
+                  </ul>
+                </div>
+              </div>
+            </details>
 
             <details className="rounded border p-2 text-sm">
               <summary className="cursor-pointer font-medium">
@@ -486,11 +546,37 @@ export function SolutionBuilderPanel({
                   <span className="text-xs text-destructive">{generationError}</span>
                 )}
               </div>
+              <div className="mt-2 space-y-1">
+                <label
+                  className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground"
+                  htmlFor={`client-request-${recommendation.id}`}
+                >
+                  Client request (optional)
+                </label>
+                <Textarea
+                  id={`client-request-${recommendation.id}`}
+                  value={requestedOutcomes[recommendation.id] ?? ""}
+                  onChange={(event) =>
+                    setRequestedOutcomes((current) => ({
+                      ...current,
+                      [recommendation.id]: event.target.value,
+                    }))
+                  }
+                  rows={2}
+                  placeholder="e.g. Build a customer-facing website demo for this construction materials supplier."
+                  className="text-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Leave blank to use the recommendation. The request is classified before
+                  generation; ambiguous requests are rejected rather than turned into the wrong
+                  product.
+                </p>
+              </div>
               {readyPrompts.length === 0 ? (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Only prompts that pass validation are shown. Generate prompts for OpenCode,
-                  Lovable, Google AI Studio and a developer specification. AI requests retry and
-                  fall back across available models automatically.
+                  Only prompts that pass validation are shown. Prompts are assembled from verified
+                  evidence with platform templates for OpenCode, Lovable, Google AI Studio and a
+                  developer specification, so no AI provider credits are used.
                 </p>
               ) : (
                 <>
