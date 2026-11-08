@@ -24,7 +24,7 @@ const FALLBACK_OFFERS = [
 ];
 const PROVIDERS = ["auto", "openai", "gemini", "lovable"] as const;
 type ProviderChoice = (typeof PROVIDERS)[number];
-const sel = "rounded border bg-background px-2 py-1.5 text-sm";
+const sel = "min-w-0 w-full rounded border bg-background px-2 py-1.5 text-sm";
 
 export function BusinessWorkspace({ businessId }: { businessId: string }) {
   const qc = useQueryClient();
@@ -181,11 +181,11 @@ export function BusinessWorkspace({ businessId }: { businessId: string }) {
         <p className="text-xs text-muted-foreground">
           Copy-paste ready for {channel}. {channelGuidance(channel)}
         </p>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Button onClick={onGenerate} disabled={busy}>
-            {busy ? "Writing… (≈30s)" : "Generate draft"}
+            {busy ? "Writing�?� (�%^30s)" : "Generate draft"}
           </Button>
-          {msg && <span className="text-sm text-muted-foreground">{msg}</span>}
+          {msg && <span className="min-w-0 text-sm text-muted-foreground">{msg}</span>}
         </div>
         <div className="divide-y rounded border">
           {proposals.data?.map((p) => (
@@ -229,7 +229,7 @@ export function BusinessWorkspace({ businessId }: { businessId: string }) {
         <div className="rounded-lg border bg-card p-5 text-sm">
           <p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-primary">Notes</p>
           <form
-            className="flex gap-2"
+            className="flex flex-wrap gap-2"
             onSubmit={async (e) => {
               e.preventDefault();
               if (!note.trim()) return;
@@ -241,11 +241,12 @@ export function BusinessWorkspace({ businessId }: { businessId: string }) {
             }}
           >
             <Input
+              className="min-w-0 flex-1"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Add a note…"
+              placeholder="Add a note�?�"
             />
-            <Button size="sm" type="submit">
+            <Button size="sm" type="submit" className="shrink-0">
               Add
             </Button>
           </form>

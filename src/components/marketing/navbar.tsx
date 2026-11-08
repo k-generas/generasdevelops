@@ -27,8 +27,8 @@ export function Navbar() {
   }, [open]);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3 md:px-4 md:pt-4">
-      <div className="mx-auto w-full max-w-6xl overflow-hidden rounded-2xl border bg-background/90 shadow-lg shadow-black/5 backdrop-blur-xl supports-[backdrop-filter]:bg-background/75">
+    <header className="fixed inset-x-0 top-0 z-50 px-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:px-4 md:pt-4">
+      <div className="mx-auto w-full max-w-6xl rounded-2xl border bg-background/90 shadow-lg shadow-black/5 backdrop-blur-xl supports-[backdrop-filter]:bg-background/75">
         <div className="flex h-14 items-center gap-1.5 px-2.5 sm:gap-2 sm:px-3 md:gap-3 md:px-4">
           <Link to="/" aria-label="GARE home" className={`shrink-0 rounded-md ${FOCUS_RING}`}>
             <Wordmark />
@@ -52,7 +52,7 @@ export function Navbar() {
             <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
               <Link to="/auth">Sign in</Link>
             </Button>
-            <Button asChild size="sm" className="min-w-0 truncate">
+            <Button asChild size="sm" className="h-10 min-w-0 truncate px-3 sm:h-8">
               <Link to="/auth" search={JOIN_SEARCH}>
                 <span className="sm:hidden">Join</span>
                 <span className="hidden sm:inline">Join Early Access</span>
@@ -64,7 +64,7 @@ export function Navbar() {
               aria-controls="marketing-nav"
               aria-label={open ? "Close menu" : "Open menu"}
               onClick={() => setOpen((v) => !v)}
-              className={`grid h-8 w-8 place-items-center rounded-lg border text-foreground transition-colors hover:bg-secondary lg:hidden ${FOCUS_RING}`}
+              className={`grid h-11 w-11 place-items-center rounded-lg border text-foreground transition-colors hover:bg-secondary lg:hidden ${FOCUS_RING}`}
             >
               {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
@@ -72,7 +72,10 @@ export function Navbar() {
         </div>
 
         {open && (
-          <div id="marketing-nav" className="border-t lg:hidden">
+          <div
+            id="marketing-nav"
+            className="max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain border-t lg:hidden"
+          >
             <nav aria-label="Primary mobile" className="px-3 py-2">
               <ul className="divide-y">
                 {NAV_LINKS.map((l) => (

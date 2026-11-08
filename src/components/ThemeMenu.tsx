@@ -25,7 +25,7 @@ export function ThemeMenu({ align = "end" }: { align?: "start" | "end" }) {
         <button
           title="Theme"
           aria-label="Theme"
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring sm:h-9 sm:w-9"
         >
           <Palette className="h-4 w-4" />
         </button>
@@ -53,7 +53,7 @@ export function ThemeMenu({ align = "end" }: { align?: "start" | "end" }) {
 
         <DropdownMenuSeparator className="my-2" />
         <DropdownMenuLabel className="px-1.5">Accent</DropdownMenuLabel>
-        <div className="grid grid-cols-6 gap-2 px-1 pb-1">
+        <div className="grid grid-cols-4 gap-2 px-1 pb-1">
           {ACCENTS.map((a) => (
             <button
               key={a.value}
@@ -63,7 +63,7 @@ export function ThemeMenu({ align = "end" }: { align?: "start" | "end" }) {
               onClick={() => setAccent(a.value)}
               style={{ backgroundColor: a.dot }}
               className={cn(
-                "grid h-6 w-full place-items-center rounded-full outline-none transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring",
+                "grid h-9 w-full place-items-center rounded-full outline-none transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring",
                 accent === a.value
                   ? "ring-2 ring-foreground ring-offset-2 ring-offset-popover"
                   : "ring-1 ring-inset ring-black/10",

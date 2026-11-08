@@ -267,13 +267,13 @@ function PartnersPage() {
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-lg font-semibold">Partner directory</h2>
           <span className="text-xs text-muted-foreground">{partnerList.length} recorded</span>
           <Button
             size="sm"
             variant="outline"
-            className="ml-auto"
+            className="sm:ml-auto"
             onClick={() => setDraft(emptyDraft())}
           >
             Add partner

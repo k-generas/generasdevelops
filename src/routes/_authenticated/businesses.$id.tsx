@@ -200,8 +200,8 @@ function BusinessPage() {
         ← Pipeline
       </Link>
       <div className="flex flex-wrap items-start gap-4">
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold">{b.name}</h1>
+        <div className="min-w-0 flex-1">
+          <h1 className="break-words text-2xl font-bold sm:text-3xl">{b.name}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {[b.category, b.address].filter(Boolean).join(" · ")}
           </p>
@@ -266,12 +266,12 @@ function BusinessPage() {
               </a>
             )}
             {b.website ? (
-              <span className="flex items-center gap-2">
+              <span className="flex min-w-0 flex-wrap items-center gap-2">
                 <a
                   href={b.website}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-primary underline"
+                  className="break-all text-primary underline"
                 >
                   {b.website}
                 </a>
@@ -296,7 +296,11 @@ function BusinessPage() {
               </Badge>
             )}
             {(b.emails ?? []).map((e) => (
-              <a key={e} href={`mailto:${e}`} className="font-mono text-primary underline">
+              <a
+                key={e}
+                href={`mailto:${e}`}
+                className="min-w-0 break-all font-mono text-primary underline"
+              >
                 {e}
               </a>
             ))}
@@ -321,7 +325,9 @@ function BusinessPage() {
           <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
             Opportunity score
           </p>
-          <p className="font-mono text-5xl font-semibold text-accent">{b.score ?? "—"}</p>
+          <p className="font-mono text-4xl font-semibold text-accent sm:text-5xl">
+            {b.score ?? "—"}
+          </p>
         </div>
       </div>
 

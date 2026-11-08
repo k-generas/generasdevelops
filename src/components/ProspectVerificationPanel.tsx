@@ -247,9 +247,9 @@ export function ProspectVerificationPanel({
 
 function Row({ k, v }: { k: string; v?: string | null | undefined }) {
   return (
-    <div className="flex justify-between gap-2">
-      <span className="text-muted-foreground">{k}</span>
-      <span className="font-mono text-xs">{v ?? "unknown"}</span>
+    <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-2">
+      <span className="shrink-0 text-muted-foreground">{k}</span>
+      <span className="min-w-0 break-words font-mono text-xs sm:text-right">{v ?? "unknown"}</span>
     </div>
   );
 }

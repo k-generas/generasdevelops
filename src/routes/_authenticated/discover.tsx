@@ -45,6 +45,7 @@ function Discover() {
   const [batchLocs, setBatchLocs] = useState<string[]>([]);
   const [batchBusy, setBatchBusy] = useState(false);
   const [batchLog, setBatchLog] = useState<string[]>([]);
+  const [batchExpanded, setBatchExpanded] = useState(false);
   const queryInputRef = useRef<HTMLInputElement>(null);
   const locationInputRef = useRef<HTMLInputElement>(null);
 
@@ -89,6 +90,12 @@ function Discover() {
       if (r.found === 0) {
         setError(
           "The search returned no results. Try a broader query (e.g. 'restaurants' instead of a specific name), a different location, or check the source health below.",
+        );
+      } else if (window.matchMedia("(max-width: 639px)").matches) {
+        requestAnimationFrame(() =>
+          document
+            .getElementById("pipeline")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" }),
         );
       }
     } catch (err) {
@@ -170,7 +177,7 @@ function Discover() {
   const gmapsHealth = scanHealth(gmapsSource, 7);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       {(businesses.isError || runs.isError) && (
         <ErrorBanner
           error={(businesses.error ?? runs.error) as Error}
@@ -181,7 +188,7 @@ function Discover() {
           }}
         />
       )}
-      <section className="grid gap-4 sm:grid-cols-5">
+      <section className="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-4">
         <Stat label="Businesses" value={total} />
         <Stat
           label="No website (confirmed)"
@@ -194,10 +201,15 @@ function Discover() {
           hint="Discovered on Google Maps, not yet double-checked"
         />
         <Stat label="Investigated" value={investigated} />
-        <Stat label="Revenue (real payments)" value="$0" hint="No payment system connected yet" />
+        <Stat
+          label="Revenue (real payments)"
+          value="$0"
+          hint="No payment system connected yet"
+          className="col-span-2 sm:col-span-1"
+        />
       </section>
 
-      <section className="rounded-lg border bg-card p-6">
+      <section className="rounded-lg border bg-card p-4 sm:p-6">
         <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">01 · Discover</p>
         <form onSubmit={onRun} className="mt-4 flex flex-col gap-3">
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -336,81 +348,102 @@ function Discover() {
         </div>
       </section>
 
-      <section className="rounded-lg border bg-card p-6">
-        <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
-          01b · Batch scan
-        </p>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Repeats the discovery above across every selected area — pick a business type in step 01,
-          choose locations, then run. Up to {BATCH_LIMIT} paid Google requests per batch, capped at
-          20 real results each; results land in the Pipeline below.
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+      <section className="rounded-lg border bg-card p-4 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
+            01b · Batch scan
+          </p>
           <Button
+            type="button"
             size="sm"
             variant="outline"
-            disabled={batchBusy}
-            onClick={() =>
-              setBatchLocs((prev) => {
-                const all = LOCATION_PRESETS.map((p) => p.value);
-                return all.every((v) => prev.includes(v)) ? [] : all;
-              })
-            }
+            className="shrink-0 sm:hidden"
+            onClick={() => setBatchExpanded((value) => !value)}
           >
-            {batchLocs.length >= LOCATION_PRESETS.length ? "Clear all" : "Select all locations"}
-          </Button>
-          <span className="font-mono text-xs text-muted-foreground">
-            {batchLocs.length} selected
-            {batchLocs.length > BATCH_LIMIT ? ` · only first ${BATCH_LIMIT} will run` : ""}
-          </span>
-          <Button
-            size="sm"
-            disabled={batchBusy || !query.trim() || batchLocs.length === 0}
-            onClick={() => void onBatchRun()}
-          >
-            {batchBusy ? "Scanning…" : `Run batch (${Math.min(batchLocs.length, BATCH_LIMIT)})`}
+            {batchExpanded ? "Hide" : "Open"}
           </Button>
         </div>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {LOCATION_PRESETS.map((p) => {
-            const value = p.value;
-            const active = batchLocs.includes(value);
-            return (
-              <button
-                key={`${p.group ?? ""}-${p.value}-${p.label}`}
-                type="button"
-                disabled={batchBusy}
-                onClick={() =>
-                  setBatchLocs((prev) =>
-                    prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
-                  )
-                }
-                className={`rounded-full border px-2.5 py-1 font-mono text-xs transition-colors disabled:opacity-50 ${
-                  active
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                {p.label}
-              </button>
-            );
-          })}
-        </div>
-        {!query.trim() && (
-          <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
-            Set a business type in step 01 first — the batch reuses that search text for every area.
+        {!batchExpanded && (
+          <p className="mt-2 text-xs text-muted-foreground sm:hidden">
+            {batchLocs.length > 0
+              ? `${batchLocs.length} locations selected`
+              : "Run the same search across multiple areas."}
           </p>
         )}
-        {batchLog.length > 0 && (
-          <div className="mt-3 max-h-56 overflow-y-auto rounded-md border bg-muted/40 p-3 font-mono text-xs leading-relaxed">
-            {batchLog.map((line, i) => (
-              <p key={i}>{line}</p>
-            ))}
+        <div className={batchExpanded ? "mt-2" : "mt-2 hidden sm:block"}>
+          <p className="text-sm text-muted-foreground">
+            Repeats the discovery above across every selected area — pick a business type in step
+            01, choose locations, then run. Up to {BATCH_LIMIT} paid Google requests per batch,
+            capped at 20 real results each; results land in the Pipeline below.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={batchBusy}
+              onClick={() =>
+                setBatchLocs((prev) => {
+                  const all = LOCATION_PRESETS.map((p) => p.value);
+                  return all.every((v) => prev.includes(v)) ? [] : all;
+                })
+              }
+            >
+              {batchLocs.length >= LOCATION_PRESETS.length ? "Clear all" : "Select all locations"}
+            </Button>
+            <span className="font-mono text-xs text-muted-foreground">
+              {batchLocs.length} selected
+              {batchLocs.length > BATCH_LIMIT ? ` · only first ${BATCH_LIMIT} will run` : ""}
+            </span>
+            <Button
+              size="sm"
+              disabled={batchBusy || !query.trim() || batchLocs.length === 0}
+              onClick={() => void onBatchRun()}
+            >
+              {batchBusy ? "Scanning…" : `Run batch (${Math.min(batchLocs.length, BATCH_LIMIT)})`}
+            </Button>
           </div>
-        )}
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {LOCATION_PRESETS.map((p) => {
+              const value = p.value;
+              const active = batchLocs.includes(value);
+              return (
+                <button
+                  key={`${p.group ?? ""}-${p.value}-${p.label}`}
+                  type="button"
+                  disabled={batchBusy}
+                  onClick={() =>
+                    setBatchLocs((prev) =>
+                      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
+                    )
+                  }
+                  className={`rounded-full border px-2.5 py-1 font-mono text-xs transition-colors disabled:opacity-50 ${
+                    active
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+          {!query.trim() && (
+            <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+              Set a business type in step 01 first — the batch reuses that search text for every
+              area.
+            </p>
+          )}
+          {batchLog.length > 0 && (
+            <div className="mt-3 max-h-56 overflow-y-auto rounded-md border bg-muted/40 p-3 font-mono text-xs leading-relaxed">
+              {batchLog.map((line, i) => (
+                <p key={i}>{line}</p>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
-      <section>
+      <section id="pipeline" className="scroll-mt-4">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <p className="mr-auto font-mono text-xs uppercase tracking-[0.3em] text-primary">
             02 · Pipeline
@@ -513,12 +546,24 @@ function Discover() {
   );
 }
 
-function Stat({ label, value, hint }: { label: string; value: number | string; hint?: string }) {
+function Stat({
+  label,
+  value,
+  hint,
+  className = "",
+}: {
+  label: string;
+  value: number | string;
+  hint?: string;
+  className?: string;
+}) {
   return (
-    <div className="rounded-lg border bg-card p-4">
-      <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">{label}</p>
-      <p className="mt-1 text-3xl font-bold">{value}</p>
-      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+    <div className={`rounded-lg border bg-card p-3 sm:p-4 ${className}`} title={hint}>
+      <p className="font-mono text-[10px] uppercase leading-tight tracking-wider text-muted-foreground sm:text-xs sm:tracking-widest">
+        {label}
+      </p>
+      <p className="mt-0.5 text-2xl font-bold sm:mt-1 sm:text-3xl">{value}</p>
+      {hint && <p className="mt-1 hidden text-xs text-muted-foreground sm:block">{hint}</p>}
     </div>
   );
 }

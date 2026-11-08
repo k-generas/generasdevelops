@@ -285,7 +285,7 @@ function Editor() {
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-2 lg:col-span-2">
           <Textarea
-            className="min-h-[420px] font-mono text-sm"
+            className="min-h-[220px] font-mono text-sm sm:min-h-[420px]"
             value={body ?? ""}
             onChange={(e) => onEdit(e.target.value)}
           />
@@ -425,13 +425,14 @@ function Editor() {
               Versions
             </p>
             {versions.data?.map((v) => (
-              <div key={v.id} className="flex items-center justify-between py-1">
-                <span className="font-mono text-xs">
-                  v{v.version} · {new Date(v.created_at).toLocaleString()} · {v.note}
+              <div key={v.id} className="flex items-start justify-between gap-2 py-1">
+                <span className="min-w-0 break-words font-mono text-xs">
+                  v{v.version} A� {new Date(v.created_at).toLocaleString()} A� {v.note}
                 </span>
                 <Button
                   size="sm"
                   variant="ghost"
+                  className="shrink-0"
                   onClick={() => {
                     if (confirm(`Restore v${v.version} into the editor?`)) onEdit(v.body);
                   }}

@@ -660,7 +660,7 @@ function SocialLeadsPage() {
       ) : null}
 
       <Dialog open={Boolean(detail)} onOpenChange={(open) => !open && setDetail(null)}>
-        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+        <DialogContent className="max-h-[90dvh] max-w-3xl overflow-y-auto">
           {detail ? (
             <>
               <DialogHeader>

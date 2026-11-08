@@ -91,7 +91,7 @@ function SocialPresencePage() {
           ) : matches.length === 0 ? (
             <p className="p-3 text-xs text-muted-foreground">No matching businesses.</p>
           ) : (
-            <ul className="mt-2 max-h-[60vh] space-y-1 overflow-y-auto">
+            <ul className="mt-2 max-h-[60dvh] space-y-1 overflow-y-auto">
               {matches.map((business) => (
                 <li key={business.id}>
                   <button

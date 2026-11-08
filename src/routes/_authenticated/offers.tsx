@@ -290,7 +290,7 @@ function KitForm({
             onChange={(e) => set("deliverables", parseList(e.target.value))}
           />
         </div>
-        <div className="grid grid-cols-3 gap-2 sm:col-span-2">
+        <div className="grid grid-cols-1 gap-2 sm:col-span-2 sm:grid-cols-3">
           <div className="space-y-1">
             <Label className="text-xs">Timeline (days)</Label>
             <Input

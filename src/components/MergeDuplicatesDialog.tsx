@@ -63,7 +63,7 @@ export function MergeDuplicatesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="flex max-h-[90dvh] max-w-3xl flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Merge className="h-5 w-5 text-primary" />
@@ -94,7 +94,7 @@ export function MergeDuplicatesDialog({
             share a generic name across different districts.
           </p>
         ) : (
-          <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
             {groups.map((group) => {
               const keepId = keepFor(group);
               const duplicates = group.businesses.filter((b) => b.id !== keepId).length;

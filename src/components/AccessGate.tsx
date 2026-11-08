@@ -77,7 +77,7 @@ function PendingScreen({
 
   return (
     <div className="grid min-h-dvh place-items-center bg-background px-4 py-10">
-      <div className="w-full max-w-md rounded-lg border bg-card p-8">
+      <div className="w-full max-w-md rounded-lg border bg-card p-5 sm:p-8">
         <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
           <KeyRound className="h-6 w-6" />
         </span>
@@ -101,16 +101,17 @@ function PendingScreen({
 
         <form onSubmit={submitCode} className="mt-5 space-y-2">
           <Label htmlFor="access-code">Have an access code?</Label>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <Input
               id="access-code"
+              className="min-w-0 flex-1"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="GARE-XXXX-XXXX-XXXX-XXXX"
               autoComplete="off"
               spellCheck={false}
             />
-            <Button type="submit" disabled={busy || !code.trim()}>
+            <Button type="submit" className="shrink-0" disabled={busy || !code.trim()}>
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Redeem"}
             </Button>
           </div>
@@ -140,7 +141,7 @@ function PendingScreen({
           <p className="text-muted-foreground">Owner email</p>
           <a
             href={`mailto:${ADMIN_EMAIL}`}
-            className="mt-0.5 inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
+            className="mt-0.5 inline-flex max-w-full items-center gap-1.5 break-all font-medium text-primary hover:underline"
           >
             <Mail className="h-3.5 w-3.5" />
             {ADMIN_EMAIL}

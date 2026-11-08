@@ -406,7 +406,7 @@ function RadarPage() {
   const monitored = monitoringPolicy(settings.monitoring);
 
   return (
-    <div className="space-y-6 p-4 md:p-6">
+    <div className="space-y-6">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold">Local Opportunity Radar</h1>
         <p className="text-sm text-muted-foreground">

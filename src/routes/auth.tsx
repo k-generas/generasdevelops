@@ -73,14 +73,14 @@ function AuthPage() {
 
   if (createdEmail) {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-4">
+      <div className="flex min-h-dvh flex-col items-center justify-start gap-4 px-4 py-6 sm:justify-center">
         <Link
           to="/"
-          className="rounded-md text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="inline-flex min-h-11 items-center justify-center rounded-md px-3 py-2 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           ← Back to overview
         </Link>
-        <div className="w-full max-w-sm space-y-5 rounded-lg border bg-card p-8">
+        <div className="w-full max-w-sm space-y-5 rounded-lg border bg-card p-6 sm:p-8">
           <div>
             <span className="grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
               <CheckCircle2 className="h-6 w-6" />
@@ -112,7 +112,7 @@ function AuthPage() {
                 href={activationWhatsAppLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2"
+                className="inline-flex h-auto min-h-10 items-center justify-center gap-2 whitespace-normal px-4 py-2.5 text-center"
               >
                 <MessageCircle className="h-4 w-4" />
                 Activate on WhatsApp — 0794144738
@@ -121,9 +121,9 @@ function AuthPage() {
             <Button asChild variant="outline" className="w-full">
               <a
                 href={activationEmailLink}
-                className="inline-flex items-center justify-center gap-2"
+                className="inline-flex h-auto min-h-10 items-center justify-center gap-2 whitespace-normal px-4 py-2.5 text-center"
               >
-                <Mail className="h-4 w-4" />
+                <Mail className="h-4 w-4 shrink-0" />
                 Send activation email instead
               </a>
             </Button>
@@ -137,7 +137,7 @@ function AuthPage() {
           <div className="border-t pt-4">
             <button
               type="button"
-              className="w-full text-center text-xs text-muted-foreground hover:text-foreground"
+              className="flex min-h-11 w-full items-center justify-center py-2 text-center text-xs text-muted-foreground hover:text-foreground"
               onClick={() => {
                 setCreatedEmail(null);
                 setMode("in");
@@ -159,7 +159,10 @@ function AuthPage() {
       >
         ← Back to overview
       </Link>
-      <form onSubmit={submit} className="w-full max-w-sm space-y-5 rounded-lg border bg-card p-8">
+      <form
+        onSubmit={submit}
+        className="w-full max-w-sm space-y-5 rounded-lg border bg-card p-6 sm:p-8"
+      >
         <div>
           <img src="/logo.png" alt="GARE" className="mb-4 h-12 w-12 rounded-xl object-cover" />
           <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
@@ -205,7 +208,7 @@ function AuthPage() {
         </Button>
         <button
           type="button"
-          className="w-full text-center text-xs text-muted-foreground hover:text-foreground"
+          className="flex min-h-11 w-full items-center justify-center py-2 text-center text-xs text-muted-foreground hover:text-foreground"
           onClick={() => setMode(mode === "in" ? "up" : "in")}
         >
           {mode === "in" ? "New here? Create an account" : "Already have an account? Sign in"}

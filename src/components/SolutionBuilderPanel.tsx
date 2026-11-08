@@ -282,7 +282,7 @@ export function SolutionBuilderPanel({
             <div className="flex flex-wrap items-start gap-2">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h4 className="font-semibold">{recommendation.title}</h4>
+                  <h4 className="break-words font-semibold">{recommendation.title}</h4>
                   <Badge variant="outline">
                     {SOLUTION_TYPE_LABELS[recommendation.solution_type as SolutionType] ??
                       recommendation.solution_type}

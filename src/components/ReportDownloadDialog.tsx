@@ -172,7 +172,7 @@ export function ReportDownloadDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Download full report</DialogTitle>
           <DialogDescription>
@@ -233,7 +233,7 @@ export function ReportDownloadDialog({
           )}
         </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="sticky bottom-0 z-10 -mx-4 gap-2 border-t bg-background px-4 py-3 sm:-mx-6 sm:px-6">
           <Button
             type="button"
             variant="outline"

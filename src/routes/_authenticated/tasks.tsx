@@ -230,7 +230,7 @@ function Tasks() {
           />
         ) : (
           tasks.data?.map((t) => (
-            <div key={t.id} className="flex items-center gap-3 px-4 py-3">
+            <div key={t.id} className="flex flex-wrap items-start gap-3 px-4 py-3">
               <div className="min-w-0 flex-1">
                 <p className="text-sm">{t.title}</p>
                 <p className="text-xs text-muted-foreground">

@@ -342,9 +342,15 @@ function AccessCodesTab() {
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         {issued && (
-          <div className="mt-3 flex items-center gap-2 rounded-md border border-primary/40 bg-primary/5 p-3">
-            <code className="font-mono text-sm">{issued}</code>
-            <Button type="button" size="sm" variant="outline" onClick={copyCode}>
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-primary/40 bg-primary/5 p-3">
+            <code className="min-w-0 break-all font-mono text-sm">{issued}</code>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="shrink-0"
+              onClick={copyCode}
+            >
               <Copy className="h-3.5 w-3.5" /> Copy
             </Button>
           </div>

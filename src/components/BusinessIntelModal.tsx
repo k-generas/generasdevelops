@@ -133,7 +133,7 @@ export function BusinessIntelModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+      <DialogContent className="max-h-[90dvh] max-w-3xl overflow-y-auto">
         <DialogHeader className="pr-10">
           <DialogTitle>{business.name}</DialogTitle>
           <DialogDescription>
@@ -458,9 +458,9 @@ function fmt(v: unknown) {
 
 function Row({ k, v }: { k: string; v?: string | null | undefined }) {
   return (
-    <div className="flex justify-between gap-3">
-      <span className="text-muted-foreground">{k}</span>
-      <span className="text-right font-mono">{v ?? "—"}</span>
+    <div className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-3">
+      <span className="shrink-0 text-muted-foreground">{k}</span>
+      <span className="min-w-0 break-words font-mono sm:text-right">{v ?? "—"}</span>
     </div>
   );
 }

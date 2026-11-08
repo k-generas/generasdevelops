@@ -357,7 +357,7 @@ function Shell() {
 
       {/* Content column */}
       <div className="min-h-dvh bg-background lg:pl-64">
-        <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur">
+        <header className="sticky top-0 z-30 border-b bg-background/80 pt-[env(safe-area-inset-top)] backdrop-blur">
           <div className="flex h-14 items-center gap-2 px-3 sm:gap-3 sm:px-4 lg:px-8">
             {/* Mobile/tablet menu — every page is reachable from here */}
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>

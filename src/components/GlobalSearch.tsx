@@ -142,7 +142,7 @@ export function GlobalSearch() {
         ref={ref}
         value={q}
         placeholder="Search everything…  ⌘K"
-        className="h-8 text-sm"
+        className="h-10 text-sm sm:h-8"
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         onChange={(e) => {
@@ -163,7 +163,7 @@ export function GlobalSearch() {
         }}
       />
       {open && q.trim().length >= 2 && (
-        <div className="absolute left-0 right-0 top-9 z-50 max-h-96 overflow-auto rounded-md border bg-popover shadow-lg">
+        <div className="absolute left-0 right-0 top-11 z-50 max-h-[min(24rem,50dvh)] overflow-auto rounded-md border bg-popover shadow-lg sm:top-9">
           {hits.length === 0 ? (
             <p className="p-3 text-xs text-muted-foreground">
               Nothing saved matches “{q}”. Try a business name, domain, email or search title.

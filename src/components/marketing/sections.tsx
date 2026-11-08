@@ -50,13 +50,13 @@ export function Hero() {
   return (
     <section id="top" className="relative overflow-hidden bg-forest text-forest-foreground">
       <GridTexture className="absolute inset-0 text-white/[0.08]" />
-      <div className="relative mx-auto grid max-w-6xl gap-12 px-6 pb-20 pt-32 lg:grid-cols-[1.03fr_1fr] lg:items-center lg:gap-14 lg:pb-28 lg:pt-40">
+      <div className="relative mx-auto grid max-w-6xl gap-12 px-4 pb-16 pt-24 sm:px-6 sm:pb-20 sm:pt-28 lg:grid-cols-[1.03fr_1fr] lg:items-center lg:gap-14 lg:pb-28 lg:pt-40">
         <div className="min-w-0">
           <Reveal>
             <Eyebrow tone="forest">Generas · Autonomous Revenue Engine</Eyebrow>
           </Reveal>
           <Reveal delay={70}>
-            <h1 className="mt-5 text-4xl font-bold leading-[1.05] tracking-tight text-balance sm:text-5xl lg:text-6xl">
+            <h1 className="mt-5 text-3xl font-bold leading-[1.05] tracking-tight text-balance sm:text-4xl lg:text-6xl">
               Find the opportunity. Win the business.{" "}
               <span className="text-mint">Grow your revenue.</span>
             </h1>

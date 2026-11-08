@@ -50,7 +50,7 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-dashed p-8 text-center">
+    <div className="rounded-lg border border-dashed p-5 text-center sm:p-8">
       <p className="text-sm font-medium text-foreground">{title}</p>
       <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">{why}</p>
       {action && <div className="mt-3">{action}</div>}

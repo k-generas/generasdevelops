@@ -458,7 +458,7 @@ function OpportunitiesPage() {
       )}
 
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelectedId(null)}>
-        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+        <DialogContent className="max-h-[90dvh] max-w-3xl overflow-y-auto">
           {selected && (
             <>
               <DialogHeader>

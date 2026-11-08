@@ -146,7 +146,7 @@ export function ValidationPlanner({
             }
           />
         </label>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2">
           <label>
             <span className={lbl}>6 · Cost (USD)</span>
             <Input

@@ -208,7 +208,7 @@ function NumbersPage() {
   }, [businesses.data]);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6">
+    <div className="flex w-full flex-col gap-6">
       <header className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Numbers lookup</h1>

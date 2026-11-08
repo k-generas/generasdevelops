@@ -154,7 +154,7 @@ export function SectionHeading({
       <Eyebrow tone={tone}>{eyebrow}</Eyebrow>
       <h2
         className={cn(
-          "mt-3 text-3xl font-bold tracking-tight text-balance sm:text-4xl",
+          "mt-3 text-2xl font-bold tracking-tight text-balance sm:text-3xl lg:text-4xl",
           dark && "text-forest-foreground",
         )}
       >

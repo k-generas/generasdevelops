@@ -9,7 +9,7 @@ const FOOTER_LINKS = [
   { label: "FAQ", href: "#faq" },
 ] as const;
 
-const linkClass = `rounded-md text-sm text-forest-foreground/65 transition-colors hover:text-forest-foreground ${FOCUS_RING_ON_FOREST}`;
+const linkClass = `inline-flex min-h-9 items-center rounded-md py-1 text-sm text-forest-foreground/65 transition-colors hover:text-forest-foreground ${FOCUS_RING_ON_FOREST}`;
 
 export function Footer() {
   return (
@@ -30,7 +30,7 @@ export function Footer() {
               evidence, and manage the path from prospect to paid work — with you in control of
               every decision.
             </p>
-            <p className="mt-4 inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/5 px-2.5 py-1.5 font-mono text-xs text-forest-foreground/75">
+            <p className="mt-4 inline-flex flex-wrap items-center gap-2 rounded-md border border-white/15 bg-white/5 px-2.5 py-1.5 font-mono text-xs text-forest-foreground/75">
               <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-mint" />
               Early access · no payments connected
             </p>

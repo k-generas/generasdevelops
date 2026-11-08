@@ -436,14 +436,18 @@ function Settings() {
 
 function StatusRow({ label, ok, hint }: { label: string; ok: boolean; hint: string }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
-      {ok ? (
-        <CheckCircle2 className="h-4 w-4 text-accent" />
-      ) : (
-        <XCircle className="h-4 w-4 text-destructive" />
-      )}
-      <span className="flex-1 text-sm">{label}</span>
-      <span className="font-mono text-xs text-muted-foreground">{hint}</span>
+    <div className="flex flex-col items-start gap-1 px-4 py-3 sm:flex-row sm:items-center sm:gap-3">
+      <div className="flex w-full items-center gap-3 sm:w-auto sm:flex-1">
+        {ok ? (
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-accent" />
+        ) : (
+          <XCircle className="h-4 w-4 shrink-0 text-destructive" />
+        )}
+        <span className="min-w-0 flex-1 text-sm">{label}</span>
+      </div>
+      <span className="min-w-0 break-all pl-7 font-mono text-xs text-muted-foreground sm:pl-0">
+        {hint}
+      </span>
     </div>
   );
 }
