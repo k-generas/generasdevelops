@@ -6,6 +6,7 @@ import { AlertTriangle, CheckCircle2, Download, Plus, Trash2, XCircle } from "lu
 import { supabase } from "@/integrations/supabase/client";
 import { downloadJson, exportAllData } from "@/lib/export";
 import { getSystemStatus } from "@/lib/system.functions";
+import { useAccessInfo } from "@/lib/access";
 import { DEFAULT_CURRENCY, parseMinPrices, type MinPrices } from "@/lib/pricing";
 import { offerNamesForFloors, sortOffers, type Offer } from "@/lib/offers";
 import { useOffers } from "@/lib/offers.hooks";
@@ -29,6 +30,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 function Settings() {
   const status = useServerFn(getSystemStatus);
+  const isAdmin = useAccessInfo().data?.isAdmin === true;
   const prefs = useQuery({
     queryKey: ["settings-prefs"],
     queryFn: async () =>
@@ -39,7 +41,11 @@ function Settings() {
   const [saved, setSaved] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const sys = useQuery({ queryKey: ["system-status"], queryFn: () => status({}) });
+  const sys = useQuery({
+    queryKey: ["system-status"],
+    queryFn: () => status({}),
+    enabled: isAdmin,
+  });
   const offersQ = useOffers();
 
   const [catalog, setCatalog] = useState<Offer[]>([]);
@@ -376,60 +382,68 @@ function Settings() {
         </div>
       </section>
 
-      <section className="rounded-xl border bg-card">
-        <div className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Integrations</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            What the engine can actually reach right now. Keys are never shown.
-          </p>
-        </div>
-        <div className="divide-y">
-          {sys.isPending ? (
-            <p className="px-4 py-3 text-sm text-muted-foreground">Checking…</p>
-          ) : sys.isError ? (
-            <p className="px-4 py-3 text-sm text-destructive">
-              Could not check integrations — see the error banner above.
-            </p>
-          ) : (
-            <>
-              <StatusRow
-                label="Places (discovery)"
-                ok={!!sys.data?.placesProvider}
-                hint={
-                  sys.data?.placesProvider === "google"
-                    ? sys.data?.mapsMode === "direct"
-                      ? "Google Maps (direct GOOGLE_MAPS_API_KEY)"
-                      : "Google Maps via Lovable connector"
-                    : sys.data?.placesProvider === "geoapify"
-                      ? "Geoapify (local fallback)"
-                      : "Connect Google Maps in Lovable, or set GOOGLE_MAPS_API_KEY / GEOAPIFY_API_KEY"
-                }
-              />
-              <StatusRow
-                label="Geoapify (local fallback)"
-                ok={!!sys.data?.geoapify}
-                hint="GEOAPIFY_API_KEY"
-              />
-              <StatusRow label="AI · OpenAI" ok={!!sys.data?.ai.openai} hint="OPENAI_API_KEY" />
-              <StatusRow label="AI · Gemini" ok={!!sys.data?.ai.gemini} hint="GEMINI_API_KEY" />
-              <StatusRow label="AI · Lovable" ok={!!sys.data?.ai.lovable} hint="LOVABLE_API_KEY" />
-            </>
-          )}
-        </div>
-      </section>
+      {isAdmin && (
+        <>
+          <section className="rounded-xl border bg-card">
+            <div className="border-b px-4 py-3">
+              <h2 className="text-sm font-semibold">Integrations</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                What the engine can actually reach right now. Keys are never shown.
+              </p>
+            </div>
+            <div className="divide-y">
+              {sys.isPending ? (
+                <p className="px-4 py-3 text-sm text-muted-foreground">Checking…</p>
+              ) : sys.isError ? (
+                <p className="px-4 py-3 text-sm text-destructive">
+                  Could not check integrations — see the error banner above.
+                </p>
+              ) : (
+                <>
+                  <StatusRow
+                    label="Places (discovery)"
+                    ok={!!sys.data?.placesProvider}
+                    hint={
+                      sys.data?.placesProvider === "google"
+                        ? sys.data?.mapsMode === "direct"
+                          ? "Google Maps (direct GOOGLE_MAPS_API_KEY)"
+                          : "Google Maps via Lovable connector"
+                        : sys.data?.placesProvider === "geoapify"
+                          ? "Geoapify (local fallback)"
+                          : "Connect Google Maps in Lovable, or set GOOGLE_MAPS_API_KEY / GEOAPIFY_API_KEY"
+                    }
+                  />
+                  <StatusRow
+                    label="Geoapify (local fallback)"
+                    ok={!!sys.data?.geoapify}
+                    hint="GEOAPIFY_API_KEY"
+                  />
+                  <StatusRow label="AI · OpenAI" ok={!!sys.data?.ai.openai} hint="OPENAI_API_KEY" />
+                  <StatusRow label="AI · Gemini" ok={!!sys.data?.ai.gemini} hint="GEMINI_API_KEY" />
+                  <StatusRow
+                    label="AI · Lovable"
+                    ok={!!sys.data?.ai.lovable}
+                    hint="LOVABLE_API_KEY"
+                  />
+                </>
+              )}
+            </div>
+          </section>
 
-      <section className="rounded-xl border bg-card">
-        <div className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Not configured yet</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            These are intentionally off. Nothing is faked.
-          </p>
-        </div>
-        <ul className="px-4 py-3 text-sm text-muted-foreground">
-          <li>Payment provider (no real payments are processed)</li>
-          <li>Email / WhatsApp sending (you record sends manually)</li>
-        </ul>
-      </section>
+          <section className="rounded-xl border bg-card">
+            <div className="border-b px-4 py-3">
+              <h2 className="text-sm font-semibold">Not configured yet</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                These are intentionally off. Nothing is faked.
+              </p>
+            </div>
+            <ul className="px-4 py-3 text-sm text-muted-foreground">
+              <li>Payment provider (no real payments are processed)</li>
+              <li>Email / WhatsApp sending (you record sends manually)</li>
+            </ul>
+          </section>
+        </>
+      )}
     </div>
   );
 }

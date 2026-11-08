@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { runDiscovery } from "@/lib/discovery.functions";
 import { Button } from "@/components/ui/button";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { useAccessInfo } from "@/lib/access";
 import { describeError } from "@/lib/errors";
 import { toast } from "sonner";
 
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/_authenticated/history/")({
 
 function History() {
   const qc = useQueryClient();
+  const isAdmin = useAccessInfo().data?.isAdmin === true;
   const rerun = useServerFn(runDiscovery);
   const [showArchived, setShowArchived] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -86,7 +88,7 @@ function History() {
                 </Link>
                 <p className="font-mono text-xs text-muted-foreground">
                   {new Date(r.created_at).toLocaleString()} · {r.status} · {r.results_count} found ·{" "}
-                  {r.new_count} new{r.error ? ` · ${r.error.slice(0, 80)}` : ""}
+                  {r.new_count} new{isAdmin && r.error ? ` · ${r.error.slice(0, 80)}` : ""}
                 </p>
               </div>
               <Button

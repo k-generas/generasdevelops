@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { summarizeOutcomes } from "@/lib/outcomes";
+import { useAccessInfo } from "@/lib/access";
 import { Button } from "@/components/ui/button";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 
@@ -37,6 +38,8 @@ function greeting() {
 }
 
 function Dashboard() {
+  const access = useAccessInfo();
+  const isAdmin = access.data?.isAdmin === true;
   const businesses = useQuery({
     queryKey: ["dash-businesses"],
     queryFn: async () =>
@@ -86,6 +89,7 @@ function Dashboard() {
   });
   const failedRuns = useQuery({
     queryKey: ["dash-failed-runs"],
+    enabled: isAdmin,
     queryFn: async () => {
       const { count, error } = await supabase
         .from("discovery_runs")
@@ -133,7 +137,7 @@ function Dashboard() {
   const props = proposals.data ?? [];
   const openTasks = tasks.data?.length ?? 0;
   const overdue = overdueQ.data ?? 0;
-  const failed = failedRuns.data ?? 0;
+  const failed = isAdmin ? (failedRuns.data ?? 0) : 0;
   const accepted = props.filter((p) => p.status === "ACCEPTED");
   const acceptedValue = accepted.reduce((s: number, p) => s + (Number(p.price) || 0), 0);
   const currency = accepted[0]?.currency ?? props[0]?.currency ?? "USD";

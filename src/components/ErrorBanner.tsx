@@ -1,6 +1,7 @@
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { useAccessInfo } from "@/lib/access";
 import { describeError } from "@/lib/errors";
 
 /**
@@ -18,7 +19,28 @@ export function ErrorBanner({
   onRetry?: () => void;
   className?: string;
 }) {
+  const isAdmin = useAccessInfo().data?.isAdmin === true;
   if (!error) return null;
+
+  if (!isAdmin) {
+    return (
+      <Alert className={className}>
+        <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+        <AlertTitle>
+          {context ? `${context} temporarily unavailable` : "Temporarily unavailable"}
+        </AlertTitle>
+        <AlertDescription>
+          <p>This could not be completed right now. Please try again in a moment.</p>
+          {onRetry && (
+            <Button size="sm" variant="outline" className="mt-2" onClick={onRetry}>
+              <RefreshCw className="mr-1 h-3 w-3" /> Try again
+            </Button>
+          )}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   const d = describeError(error, context);
   return (
     <Alert variant="destructive" className={className}>

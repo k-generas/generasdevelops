@@ -20,6 +20,7 @@ import { scanHealth, type Source } from "@/lib/sources";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 import { BUSINESS_CATEGORIES } from "@/lib/business-categories";
 import { LOCATION_PRESETS } from "@/lib/location-presets";
+import { useAccessInfo } from "@/lib/access";
 
 export const Route = createFileRoute("/_authenticated/discover")({
   head: () => ({
@@ -35,6 +36,7 @@ export const Route = createFileRoute("/_authenticated/discover")({
 
 function Discover() {
   const qc = useQueryClient();
+  const isAdmin = useAccessInfo().data?.isAdmin === true;
   const discover = useServerFn(runDiscovery);
   const [query, setQuery] = useState("");
   const [location, setLocation] = useState("");
@@ -101,7 +103,9 @@ function Discover() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(
-        `${msg} — Check Settings → Integrations for a valid Maps/Places key. Each run is a paid Google request, so also verify quota/billing. Then try again.`,
+        isAdmin
+          ? `${msg} — Check Settings → Integrations for a valid Maps/Places key. Each run is a paid Google request, so also verify quota/billing. Then try again.`
+          : "Discovery could not run right now. Please try again in a moment.",
       );
     }
     setBusy(false);
@@ -128,7 +132,12 @@ function Discover() {
         ]);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        setBatchLog((l) => [...l, `  ${label}: failed — ${msg.slice(0, 120)}`]);
+        setBatchLog((l) => [
+          ...l,
+          isAdmin
+            ? `  ${label}: failed — ${msg.slice(0, 120)}`
+            : `  ${label}: could not run. Try again later.`,
+        ]);
       }
     }
     setBatchLog((l) => [
@@ -340,7 +349,7 @@ function Discover() {
             />
             {gmapsSource.name} · {gmapsHealth.reason}
           </span>
-          {lastFailed?.error && (
+          {isAdmin && lastFailed?.error && (
             <span className="font-mono text-destructive" title={lastFailed.error}>
               last error: {lastFailed.error.slice(0, 60)}
             </span>

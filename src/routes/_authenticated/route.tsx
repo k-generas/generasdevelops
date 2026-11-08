@@ -169,7 +169,11 @@ const EMPTY_COUNTS: NavCounts = {
 };
 
 // Which badge (if any) to show next to a nav item, and how urgent it is.
-function navBadgeFor(to: string, c: NavCounts): { count: number; tone: NavTone } | null {
+function navBadgeFor(
+  to: string,
+  c: NavCounts,
+  isAdmin: boolean,
+): { count: number; tone: NavTone } | null {
   switch (to) {
     case "/dashboard":
       return c.newLeads > 0 ? { count: c.newLeads, tone: "primary" } : null;
@@ -178,7 +182,7 @@ function navBadgeFor(to: string, c: NavCounts): { count: number; tone: NavTone }
     case "/updates":
       return c.updatesUnread > 0 ? { count: c.updatesUnread, tone: "primary" } : null;
     case "/discover":
-      return c.discoverFailed > 0 ? { count: c.discoverFailed, tone: "danger" } : null;
+      return isAdmin && c.discoverFailed > 0 ? { count: c.discoverFailed, tone: "danger" } : null;
     case "/history":
       return c.historyRuns > 0 ? { count: c.historyRuns, tone: "neutral" } : null;
     case "/leaks":
@@ -303,7 +307,8 @@ function Shell() {
     );
   }
 
-  const navItems: NavItem[] = access.data?.isAdmin
+  const isAdmin = access.data?.isAdmin === true;
+  const navItems: NavItem[] = isAdmin
     ? [...NAV, { to: "/admin", label: "Admin", icon: ShieldCheck }]
     : NAV;
 
@@ -320,7 +325,7 @@ function Shell() {
         </Link>
         <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain scroll-smooth px-3 py-2">
           {navItems.map((n) => {
-            const badge = navBadgeFor(n.to, counts);
+            const badge = navBadgeFor(n.to, counts, isAdmin);
             return (
               <Link
                 key={n.to}
@@ -387,7 +392,7 @@ function Shell() {
                 </div>
                 <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 py-3">
                   {navItems.map((n) => {
-                    const badge = navBadgeFor(n.to, counts);
+                    const badge = navBadgeFor(n.to, counts, isAdmin);
                     return (
                       <Link
                         key={n.to}
@@ -480,7 +485,7 @@ function Shell() {
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur pb-[env(safe-area-inset-bottom)] lg:hidden">
         <div className="mx-auto grid max-w-lg grid-cols-5">
           {MOBILE_NAV.map((n) => {
-            const badge = navBadgeFor(n.to, counts);
+            const badge = navBadgeFor(n.to, counts, isAdmin);
             return (
               <Link
                 key={n.to}
