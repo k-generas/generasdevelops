@@ -86,15 +86,15 @@ function Dashboard() {
   });
   const failedRuns = useQuery({
     queryKey: ["dash-failed-runs"],
-    queryFn: async () =>
-      (
-        await supabase
-          .from("discovery_runs")
-          .select("id,query,error,created_at")
-          .eq("status", "failed")
-          .order("created_at", { ascending: false })
-          .limit(3)
-      ).data ?? [],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("discovery_runs")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "failed")
+        .eq("archived", false);
+      if (error) throw error;
+      return count ?? 0;
+    },
   });
   const lastOpened = useQuery({
     queryKey: ["dash-last-opened"],
@@ -133,7 +133,7 @@ function Dashboard() {
   const props = proposals.data ?? [];
   const openTasks = tasks.data?.length ?? 0;
   const overdue = overdueQ.data ?? 0;
-  const failed = failedRuns.data ?? [];
+  const failed = failedRuns.data ?? 0;
   const accepted = props.filter((p) => p.status === "ACCEPTED");
   const acceptedValue = accepted.reduce((s: number, p) => s + (Number(p.price) || 0), 0);
   const currency = accepted[0]?.currency ?? props[0]?.currency ?? "USD";
@@ -187,7 +187,7 @@ function Dashboard() {
         />
       </section>
 
-      {(overdue > 0 || failed.length > 0) && (
+      {(overdue > 0 || failed > 0) && (
         <section className="space-y-2">
           {overdue > 0 && (
             <Link
@@ -201,18 +201,16 @@ function Dashboard() {
               <span className="text-xs text-muted-foreground">Review</span>
             </Link>
           )}
-          {failed.length > 0 && (
+          {failed > 0 && (
             <Link
               to="/history"
               className="flex items-center gap-3 rounded-xl border border-destructive/40 bg-card px-4 py-3 text-sm transition-colors hover:bg-muted"
             >
-              <AlertTriangle className="h-4 w-4 text-destructive" />
-              <span className="min-w-0 flex-1">
-                <strong>{failed.length}</strong> discovery run{failed.length === 1 ? "" : "s"}{" "}
-                failed
-                {failed[0]?.error ? ` — ${failed[0].error}` : ""}
+              <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
+              <span className="min-w-0 flex-1 truncate">
+                <strong>{failed}</strong> discovery run{failed === 1 ? "" : "s"} failed
               </span>
-              <span className="shrink-0 text-xs text-muted-foreground">History</span>
+              <span className="shrink-0 text-xs text-muted-foreground">Review</span>
             </Link>
           )}
         </section>
