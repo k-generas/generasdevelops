@@ -1,11 +1,27 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, Mail, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { recordLoginEvent, ADMIN_EMAIL, ADMIN_WHATSAPP } from "@/lib/access";
+import { createEarlyAccessAccount } from "@/lib/signup.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+const SIGNUP_ERROR_MESSAGES: Record<string, string> = {
+  invalid_input: "Enter a valid email and a password of 8 to 72 characters.",
+  invalid_email: "That email address is not valid.",
+  weak_password: "Choose a stronger password with at least 8 characters.",
+  rate_limited: "Too many attempts. Wait a few minutes and try again.",
+  unknown: "Could not create the account. Try again.",
+};
+
+function signUpErrorMessage(key?: string): string {
+  return (
+    (key ? SIGNUP_ERROR_MESSAGES[key] : undefined) ?? "Could not create the account. Try again."
+  );
+}
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -33,6 +49,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const createAccount = useServerFn(createEarlyAccessAccount);
   const searchMode = Route.useSearch().mode;
   const [mode, setMode] = useState<"in" | "up">(searchMode === "signup" ? "up" : "in");
   const [email, setEmail] = useState("");
@@ -53,20 +70,40 @@ function AuthPage() {
     setMsg(null);
     if (mode === "in") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) setMsg(error.message);
-      else {
+      if (error) {
+        setMsg(
+          error.message.toLowerCase().includes("email not confirmed")
+            ? "This account is approved, but its email is not confirmed yet. Ask the admin to use Confirm email in Admin, then sign in."
+            : error.message,
+        );
+      } else {
         void recordLoginEvent("sign_in");
         navigate({ to: "/dashboard" });
       }
     } else {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: `${window.location.origin}/dashboard` },
-      });
-      if (error) setMsg(error.message);
-      else if (!data.session) setCreatedEmail(email);
-      else navigate({ to: "/dashboard" });
+      const result = await createAccount({ data: { email, password } });
+      if (result.ok) {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) setMsg(error.message);
+        else {
+          void recordLoginEvent("sign_in");
+          navigate({ to: "/dashboard" });
+        }
+      } else if (result.error === "email_exists") {
+        setMode("in");
+        setMsg("That email already has an account. Try signing in below.");
+      } else if (result.error === "service_unconfigured") {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+        });
+        if (error) setMsg(error.message);
+        else if (!data.session) setCreatedEmail(email);
+        else navigate({ to: "/dashboard" });
+      } else {
+        setMsg(signUpErrorMessage(result.error));
+      }
     }
     setBusy(false);
   }

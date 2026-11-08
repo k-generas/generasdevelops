@@ -83,9 +83,8 @@ function PendingScreen({
         </span>
         <h1 className="mt-4 text-center text-xl font-bold">You&apos;re on the Early Access List</h1>
         <p className="mt-2 text-center text-sm text-muted-foreground">
-          Your account has been created successfully. GARE is currently in private early access.
-          Contact the owner to request access. Once your account is approved, you can sign in and
-          explore the platform.
+          Your account is signed in. GARE is currently in private early access. This page checks
+          automatically, and your workspace unlocks here as soon as the owner approves you.
         </p>
 
         <div className="mt-5 space-y-1 rounded-md border bg-muted/40 p-3 text-xs">

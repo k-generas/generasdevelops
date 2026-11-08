@@ -2,7 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Copy, Loader2, ShieldCheck, ShieldX, UserCheck, UserX } from "lucide-react";
+import {
+  Check,
+  Copy,
+  Loader2,
+  MailCheck,
+  ShieldCheck,
+  ShieldX,
+  UserCheck,
+  UserX,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +29,7 @@ import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 import { useAccessInfo } from "@/lib/access";
 import { describeError } from "@/lib/errors";
 import {
+  confirmUserEmail,
   getAdminOverview,
   issueAccessCode,
   listAccessCodes,
@@ -115,6 +125,7 @@ function UsersTab() {
   const qc = useQueryClient();
   const load = useServerFn(listUsers);
   const setStatus = useServerFn(setUserAccessStatus);
+  const confirmEmail = useServerFn(confirmUserEmail);
   const q = useQuery<AdminUserRow[]>({ queryKey: ["admin-users"], queryFn: () => load() });
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -139,9 +150,31 @@ function UsersTab() {
     },
   });
 
+  const confirmMutation = useMutation({
+    mutationFn: (userId: string) => confirmEmail({ data: { userId } }),
+    onSuccess: (res) => {
+      if (!res.ok) {
+        toast.error("Could not confirm email", { description: res.error });
+      } else {
+        toast.success("Email confirmed");
+      }
+      setBusyId(null);
+    },
+    onError: (err) => {
+      const d = describeError(err, "Confirm email");
+      toast.error(d.title, { description: `${d.message} ${d.fix}` });
+      setBusyId(null);
+    },
+  });
+
   function act(userId: string, status: AccessStatus) {
     setBusyId(userId);
     mutation.mutate({ userId, status });
+  }
+
+  function verifyEmail(userId: string) {
+    setBusyId(userId);
+    confirmMutation.mutate(userId);
   }
 
   if (q.isLoading) return <p className="py-6 text-sm text-muted-foreground">Loading…</p>;
@@ -192,6 +225,16 @@ function UsersTab() {
                           title="Approve"
                         >
                           <UserCheck className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {u.access_status === "approved" && !u.is_admin && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => verifyEmail(u.id)}
+                          title="Confirm email"
+                        >
+                          <MailCheck className="h-4 w-4" />
                         </Button>
                       )}
                       {u.access_status !== "suspended" && (

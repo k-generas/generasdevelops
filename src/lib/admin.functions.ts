@@ -73,6 +73,20 @@ async function assertAdmin(supabase: Db): Promise<void> {
   if (!data) throw new Error("Not authorized: administrator access required");
 }
 
+async function confirmAuthEmail(userId: string): Promise<MutationResult> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      email_confirm: true,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: message };
+  }
+}
+
 async function countProfiles(supabase: Db, value: AccessStatus): Promise<number> {
   const { count } = await supabase
     .from("user_profiles")
@@ -204,7 +218,25 @@ export const setUserAccessStatus = createServerFn({ method: "POST" })
       p_note: data.note ?? null,
     });
     if (error) return { ok: false, error: error.message };
-    return result as MutationResult;
+    const outcome = result as MutationResult;
+    if (outcome.ok && data.status === "approved") {
+      const confirmed = await confirmAuthEmail(data.userId);
+      if (!confirmed.ok) {
+        return {
+          ok: false,
+          error: `Access approved, but email confirmation failed: ${confirmed.error ?? "unknown error"}`,
+        };
+      }
+    }
+    return outcome;
+  });
+
+export const confirmUserEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ userId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }): Promise<MutationResult> => {
+    await assertAdmin(context.supabase);
+    return confirmAuthEmail(data.userId);
   });
 
 const issueInput = z.object({
