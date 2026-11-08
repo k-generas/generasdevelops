@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { runDiscovery } from "@/lib/discovery.functions";
+import { checkStoredWebsites, runDiscovery } from "@/lib/discovery.functions";
+import { assessWebsite, type WebsiteProbe } from "@/lib/website-opportunity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -34,15 +35,44 @@ export const Route = createFileRoute("/_authenticated/discover")({
   component: Discover,
 });
 
+type WebsiteAssessmentInput = {
+  website: string | null;
+  website_probe: unknown;
+  website_check: unknown;
+};
+
+function assessBusiness(b: WebsiteAssessmentInput) {
+  return assessWebsite({
+    website: b.website,
+    websiteProbe: (b.website_probe as WebsiteProbe | null) ?? null,
+    websiteCheck: (b.website_check as { confidence?: string | null } | null) ?? null,
+  });
+}
+
+type DiscoverFilter = "gare" | "all" | "no_site" | "site_issues" | "investigated" | "closed";
+
+const DISCOVER_FILTERS: { key: DiscoverFilter; label: string }[] = [
+  { key: "gare", label: "GARE leads" },
+  { key: "all", label: "All" },
+  { key: "no_site", label: "No website" },
+  { key: "site_issues", label: "Website issues" },
+  { key: "investigated", label: "Investigated" },
+  { key: "closed", label: "Closed" },
+];
+
 function Discover() {
   const qc = useQueryClient();
   const isAdmin = useAccessInfo().data?.isAdmin === true;
   const discover = useServerFn(runDiscovery);
+  const checkSites = useServerFn(checkStoredWebsites);
   const [query, setQuery] = useState("");
   const [location, setLocation] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"all" | "no_site" | "investigated" | "closed">("all");
+  const [filter, setFilter] = useState<DiscoverFilter>("gare");
+  const [checkSitesBusy, setCheckSitesBusy] = useState(false);
+  const [checkSitesMsg, setCheckSitesMsg] = useState<string | null>(null);
+  const [checkSitesError, setCheckSitesError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [batchLocs, setBatchLocs] = useState<string[]>([]);
   const [batchBusy, setBatchBusy] = useState(false);
@@ -87,7 +117,7 @@ function Discover() {
     try {
       const r = await discover({ data: { query, location, maxResults: 20 } });
       setResult(
-        `Found ${r.found} · ${r.added} new · ${r.duplicates} already known · ${r.verifiedNoWebsite} verified with no website`,
+        `Found ${r.found} · ${r.added} new · ${r.duplicates} already known · ${r.gareLeads} GARE leads (${r.noWebsite} no site, ${r.siteIssues} site issues${r.uncheckedSites ? `, ${r.uncheckedSites} unchecked` : ""})`,
       );
       if (r.found === 0) {
         setError(
@@ -128,7 +158,7 @@ function Discover() {
         const r = await discover({ data: { query, location: loc, maxResults: 20 } });
         setBatchLog((l) => [
           ...l,
-          `  ${label}: ${r.found} found · ${r.added} new · ${r.duplicates} known · ${r.verifiedNoWebsite} no-website`,
+          `  ${label}: ${r.found} found · ${r.added} new · ${r.duplicates} known · ${r.gareLeads} GARE leads (${r.noWebsite} no site, ${r.siteIssues} site issues)`,
         ]);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -149,23 +179,53 @@ function Discover() {
     qc.invalidateQueries({ queryKey: ["runs"] });
   }
 
+  async function onCheckSites() {
+    if (checkSitesBusy) return;
+    setCheckSitesBusy(true);
+    setCheckSitesMsg(null);
+    setCheckSitesError(null);
+    try {
+      const r = await checkSites({ data: { limit: 20 } });
+      setCheckSitesMsg(
+        `Checked ${r.checked} website${r.checked === 1 ? "" : "s"}${r.remaining > 0 ? ` · ${r.remaining} left` : ""}`,
+      );
+      qc.invalidateQueries({ queryKey: ["businesses"] });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setCheckSitesError(
+        isAdmin ? msg : "Could not check websites right now. Please try again in a moment.",
+      );
+    }
+    setCheckSitesBusy(false);
+  }
+
   const isClosed = (b: { business_status: string | null }) =>
     b.business_status === "CLOSED_PERMANENTLY" || b.business_status === "CLOSED_TEMPORARILY";
-  const list = (businesses.data ?? []).filter((b) =>
-    filter === "no_site"
-      ? !b.website
-      : filter === "investigated"
-        ? b.status === "investigated"
-        : filter === "closed"
-          ? isClosed(b)
-          : true,
-  );
-  const total = businesses.data?.length ?? 0;
-  const noSite = businesses.data?.filter((b) => !b.website && b.website_checked_at).length ?? 0;
-  const noSiteUnverified =
-    businesses.data?.filter((b) => !b.website && !b.website_checked_at).length ?? 0;
-  const investigated = businesses.data?.filter((b) => b.status === "investigated").length ?? 0;
-  const closedCount = businesses.data?.filter(isClosed).length ?? 0;
+  const allBusinesses = businesses.data ?? [];
+  const assessments = new Map(allBusinesses.map((b) => [b.id, assessBusiness(b)]));
+  const stateOf = (b: (typeof allBusinesses)[number]) => assessments.get(b.id)!;
+  const isGareLead = (b: (typeof allBusinesses)[number]) => !isClosed(b) && stateOf(b).qualified;
+  const list = allBusinesses.filter((b) => {
+    if (filter === "gare") return isGareLead(b);
+    if (filter === "no_site") return stateOf(b).state === "no_website";
+    if (filter === "site_issues") return stateOf(b).state === "needs_work";
+    if (filter === "investigated") return b.status === "investigated";
+    if (filter === "closed") return isClosed(b);
+    return true;
+  });
+  const total = allBusinesses.length;
+  const gareLeads = allBusinesses.filter(isGareLead).length;
+  const noWebsite = allBusinesses.filter(
+    (b) => !isClosed(b) && stateOf(b).state === "no_website",
+  ).length;
+  const siteIssues = allBusinesses.filter(
+    (b) => !isClosed(b) && stateOf(b).state === "needs_work",
+  ).length;
+  const noSiteConfirmed = allBusinesses.filter(
+    (b) => !isClosed(b) && stateOf(b).state === "no_website" && b.website_checked_at,
+  ).length;
+  const investigated = allBusinesses.filter((b) => b.status === "investigated").length;
+  const unprobedSites = allBusinesses.filter((b) => !!b.website && !b.website_probed_at).length;
 
   const runsList = runs.data ?? [];
   const lastAttempt = runsList[0]?.created_at ?? null;
@@ -197,17 +257,22 @@ function Discover() {
           }}
         />
       )}
-      <section className="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-4">
+      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
         <Stat label="Businesses" value={total} />
         <Stat
-          label="No website (confirmed)"
-          value={noSite}
-          hint="Only counted after investigation double-checks"
+          label="GARE leads"
+          value={gareLeads}
+          hint="Open businesses with no website or an observable site problem"
         />
         <Stat
-          label="No website (unverified)"
-          value={noSiteUnverified}
-          hint="Discovered on Google Maps, not yet double-checked"
+          label="No website"
+          value={noWebsite}
+          hint={`${noSiteConfirmed} confirmed after a double-check`}
+        />
+        <Stat
+          label="Website issues"
+          value={siteIssues}
+          hint="Broken, insecure, slow, not mobile-ready or outdated"
         />
         <Stat label="Investigated" value={investigated} />
         <Stat
@@ -460,23 +525,36 @@ function Discover() {
               {list.length} shown
             </span>
           </p>
-          {(["all", "no_site", "investigated", "closed"] as const).map((f) => (
+          {unprobedSites > 0 && (
             <Button
-              key={f}
               size="sm"
-              variant={filter === f ? "default" : "outline"}
-              onClick={() => setFilter(f)}
+              variant="outline"
+              disabled={checkSitesBusy}
+              onClick={() => void onCheckSites()}
             >
-              {f === "all"
-                ? "All"
-                : f === "no_site"
-                  ? "No website"
-                  : f === "investigated"
-                    ? "Investigated"
-                    : "Closed"}
+              {checkSitesBusy ? "Checking websites…" : `Check website health (${unprobedSites})`}
+            </Button>
+          )}
+          {DISCOVER_FILTERS.map(({ key, label }) => (
+            <Button
+              key={key}
+              size="sm"
+              variant={filter === key ? "default" : "outline"}
+              onClick={() => setFilter(key)}
+            >
+              {label}
             </Button>
           ))}
         </div>
+        {(checkSitesMsg || checkSitesError) && (
+          <p
+            className={`mb-3 font-mono text-xs ${
+              checkSitesError ? "text-destructive" : "text-muted-foreground"
+            }`}
+          >
+            {checkSitesError ?? checkSitesMsg}
+          </p>
+        )}
         {businesses.isError ? (
           <ErrorBanner
             error={businesses.error}
@@ -491,7 +569,9 @@ function Discover() {
             why={
               total === 0
                 ? "No businesses have been discovered yet. Run a search above — only real Google Maps results are stored."
-                : "You have businesses, but none match the current filter. Switch the filter back to All to see everything."
+                : filter === "gare"
+                  ? "No GARE leads in this view yet. Businesses with healthy websites are hidden here, and saved sites are only classified after they are checked."
+                  : "You have businesses, but none match the current filter. Switch the filter back to All to see everything."
             }
             action={
               total > 0 ? (
@@ -506,8 +586,12 @@ function Discover() {
             {list.map((b) => {
               const closedPermanently = b.business_status === "CLOSED_PERMANENTLY";
               const closedTemporarily = b.business_status === "CLOSED_TEMPORARILY";
+              const assessment = stateOf(b);
               const hasMeta =
-                !b.website || closedPermanently || closedTemporarily || b.rating != null;
+                assessment.state !== "healthy" ||
+                closedPermanently ||
+                closedTemporarily ||
+                b.rating != null;
               return (
                 <Link
                   key={b.id}
@@ -526,7 +610,7 @@ function Discover() {
                   </p>
                   {hasMeta && (
                     <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                      {!b.website &&
+                      {assessment.state === "no_website" &&
                         (b.website_checked_at ? (
                           <Badge variant="outline" className="border-primary text-primary">
                             no website · checked
@@ -536,6 +620,20 @@ function Discover() {
                             no website · unchecked
                           </Badge>
                         ))}
+                      {assessment.state === "needs_work" && (
+                        <Badge
+                          variant="outline"
+                          className="border-amber-600/50 text-amber-700 dark:text-amber-300"
+                          title={assessment.needs.map((need) => need.evidence).join(" ")}
+                        >
+                          {assessment.headline}
+                        </Badge>
+                      )}
+                      {assessment.state === "unchecked" && b.website && (
+                        <Badge variant="outline" className="text-muted-foreground">
+                          site unchecked
+                        </Badge>
+                      )}
                       {closedPermanently && <Badge variant="destructive">closed</Badge>}
                       {closedTemporarily && <Badge variant="destructive">temp. closed</Badge>}
                       {b.rating != null && (

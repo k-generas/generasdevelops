@@ -339,6 +339,8 @@ export type Database = {
           website: string | null
           website_check: Json
           website_checked_at: string | null
+          website_probe: Json
+          website_probed_at: string | null
           website_source: string | null
         }
         Insert: {
@@ -412,6 +414,8 @@ export type Database = {
           website?: string | null
           website_check?: Json
           website_checked_at?: string | null
+          website_probe?: Json
+          website_probed_at?: string | null
           website_source?: string | null
         }
         Update: {
@@ -485,6 +489,8 @@ export type Database = {
           website?: string | null
           website_check?: Json
           website_checked_at?: string | null
+          website_probe?: Json
+          website_probed_at?: string | null
           website_source?: string | null
         }
         Relationships: []

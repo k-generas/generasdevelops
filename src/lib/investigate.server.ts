@@ -105,7 +105,16 @@ export function computeVisibility(
   return { score: breakdown.reduce((a, x) => a + x.points, 0), breakdown };
 }
 
-export async function probeWebsite(url: string | null): Promise<WebsiteFindings> {
+export type ProbeOptions = {
+  timeoutMs?: number;
+  collectEmails?: boolean;
+  maxHtmlBytes?: number;
+};
+
+export async function probeWebsite(
+  url: string | null,
+  options: ProbeOptions = {},
+): Promise<WebsiteFindings> {
   const empty: WebsiteFindings = {
     url,
     reachable: null,
@@ -132,9 +141,9 @@ export async function probeWebsite(url: string | null): Promise<WebsiteFindings>
     const res = await fetch(url, {
       redirect: "follow",
       headers: { "User-Agent": "Mozilla/5.0 (compatible; GARE-Investigator/1.0)" },
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(options.timeoutMs ?? 15000),
     });
-    const html = (await res.text()).slice(0, 400_000);
+    const html = (await res.text()).slice(0, options.maxHtmlBytes ?? 400_000);
     const lower = html.toLowerCase();
     const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.trim() ?? null;
     const desc =
@@ -166,7 +175,7 @@ export async function probeWebsite(url: string | null): Promise<WebsiteFindings>
       copyright_year: years.length ? Math.max(...years) : null,
       html_kb: Math.round(html.length / 1024),
       text_excerpt: text || null,
-      emails: await collectEmails(html, res.url),
+      emails: options.collectEmails === false ? [] : await collectEmails(html, res.url),
       socials: Object.fromEntries(
         Object.entries(SOCIAL_PATTERNS)
           .map(([k, re]) => [k, html.match(re)?.[0]] as const)

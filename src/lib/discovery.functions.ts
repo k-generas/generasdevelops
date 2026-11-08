@@ -3,10 +3,16 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
 import { searchPlaces } from "./places.server";
-import { probeWebsite, analyzeWithAI, computeVisibility } from "./investigate.server";
+import {
+  probeWebsite,
+  analyzeWithAI,
+  computeVisibility,
+  type WebsiteFindings,
+} from "./investigate.server";
 import { verifyWebsite, type WebsiteCheck } from "./website-finder.server";
 import { sameBusinessRecord } from "./company-identity";
 import { recordPlaceChanges } from "./signals.server";
+import { assessWebsite, type WebsiteProbe } from "./website-opportunity";
 
 // Website verification runs inside discovery so we never claim a business has
 // no website when it actually has one. It is time-boxed so a run always returns;
@@ -16,6 +22,30 @@ const VERIFY_CONCURRENCY = 4;
 const VERIFY_MAX_DOMAINS = 6;
 const VERIFY_MAX_FREE_HOSTS = 4;
 const VERIFY_PER_REQUEST_MS = 4_000;
+
+const PROBE_BUDGET_MS = 18_000;
+const PROBE_CONCURRENCY = 4;
+const PROBE_TIMEOUT_MS = 6_000;
+const PROBE_MAX_HTML_BYTES = 250_000;
+
+function websiteProbeJson(findings: WebsiteFindings, checkedAt: string): WebsiteProbe {
+  return {
+    url: findings.url,
+    reachable: findings.reachable,
+    status: findings.status,
+    https: findings.https,
+    load_ms: findings.load_ms,
+    has_viewport_meta: findings.has_viewport_meta,
+    has_contact_form: findings.has_contact_form,
+    has_email_link: findings.has_email_link,
+    has_whatsapp_link: findings.has_whatsapp_link,
+    has_online_booking_or_shop: findings.has_online_booking_or_shop,
+    copyright_year: findings.copyright_year,
+    title: findings.title,
+    error: findings.error,
+    checked_at: checkedAt,
+  };
+}
 
 function websiteCheckJson(check: WebsiteCheck): Json {
   return {
@@ -211,6 +241,9 @@ export const runDiscovery = createServerFn({ method: "POST" })
     // business as confirmed no-website; if a website is found we store it so the
     // lead is no longer shown as website-less.
     const freshByPlaceId = new Map(fresh.map((p) => [p.place_id, p]));
+    const effectiveWebsiteByPlaceId = new Map(
+      places.map((p) => [p.place_id, p.website?.trim() || null]),
+    );
     const noSite = inserted.filter((b) => !freshByPlaceId.get(b.place_id)?.website);
     let verifiedNoWebsite = 0;
     if (noSite.length) {
@@ -238,6 +271,7 @@ export const runDiscovery = createServerFn({ method: "POST" })
             const now = new Date().toISOString();
             const websiteCheck = websiteCheckJson(check);
             if (check.website) {
+              effectiveWebsiteByPlaceId.set(b.place_id, check.website);
               await supabase
                 .from("businesses")
                 .update({
@@ -263,6 +297,65 @@ export const runDiscovery = createServerFn({ method: "POST" })
           }),
         );
       }
+    }
+
+    // Probe the websites returned by this run so Discover can focus on businesses
+    // that need a site, a repair or ongoing maintenance. Bounded and parallel so
+    // one slow host cannot stall the whole run.
+    const probeByBusinessId = new Map<string, WebsiteProbe>();
+    const probeTargets: { id: string; website: string }[] = [];
+    const seenProbeIds = new Set<string>();
+    for (const p of places) {
+      const id = resolved.get(p.place_id);
+      const website = effectiveWebsiteByPlaceId.get(p.place_id);
+      if (!id || !website || seenProbeIds.has(id)) continue;
+      seenProbeIds.add(id);
+      probeTargets.push({ id, website });
+    }
+    if (probeTargets.length) {
+      const deadline = Date.now() + PROBE_BUDGET_MS;
+      for (let i = 0; i < probeTargets.length; i += PROBE_CONCURRENCY) {
+        if (Date.now() >= deadline) break;
+        await Promise.allSettled(
+          probeTargets.slice(i, i + PROBE_CONCURRENCY).map(async ({ id, website }) => {
+            const findings = await probeWebsite(website, {
+              timeoutMs: PROBE_TIMEOUT_MS,
+              collectEmails: false,
+              maxHtmlBytes: PROBE_MAX_HTML_BYTES,
+            });
+            const checkedAt = new Date().toISOString();
+            const probe = websiteProbeJson(findings, checkedAt);
+            const { error: updateError } = await supabase
+              .from("businesses")
+              .update({
+                website_probe: probe as unknown as Json,
+                website_probed_at: checkedAt,
+              })
+              .eq("id", id);
+            if (!updateError) probeByBusinessId.set(id, probe);
+          }),
+        );
+      }
+    }
+
+    const assessments = new Map<string, ReturnType<typeof assessWebsite>>();
+    for (const p of places) {
+      const id = resolved.get(p.place_id);
+      if (!id || assessments.has(id)) continue;
+      assessments.set(
+        id,
+        assessWebsite({
+          website: effectiveWebsiteByPlaceId.get(p.place_id) ?? null,
+          websiteProbe: probeByBusinessId.get(id) ?? null,
+        }),
+      );
+    }
+    const counts = { noWebsite: 0, siteIssues: 0, healthy: 0, uncheckedSites: 0 };
+    for (const assessment of assessments.values()) {
+      if (assessment.state === "no_website") counts.noWebsite += 1;
+      else if (assessment.state === "needs_work") counts.siteIssues += 1;
+      else if (assessment.state === "healthy") counts.healthy += 1;
+      else counts.uncheckedSites += 1;
     }
 
     const freshIds = new Set(fresh.map((p) => p.place_id));
@@ -303,7 +396,68 @@ export const runDiscovery = createServerFn({ method: "POST" })
       added: fresh.length,
       duplicates: places.length - fresh.length,
       verifiedNoWebsite,
+      ...counts,
+      gareLeads: counts.noWebsite + counts.siteIssues,
     };
+  });
+
+// Probes saved websites that have never been checked, so older leads can be
+// classified without re-running discovery. Time-boxed and capped per call.
+export const checkStoredWebsites = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z.object({ limit: z.number().int().min(1).max(40).default(20) }).parse(d ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: rows, error } = await supabase
+      .from("businesses")
+      .select("id, website")
+      .not("website", "is", null)
+      .is("website_probed_at", null)
+      .order("created_at", { ascending: false })
+      .limit(data.limit);
+    if (error) throw new Error(error.message);
+
+    const targets: { id: string; website: string }[] = [];
+    for (const row of rows ?? []) {
+      const website = row.website?.trim();
+      if (website) targets.push({ id: row.id, website });
+    }
+
+    let checked = 0;
+    const deadline = Date.now() + PROBE_BUDGET_MS;
+    for (let i = 0; i < targets.length; i += PROBE_CONCURRENCY) {
+      if (Date.now() >= deadline) break;
+      const results = await Promise.allSettled(
+        targets.slice(i, i + PROBE_CONCURRENCY).map(async ({ id, website }) => {
+          const findings = await probeWebsite(website, {
+            timeoutMs: PROBE_TIMEOUT_MS,
+            collectEmails: false,
+            maxHtmlBytes: PROBE_MAX_HTML_BYTES,
+          });
+          const checkedAt = new Date().toISOString();
+          const probe = websiteProbeJson(findings, checkedAt);
+          const { error: updateError } = await supabase
+            .from("businesses")
+            .update({
+              website_probe: probe as unknown as Json,
+              website_probed_at: checkedAt,
+            })
+            .eq("id", id);
+          return !updateError;
+        }),
+      );
+      checked += results.filter((r) => r.status === "fulfilled" && r.value).length;
+    }
+
+    const { count: remaining } = await supabase
+      .from("businesses")
+      .select("id", { count: "exact", head: true })
+      .not("website", "is", null)
+      .is("website_probed_at", null);
+
+    return { checked, remaining: remaining ?? 0 };
   });
 
 export const investigateBusiness = createServerFn({ method: "POST" })
