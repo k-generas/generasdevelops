@@ -1530,6 +1530,352 @@ export type Database = {
         }
         Relationships: []
       }
+      professional_business_links: {
+        Row: {
+          business_id: string
+          confidence: number
+          created_at: string
+          evidence: Json
+          id: string
+          owner_id: string
+          professional_id: string
+          relationship_type: string
+          role: string | null
+          updated_at: string
+          verified: boolean
+        }
+        Insert: {
+          business_id: string
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          id?: string
+          owner_id?: string
+          professional_id: string
+          relationship_type?: string
+          role?: string | null
+          updated_at?: string
+          verified?: boolean
+        }
+        Update: {
+          business_id?: string
+          confidence?: number
+          created_at?: string
+          evidence?: Json
+          id?: string
+          owner_id?: string
+          professional_id?: string
+          relationship_type?: string
+          role?: string | null
+          updated_at?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_business_links_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professional_business_links_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professionals: {
+        Row: {
+          availability_status: string
+          city: string | null
+          confidence: number
+          country: string | null
+          created_at: string
+          dedupe_key: string
+          do_not_contact: boolean
+          evidence: Json
+          expertise: string[]
+          full_name: string
+          headline: string | null
+          id: string
+          languages: string[]
+          last_verified_at: string | null
+          notes: string | null
+          owner_id: string
+          professional_type: string
+          profile_url: string | null
+          public_email: string | null
+          public_phone: string | null
+          region: string | null
+          relationship_stage: string
+          skills: string[]
+          source_name: string | null
+          source_url: string | null
+          updated_at: string
+          verification_status: string
+          website: string | null
+        }
+        Insert: {
+          availability_status?: string
+          city?: string | null
+          confidence?: number
+          country?: string | null
+          created_at?: string
+          dedupe_key: string
+          do_not_contact?: boolean
+          evidence?: Json
+          expertise?: string[]
+          full_name: string
+          headline?: string | null
+          id?: string
+          languages?: string[]
+          last_verified_at?: string | null
+          notes?: string | null
+          owner_id?: string
+          professional_type?: string
+          profile_url?: string | null
+          public_email?: string | null
+          public_phone?: string | null
+          region?: string | null
+          relationship_stage?: string
+          skills?: string[]
+          source_name?: string | null
+          source_url?: string | null
+          updated_at?: string
+          verification_status?: string
+          website?: string | null
+        }
+        Update: {
+          availability_status?: string
+          city?: string | null
+          confidence?: number
+          country?: string | null
+          created_at?: string
+          dedupe_key?: string
+          do_not_contact?: boolean
+          evidence?: Json
+          expertise?: string[]
+          full_name?: string
+          headline?: string | null
+          id?: string
+          languages?: string[]
+          last_verified_at?: string | null
+          notes?: string | null
+          owner_id?: string
+          professional_type?: string
+          profile_url?: string | null
+          public_email?: string | null
+          public_phone?: string | null
+          region?: string | null
+          relationship_stage?: string
+          skills?: string[]
+          source_name?: string | null
+          source_url?: string | null
+          updated_at?: string
+          verification_status?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      outreach_campaigns: {
+        Row: {
+          audience_kind: string
+          created_at: string
+          daily_limit: number
+          id: string
+          name: string
+          notes: string | null
+          objective: string | null
+          owner_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          audience_kind?: string
+          created_at?: string
+          daily_limit?: number
+          id?: string
+          name: string
+          notes?: string | null
+          objective?: string | null
+          owner_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          audience_kind?: string
+          created_at?: string
+          daily_limit?: number
+          id?: string
+          name?: string
+          notes?: string | null
+          objective?: string | null
+          owner_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      outreach_campaign_steps: {
+        Row: {
+          active: boolean
+          body_template: string
+          campaign_id: string
+          channel: string
+          created_at: string
+          delay_days: number
+          id: string
+          owner_id: string
+          requires_approval: boolean
+          step_order: number
+          subject_template: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          body_template: string
+          campaign_id: string
+          channel: string
+          created_at?: string
+          delay_days?: number
+          id?: string
+          owner_id?: string
+          requires_approval?: boolean
+          step_order: number
+          subject_template?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          body_template?: string
+          campaign_id?: string
+          channel?: string
+          created_at?: string
+          delay_days?: number
+          id?: string
+          owner_id?: string
+          requires_approval?: boolean
+          step_order?: number
+          subject_template?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_campaign_steps_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outreach_queue_items: {
+        Row: {
+          approved_at: string | null
+          business_id: string | null
+          campaign_id: string
+          channel: string
+          country: string | null
+          created_at: string
+          dedupe_key: string
+          draft_body: string
+          draft_subject: string | null
+          eligibility: Json
+          id: string
+          owner_id: string
+          owner_note: string | null
+          professional_id: string | null
+          recipient_domain: string | null
+          recipient_email: string | null
+          recipient_name: string
+          recipient_phone: string | null
+          sent_at: string | null
+          status: string
+          step_id: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          business_id?: string | null
+          campaign_id: string
+          channel: string
+          country?: string | null
+          created_at?: string
+          dedupe_key: string
+          draft_body?: string
+          draft_subject?: string | null
+          eligibility?: Json
+          id?: string
+          owner_id?: string
+          owner_note?: string | null
+          professional_id?: string | null
+          recipient_domain?: string | null
+          recipient_email?: string | null
+          recipient_name: string
+          recipient_phone?: string | null
+          sent_at?: string | null
+          status?: string
+          step_id: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          business_id?: string | null
+          campaign_id?: string
+          channel?: string
+          country?: string | null
+          created_at?: string
+          dedupe_key?: string
+          draft_body?: string
+          draft_subject?: string | null
+          eligibility?: Json
+          id?: string
+          owner_id?: string
+          owner_note?: string | null
+          professional_id?: string | null
+          recipient_domain?: string | null
+          recipient_email?: string | null
+          recipient_name?: string
+          recipient_phone?: string | null
+          sent_at?: string | null
+          status?: string
+          step_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_queue_items_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_queue_items_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_queue_items_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_queue_items_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_campaign_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -2294,6 +2640,48 @@ export type Database = {
           source_id?: string
           started_at?: string
           status?: string
+        }
+        Relationships: []
+      }
+      suppression_entries: {
+        Row: {
+          channel: string
+          country: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          owner_id: string
+          reason: string
+          scope: string
+          source: string | null
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          channel?: string
+          country?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          owner_id?: string
+          reason: string
+          scope?: string
+          source?: string | null
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          channel?: string
+          country?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          owner_id?: string
+          reason?: string
+          scope?: string
+          source?: string | null
+          updated_at?: string
+          value?: string
         }
         Relationships: []
       }

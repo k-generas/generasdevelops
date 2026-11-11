@@ -11,6 +11,125 @@ npm test
 npm run build
 ```
 
+## 2026-11-11 - Outreach campaigns and manual review queue
+
+Add a campaign builder, sequence templates and a compliance-gated manual review queue without
+adding any sending integration.
+
+### Changes
+
+- **`supabase/migrations/20261111000000_outreach_campaigns.sql`** - additive
+  `outreach_campaigns`, `outreach_campaign_steps` and `outreach_queue_items` tables with owner
+  indexes, unique keys, grants and RLS. Not yet applied to hosted Supabase.
+- **`src/integrations/supabase/types.ts`** - types for the three campaign tables.
+- **`src/lib/campaign.ts`** + tests - status taxonomies, template rendering, opt-out insertion,
+  validation, queue transitions, approval/send gates and summaries.
+- **`src/lib/campaigns.functions.ts`** - owner-scoped campaign CRUD, sequence save, bounded
+  audience queue build, queue updates and queue deletion.
+- **`src/routes/_authenticated/campaigns.tsx`** - campaign list, settings, sequence editor,
+  audience filters, review queue, approval and manual-sent controls.
+- **`src/routes/_authenticated/route.tsx`** - Campaigns nav entry.
+- **`src/lib/export.ts`** - backups include the three campaign tables.
+- **Docs** - architecture, implementation, database, compliance and testing updated.
+
+### Non-breaking design decisions
+
+- No existing table or route was rewritten.
+- Campaign steps are owner-authored templates; no AI or provider call is made.
+- Every queue item starts as review or blocked; nothing is auto-approved.
+- Blocked suppression/DNC or missing channel contact data cannot be approved.
+- "Mark sent" records a manual action only; there is no SMTP, WhatsApp or LinkedIn send path.
+- Sequence steps cannot be replaced while a queue exists, preventing accidental cascade deletion.
+- Queue builds are capped at 50 targets per run and deduped by owner/campaign/step/target.
+
+### Verification
+
+- `npx tsc --noEmit` - clean.
+- New pure-module tests - 5 files / 46 tests passing.
+- Full `npm test` - 55 files / 448 tests passing.
+- `npm run build` - successful; `/campaigns` generated.
+- Targeted ESLint/Prettier on new and changed files - clean.
+- Full `npm run lint` not used as a gate; the repository has pre-existing lint issues outside
+  this change.
+
+### Known limitations / follow-ups
+
+- Both migrations remain unapplied in hosted Supabase because the Lovable MCP token is invalid.
+- No database integration, RLS isolation or browser end-to-end tests for campaign flows yet.
+- Campaign scheduling, sending, delivery tracking and reply ingestion are intentionally absent.
+
+## 2026-11-10 - Global intelligence foundation
+
+Add the first global professional, suppression, provider-status and safe-export foundation while
+preserving the existing Rwanda-focused discovery and revenue workflows.
+
+### Baseline at start of pass
+
+- `git` HEAD had the deployed website-opportunity work (`4077a3d`).
+- Existing full regression before this pass: 50 files / 402 tests passing.
+- Existing professional, suppression and provider tables did not exist.
+
+### Changes
+
+- **`docs/GARE_GLOBAL_INTELLIGENCE_MASTER_INSTRUCTION.md`** - saved the full product instruction.
+- **`supabase/migrations/20261109000000_global_intelligence_foundation.sql`** - additive
+  `professionals`, `professional_business_links` and `suppression_entries` tables with owner
+  indexes, unique keys, grants and RLS. Not yet applied to hosted Supabase.
+- **`src/integrations/supabase/types.ts`** - generated-style types for the new tables.
+- **`src/lib/professional-intelligence.ts`** + tests - normalisation, dedupe, validation,
+  confidence, completeness and taxonomies.
+- **`src/lib/compliance.ts`** + tests - suppression matching, policy templates, eligibility
+  checks and summaries.
+- **`src/lib/provider-registry.ts`** + tests - truthful provider catalogue and runtime status.
+- **`src/lib/export-safe.ts`** + tests - formula-safe CSV and dependency-free XLSX.
+- **`src/lib/professionals.functions.ts`** - authenticated professional CRUD and business links.
+- **`src/lib/compliance.functions.ts`** - authenticated suppression CRUD, eligibility, policy and
+  business do-not-contact functions.
+- **`src/routes/_authenticated/professionals.tsx`** - professional directory, filters, edit
+  dialog, confidence/completeness and business links.
+- **`src/routes/_authenticated/compliance.tsx`** - suppression ledger, eligibility checker,
+  business suppression and policy checklist.
+- **`src/routes/_authenticated/providers.tsx`** - provider status, capabilities, cost model and
+  compliance notes.
+- **`src/routes/_authenticated/exports.tsx`** - safe CSV/XLSX exports for businesses,
+  professionals and suppression.
+- **`src/routes/_authenticated/route.tsx`** - nav entries for the four new pages.
+- **`src/routes/_authenticated/proposals.$id.tsx`** - outreach recording now requires owner
+  confirmation, runs eligibility, blocks suppression matches and stores compliance details.
+- **`src/lib/export.ts`** - backups include the three new tables.
+- **Global intelligence docs** - architecture, implementation, database, providers, compliance and
+  testing.
+
+### Non-breaking design decisions
+
+- Additive schema and routes only; no existing table or column was rewritten.
+- Existing businesses have no `country` column, so compliance uses caller/professional country.
+- Professional data is manual and evidence-based; no automated professional scraping.
+- LinkedIn is blocked for automation.
+- AI providers are configured-unverified, never claimed as working.
+- Policy templates are owner-review-required and are not legal advice.
+- Outreach is recorded manually and never sent by the app.
+- Missing new tables produce setup mode rather than hard failures.
+
+### Verification
+
+- `npx tsc --noEmit` - clean.
+- New pure-module tests - 4 files / 31 tests passing.
+- Full `npm test` - 54 files / 433 tests passing.
+- `npm run build` - successful; new routes generated.
+- Targeted ESLint/Prettier on new and changed files - clean.
+- Full `npm run lint` not used as a gate; the repository has pre-existing lint issues outside
+  this change.
+
+### Known limitations / follow-ups
+
+- Hosted migration not applied: the Lovable MCP OAuth refresh token was invalidated while
+  refreshing it during this pass. A fresh authorised token is needed.
+- Provider quota/billing is not verified.
+- No database-integration or browser end-to-end tests yet.
+- Legal/compliance review is still required.
+- Existing source registry remains Rwanda-centric.
+
 ## 2026-11-05 — Social commerce intelligence, Phases 2–6
 
 Turn recorded social matches and business audits into evidence-backed opportunities with

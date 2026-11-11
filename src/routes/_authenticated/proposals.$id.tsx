@@ -1,7 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { checkOutreachEligibility, type OutreachCheckResult } from "@/lib/compliance.functions";
+import type { ContactChannel } from "@/lib/compliance";
 import {
   OUTREACH_CHANNELS,
   nowLocalInput,
@@ -47,9 +50,20 @@ export const Route = createFileRoute("/_authenticated/proposals/$id")({
   component: Editor,
 });
 
+function complianceChannel(channel: string): ContactChannel | null {
+  const value = channel.trim().toLowerCase();
+  if (value === "email") return "email";
+  if (value === "whatsapp") return "whatsapp";
+  if (value === "phone") return "phone";
+  if (value === "sms") return "sms";
+  if (value === "linkedin") return "linkedin";
+  return null;
+}
+
 function Editor() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
+  const checkCompliance = useServerFn(checkOutreachEligibility);
   const prop = useQuery({
     queryKey: ["proposal", id],
     queryFn: async () => {
@@ -92,6 +106,9 @@ function Editor() {
   const [response, setResponse] = useState("");
   const [when, setWhen] = useState(() => nowLocalInput());
   const [outreachBusy, setOutreachBusy] = useState(false);
+  const [ownerConfirmed, setOwnerConfirmed] = useState(false);
+  const [complianceCheck, setComplianceCheck] = useState<OutreachCheckResult | null>(null);
+  const [complianceMessage, setComplianceMessage] = useState<string | null>(null);
   const [outcomeReason, setOutcomeReason] = useState("");
   const [outcomeBusy, setOutcomeBusy] = useState(false);
   const [invBusy, setInvBusy] = useState(false);
@@ -142,8 +159,35 @@ function Editor() {
     if (!p) return;
     const ch = channel.trim() || p.channel || "Email";
     const at = when ? new Date(when).toISOString() : new Date().toISOString();
+    const mapped = complianceChannel(ch);
     setOutreachBusy(true);
+    setComplianceMessage(null);
     try {
+      let result: OutreachCheckResult | null = null;
+      if (mapped) {
+        result = await checkCompliance({
+          data: {
+            channel: mapped,
+            businessId: p.business_id,
+            ownerConfirmedLawfulBasis: ownerConfirmed,
+          },
+        });
+        setComplianceCheck(result);
+      }
+      if (result?.status === "blocked") {
+        setComplianceMessage(
+          `Outreach blocked: ${result.reasons.join(" ") || "suppression or do-not-contact applies."}`,
+        );
+        return;
+      }
+      if (!ownerConfirmed) {
+        setComplianceMessage(
+          mapped
+            ? "Confirm that you reviewed the lawful basis, channel terms and suppression result before recording outreach."
+            : "In-person/other channels cannot be checked automatically. Confirm that you reviewed the lawful basis and suppression ledger manually.",
+        );
+        return;
+      }
       await supabase
         .from("proposals")
         .update({ status: "SENT", sent_at: at, sent_channel: ch })
@@ -154,7 +198,17 @@ function Editor() {
         summary: outreachSummary(ch, response),
         ref_table: "proposals",
         ref_id: id,
-        details: { channel: ch, response: response.trim() || null, at },
+        details: {
+          channel: ch,
+          response: response.trim() || null,
+          at,
+          compliance: {
+            status: result?.status ?? "manual_review",
+            checkedAt: new Date().toISOString(),
+            ownerConfirmed: true,
+            reasons: result?.reasons ?? [],
+          },
+        },
       });
       await supabase
         .from("tasks")
@@ -163,9 +217,14 @@ function Editor() {
         .eq("status", "open");
       setResponse("");
       setWhen(nowLocalInput());
+      setOwnerConfirmed(false);
+      setComplianceMessage("Outreach recorded with the owner compliance confirmation.");
       qc.invalidateQueries({ queryKey: ["proposal", id] });
       qc.invalidateQueries({ queryKey: ["proposal-outreach", id] });
       qc.invalidateQueries({ queryKey: ["biz-events", p.business_id] });
+    } catch (err) {
+      const d = describeError(err, "Record outreach");
+      setComplianceMessage(`${d.title}: ${d.message} ${d.fix}`);
     } finally {
       setOutreachBusy(false);
     }
@@ -361,6 +420,8 @@ function Editor() {
                 onChange={(e) => {
                   channelTouched.current = true;
                   setChannel(e.target.value);
+                  setComplianceCheck(null);
+                  setComplianceMessage(null);
                 }}
               >
                 {OUTREACH_CHANNELS.map((c) => (
@@ -373,7 +434,37 @@ function Editor() {
                 value={response}
                 onChange={(e) => setResponse(e.target.value)}
               />
-              <Button size="sm" onClick={recordOutreach} disabled={outreachBusy}>
+              <label className="flex items-start gap-2 text-xs text-muted-foreground">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={ownerConfirmed}
+                  onChange={(e) => setOwnerConfirmed(e.target.checked)}
+                />
+                <span>
+                  I reviewed the lawful basis, destination-country rules, channel terms and the
+                  suppression result for this specific outreach.
+                </span>
+              </label>
+              {complianceMessage && (
+                <p
+                  className={`rounded border px-2 py-1 text-xs ${
+                    complianceMessage.startsWith("Outreach recorded")
+                      ? "bg-muted text-muted-foreground"
+                      : "border-destructive/40 text-destructive"
+                  }`}
+                >
+                  {complianceMessage}
+                </p>
+              )}
+              {complianceCheck && complianceCheck.reasons.length > 0 && (
+                <ul className="list-disc space-y-1 pl-4 text-xs text-muted-foreground">
+                  {complianceCheck.reasons.slice(0, 4).map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+              )}
+              <Button size="sm" onClick={recordOutreach} disabled={outreachBusy || !ownerConfirmed}>
                 {outreachBusy ? "Recording…" : "Record outreach"}
               </Button>
             </div>
@@ -427,7 +518,7 @@ function Editor() {
             {versions.data?.map((v) => (
               <div key={v.id} className="flex items-start justify-between gap-2 py-1">
                 <span className="min-w-0 break-words font-mono text-xs">
-                  v{v.version} A� {new Date(v.created_at).toLocaleString()} A� {v.note}
+                  v{v.version} - {new Date(v.created_at).toLocaleString()} - {v.note}
                 </span>
                 <Button
                   size="sm"

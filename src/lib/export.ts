@@ -30,6 +30,12 @@ export const BACKUP_TABLES = [
   "source_scans",
   "daily_digests",
   "monitoring_settings",
+  "professionals",
+  "professional_business_links",
+  "outreach_campaigns",
+  "outreach_campaign_steps",
+  "outreach_queue_items",
+  "suppression_entries",
   "user_preferences",
   "user_profiles",
 ] as const;

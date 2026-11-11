@@ -333,7 +333,11 @@ function BusinessPage() {
 
       <div className="flex flex-wrap items-center gap-3">
         <Button onClick={run} disabled={busy}>
-          {busy ? "Investigating�?� (�%^30s)" : inv.data ? "Re-investigate" : "Run investigation"}
+          {busy
+            ? "Investigating... (up to 30s)"
+            : inv.data
+              ? "Re-investigate"
+              : "Run investigation"}
         </Button>
         <Button onClick={runAudit} disabled={auditBusy} variant="secondary">
           {auditBusy ? "Running audit..." : "Run Business Audit"}
@@ -367,7 +371,7 @@ function BusinessPage() {
       )}
       {err && (
         <p className="rounded border border-destructive bg-card p-3 text-sm text-destructive">
-          {describeError(err, "Investigation").title}: {err} �?"{" "}
+          {describeError(err, "Investigation").title}: {err} -{" "}
           {describeError(err, "Investigation").fix}
         </p>
       )}
