@@ -11,6 +11,62 @@ npm test
 npm run build
 ```
 
+## 2026-11-11 - Saved prospect lists and campaign list targeting
+
+Add reusable owner-scoped prospect filters with live previews, safe exports and optional campaign
+queue targeting. No sending integration was added.
+
+### Changes
+
+- **`supabase/migrations/20261112000000_prospect_lists.sql`** - additive `prospect_lists` table
+  with owner indexes, grants, RLS and an owner-scoped policy. Applied to hosted Supabase on
+  2026-11-11.
+- **`src/integrations/supabase/types.ts`** - types for `prospect_lists`.
+- **`src/lib/prospect-lists.ts`** + tests - filter normalisation, audience validation, chips,
+  summaries, list validation and preview rows.
+- **`src/lib/prospect-queries.server.ts`** - shared owner-scoped business/professional filter
+  queries for previews, exports, counts and campaign targets.
+- **`src/lib/prospect-lists.functions.ts`** - saved-list CRUD, live results and bounded export
+  rows.
+- **`src/routes/_authenticated/lists.tsx`** - create/edit/delete lists, filter controls, live
+  preview and CSV/XLSX export.
+- **`src/lib/campaigns.functions.ts`** - campaign queue build accepts an optional saved list;
+  list filters replace ad-hoc filters and audience mismatches are rejected.
+- **`src/routes/_authenticated/campaigns.tsx`** - saved-list selector and disabled ad-hoc filters
+  while a list is active.
+- **`src/routes/_authenticated/route.tsx`** - Prospect lists nav entry.
+- **`src/lib/export.ts`** - backups include `prospect_lists`.
+- **Docs** - architecture, implementation, database, testing and this log updated.
+
+### Non-breaking design decisions
+
+- Lists store live filter criteria, not frozen member IDs.
+- Business filters are keyword, district, sector and outreach stage.
+- Professional filters are keyword, country, professional type and availability.
+- Exports are capped at 5,000 rows and use the existing formula-neutralising writer.
+- A saved list never bypasses suppression, do-not-contact, lawful-basis or contact completeness
+  checks; those still run when the campaign queue is built.
+- No automatic outreach, provider call or external send path was introduced.
+
+### Verification
+
+- `npx tsc --noEmit` - clean.
+- `npm test` - 56 files / 459 tests passing.
+- `npm run build` - successful; `/lists`, `/campaigns` and related assets generated.
+- Targeted ESLint/Prettier on changed files - clean.
+- Hosted verification confirmed `prospect_lists` exists, RLS is enabled, the owner policy uses
+  `owner_id = auth.uid()`, both owner indexes exist, and `authenticated` has
+  select/insert/update/delete grants.
+- Full `npm run lint` not used as a gate; the repository has pre-existing lint issues outside
+  this change.
+
+### Known limitations / follow-ups
+
+- No database integration, RLS isolation or browser end-to-end tests for saved lists yet.
+- Lists are live filters; point-in-time snapshots are not stored.
+- An owner-authenticated smoke test of `/lists` and list-targeted queue building remains.
+- Campaign scheduling, sending, delivery tracking and reply ingestion remain intentionally absent.
+
 ## 2026-11-11 - Outreach campaigns and manual review queue
 
 Add a campaign builder, sequence templates and a compliance-gated manual review queue without

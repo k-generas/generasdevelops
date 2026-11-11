@@ -22,6 +22,7 @@ import { Route as AuthenticatedExportsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedIntentRouteImport } from './routes/_authenticated/intent'
 import { Route as AuthenticatedInvoicesRouteImport } from './routes/_authenticated/invoices'
 import { Route as AuthenticatedLeaksRouteImport } from './routes/_authenticated/leaks'
+import { Route as AuthenticatedListsRouteImport } from './routes/_authenticated/lists'
 import { Route as AuthenticatedMaintenanceRouteImport } from './routes/_authenticated/maintenance'
 import { Route as AuthenticatedMoneyRouteImport } from './routes/_authenticated/money'
 import { Route as AuthenticatedNumbersRouteImport } from './routes/_authenticated/numbers'
@@ -112,6 +113,11 @@ const AuthenticatedInvoicesRoute = AuthenticatedInvoicesRouteImport.update({
 const AuthenticatedLeaksRoute = AuthenticatedLeaksRouteImport.update({
   id: '/leaks',
   path: '/leaks',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedListsRoute = AuthenticatedListsRouteImport.update({
+  id: '/lists',
+  path: '/lists',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMaintenanceRoute =
@@ -274,6 +280,7 @@ export interface FileRoutesByFullPath {
   '/intent': typeof AuthenticatedIntentRoute
   '/invoices': typeof AuthenticatedInvoicesRoute
   '/leaks': typeof AuthenticatedLeaksRoute
+  '/lists': typeof AuthenticatedListsRoute
   '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/money': typeof AuthenticatedMoneyRoute
   '/numbers': typeof AuthenticatedNumbersRoute
@@ -315,6 +322,7 @@ export interface FileRoutesByTo {
   '/intent': typeof AuthenticatedIntentRoute
   '/invoices': typeof AuthenticatedInvoicesRoute
   '/leaks': typeof AuthenticatedLeaksRoute
+  '/lists': typeof AuthenticatedListsRoute
   '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/money': typeof AuthenticatedMoneyRoute
   '/numbers': typeof AuthenticatedNumbersRoute
@@ -358,6 +366,7 @@ export interface FileRoutesById {
   '/_authenticated/intent': typeof AuthenticatedIntentRoute
   '/_authenticated/invoices': typeof AuthenticatedInvoicesRoute
   '/_authenticated/leaks': typeof AuthenticatedLeaksRoute
+  '/_authenticated/lists': typeof AuthenticatedListsRoute
   '/_authenticated/maintenance': typeof AuthenticatedMaintenanceRoute
   '/_authenticated/money': typeof AuthenticatedMoneyRoute
   '/_authenticated/numbers': typeof AuthenticatedNumbersRoute
@@ -401,6 +410,7 @@ export interface FileRouteTypes {
     | '/intent'
     | '/invoices'
     | '/leaks'
+    | '/lists'
     | '/maintenance'
     | '/money'
     | '/numbers'
@@ -442,6 +452,7 @@ export interface FileRouteTypes {
     | '/intent'
     | '/invoices'
     | '/leaks'
+    | '/lists'
     | '/maintenance'
     | '/money'
     | '/numbers'
@@ -484,6 +495,7 @@ export interface FileRouteTypes {
     | '/_authenticated/intent'
     | '/_authenticated/invoices'
     | '/_authenticated/leaks'
+    | '/_authenticated/lists'
     | '/_authenticated/maintenance'
     | '/_authenticated/money'
     | '/_authenticated/numbers'
@@ -610,6 +622,13 @@ declare module '@tanstack/react-router' {
       path: '/leaks'
       fullPath: '/leaks'
       preLoaderRoute: typeof AuthenticatedLeaksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/lists': {
+      id: '/_authenticated/lists'
+      path: '/lists'
+      fullPath: '/lists'
+      preLoaderRoute: typeof AuthenticatedListsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/maintenance': {
@@ -815,6 +834,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIntentRoute: typeof AuthenticatedIntentRoute
   AuthenticatedInvoicesRoute: typeof AuthenticatedInvoicesRoute
   AuthenticatedLeaksRoute: typeof AuthenticatedLeaksRoute
+  AuthenticatedListsRoute: typeof AuthenticatedListsRoute
   AuthenticatedMaintenanceRoute: typeof AuthenticatedMaintenanceRoute
   AuthenticatedMoneyRoute: typeof AuthenticatedMoneyRoute
   AuthenticatedNumbersRoute: typeof AuthenticatedNumbersRoute
@@ -855,6 +875,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIntentRoute: AuthenticatedIntentRoute,
   AuthenticatedInvoicesRoute: AuthenticatedInvoicesRoute,
   AuthenticatedLeaksRoute: AuthenticatedLeaksRoute,
+  AuthenticatedListsRoute: AuthenticatedListsRoute,
   AuthenticatedMaintenanceRoute: AuthenticatedMaintenanceRoute,
   AuthenticatedMoneyRoute: AuthenticatedMoneyRoute,
   AuthenticatedNumbersRoute: AuthenticatedNumbersRoute,

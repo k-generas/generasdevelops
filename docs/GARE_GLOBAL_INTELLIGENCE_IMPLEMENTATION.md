@@ -2,16 +2,17 @@
 
 ## Status
 
-Foundation and campaign phases are implemented in code and tests. Both additive database
-migrations were applied to hosted Supabase on 2026-11-11. Schema verification confirmed all six
-tables exist with RLS enabled, one owner-scoped policy per table and expected indexes/grants.
+Foundation, campaign and saved-prospect-list phases are implemented in code and tests. All three
+additive database migrations were applied to hosted Supabase on 2026-11-11. Schema verification
+confirmed all seven tables exist with RLS enabled, one owner-scoped policy per table and expected
+indexes/grants.
 
 Verification completed:
 
 - `npx tsc --noEmit` - clean
-- `npm test` - 55 files / 448 tests passing
-- `npm run build` - successful; `/professionals`, `/compliance`, `/providers`, `/exports` and
-  `/campaigns` generated
+- `npm test` - 56 files / 459 tests passing
+- `npm run build` - successful; `/professionals`, `/compliance`, `/providers`, `/exports`,
+  `/campaigns` and `/lists` generated
 - Targeted ESLint/Prettier on all new or changed files - clean
 
 ## What shipped
@@ -138,15 +139,40 @@ Capabilities:
   called.
 - UI exposes campaign settings, sequence editor, queue filters, summary counts, draft preview,
   approval, skip, mark-sent and remove actions.
-- Missing-table setup mode points at the outreach campaign migration.
+- A saved prospect list can be selected when building a queue; its live filters replace the
+  ad-hoc audience filters and must match the campaign audience kind.
+- Missing-table setup mode points at the required migration.
 
-### 7. Navigation
+### 7. Saved prospect lists
+
+Files:
+
+- `src/lib/prospect-lists.ts`
+- `src/lib/prospect-lists.test.ts`
+- `src/lib/prospect-queries.server.ts`
+- `src/lib/prospect-lists.functions.ts`
+- `src/routes/_authenticated/lists.tsx`
+
+Capabilities:
+
+- Owner-scoped saved lists for businesses or professionals.
+- Filters: keyword, district, sector, outreach stage, country, professional type and availability,
+  with audience-irrelevant filters cleared.
+- Validation for name, audience, filter lengths and stored filter shapes.
+- Live preview count and sample rows; lists store filters, not frozen prospect IDs.
+- Safe CSV/XLSX export of up to 5,000 current matches using formula-neutralised cells.
+- List management UI with create, edit, delete and audience chips.
+- Campaign queue builder can use a saved list; audience mismatch is rejected.
+- Prospect lists remain filters only: suppression, do-not-contact, lawful-basis and contact
+  completeness checks still run when the manual queue is built.
+
+### 8. Navigation
 
 File:
 
 - `src/routes/_authenticated/route.tsx`
 
-New entries: Professionals, Compliance, Providers, Exports and Campaigns.
+New entries: Professionals, Prospect lists, Compliance, Providers, Exports and Campaigns.
 
 ## Database migrations
 
@@ -154,6 +180,7 @@ Files:
 
 - `supabase/migrations/20261109000000_global_intelligence_foundation.sql`
 - `supabase/migrations/20261111000000_outreach_campaigns.sql`
+- `supabase/migrations/20261112000000_prospect_lists.sql`
 
 They create:
 
@@ -163,6 +190,7 @@ They create:
 - `outreach_campaigns`
 - `outreach_campaign_steps`
 - `outreach_queue_items`
+- `prospect_lists`
 - owner indexes, unique keys, grants and RLS policies
 - a PostgREST schema reload notification
 
@@ -173,16 +201,16 @@ The migrations are additive and do not rewrite existing rows.
 Completed on hosted Supabase on 2026-11-11:
 
 1. Authorised the Lovable MCP connection with the project owner account.
-2. Applied both migrations.
-3. Verified all six tables, indexes, grants and owner-scoped RLS policies exist.
+2. Applied all three migrations.
+3. Verified all seven tables, indexes, grants and owner-scoped RLS policies exist.
 
 Still to do with the owner session:
 
-4. Open `/professionals`, `/compliance`, `/exports` and `/campaigns`.
+4. Open `/professionals`, `/lists`, `/compliance`, `/exports` and `/campaigns`.
 5. Add a test professional, suppression entry and business link; confirm the owner can read and
    delete only their own rows.
-6. Create a campaign with one step, build a small queue, and confirm items are review/blocked and
-   never sent.
+6. Create a saved list, verify its live preview and export, then build a small campaign queue from
+   it and confirm items are review/blocked and never sent.
 7. Run the check in `/compliance` and confirm a suppression match returns blocked.
 8. Run the full test and build commands again.
 
@@ -193,6 +221,8 @@ Still to do with the owner session:
 - Integrate eligibility into any other outreach logging paths that may be added later.
 - Expand source coverage and global discovery only after provider terms and quotas are reviewed.
 - Add a retention/cleanup workflow for suppression and professional records.
+- Add saved-list membership snapshots only if reporting needs point-in-time segments; the current
+  live-filter model is intentional.
 - Campaign scheduling, sending, delivery tracking and reply ingestion remain future work; the
   current queue is intentionally manual.
 - Complete the legal/compliance review with a qualified adviser.
@@ -202,6 +232,7 @@ Still to do with the owner session:
 The migrations only add tables. Before production data exists, rollback is:
 
 ```sql
+DROP TABLE IF EXISTS public.prospect_lists;
 DROP TABLE IF EXISTS public.outreach_queue_items;
 DROP TABLE IF EXISTS public.outreach_campaign_steps;
 DROP TABLE IF EXISTS public.outreach_campaigns;

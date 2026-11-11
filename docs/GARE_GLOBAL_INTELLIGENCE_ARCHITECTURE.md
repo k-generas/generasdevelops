@@ -34,9 +34,10 @@ the system of record. Global intelligence is additive.
 - Existing tables such as `businesses`, `proposals`, `business_activity_events`, `tasks` and
   `discovery_runs` remain unchanged.
 - New tables: `professionals`, `professional_business_links`, `suppression_entries`,
-  `outreach_campaigns`, `outreach_campaign_steps`, `outreach_queue_items`.
-- Migrations: `supabase/migrations/20261109000000_global_intelligence_foundation.sql` and
-  `supabase/migrations/20261111000000_outreach_campaigns.sql`.
+  `outreach_campaigns`, `outreach_campaign_steps`, `outreach_queue_items`, `prospect_lists`.
+- Migrations: `supabase/migrations/20261109000000_global_intelligence_foundation.sql`,
+  `supabase/migrations/20261111000000_outreach_campaigns.sql` and
+  `supabase/migrations/20261112000000_prospect_lists.sql`.
 - All new tables are owner-scoped with RLS and authenticated grants.
 
 ### Domain logic
@@ -51,6 +52,8 @@ Pure, testable modules with no network or database access:
 - `src/lib/export-safe.ts` - formula sanitisation, safe CSV and dependency-free XLSX writing.
 - `src/lib/campaign.ts` - campaign statuses, template rendering, validation, queue transitions,
   approval gates and summaries.
+- `src/lib/prospect-lists.ts` - saved-list filter normalisation, validation, preview rows and
+  audience-safe chips.
 
 ### Server functions
 
@@ -60,8 +63,12 @@ Authenticated TanStack server functions:
   professional-business links.
 - `src/lib/compliance.functions.ts` - suppression CRUD, summary, outreach eligibility check,
   policy lookup and business do-not-contact flag.
-- `src/lib/campaigns.functions.ts` - campaign CRUD, sequence save, bounded audience queue build,
-  queue status updates and queue deletion.
+- `src/lib/campaigns.functions.ts` - campaign CRUD, sequence save, bounded audience queue build
+  from ad-hoc filters or a saved list, queue status updates and queue deletion.
+- `src/lib/prospect-lists.functions.ts` - saved-list CRUD, live counts, previews and bounded
+  export rows.
+- `src/lib/prospect-queries.server.ts` - owner-scoped business/professional filter queries shared
+  by lists and campaign queue builds.
 - `src/lib/system.functions.ts` - runtime provider configuration status without exposing keys.
 
 Server functions read the caller through `requireSupabaseAuth` and always filter by owner.
@@ -72,6 +79,7 @@ Authenticated pages under `src/routes/_authenticated/`:
 
 - `/professionals` - evidence-based professional directory with filters, edit dialog, confidence,
   completeness and business links.
+- `/lists` - saved business/professional prospect filters with live preview and safe exports.
 - `/compliance` - suppression ledger, eligibility checker, business do-not-contact and policy
   checklists.
 - `/providers` - truthful provider availability and compliance notes.
@@ -108,6 +116,15 @@ Navigation lives in `src/routes/_authenticated/route.tsx`.
 4. A blocked result stops the record. Review-required results can be recorded only with the
    explicit owner confirmation.
 5. The compliance result is stored in the activity event details for auditability.
+
+### Saved prospect list
+
+1. Owner saves a name, audience kind and filter object.
+2. Filters are normalised for the audience and stored as live query criteria, not fixed members.
+3. Preview and export run the same owner-scoped filter query used by campaign queue builds.
+4. A campaign can select a matching list; list filters replace ad-hoc filters and mismatched
+   audience kinds are rejected.
+5. Every preview, export and queue build remains subject to compliance checks at queue time.
 
 ### Campaign queue
 

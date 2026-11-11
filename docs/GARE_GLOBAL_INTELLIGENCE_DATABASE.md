@@ -4,10 +4,11 @@
 
 - `supabase/migrations/20261109000000_global_intelligence_foundation.sql`
 - `supabase/migrations/20261111000000_outreach_campaigns.sql`
+- `supabase/migrations/20261112000000_prospect_lists.sql`
 
-Status: applied to hosted Supabase on 2026-11-11. Verification confirmed all six tables exist,
+Status: applied to hosted Supabase on 2026-11-11. Verification confirmed all seven tables exist,
 RLS is enabled, each table has one owner-scoped policy using `owner_id = auth.uid()`, expected
-indexes are present, and `authenticated` has select grants.
+indexes are present, and `authenticated` has select/insert/update/delete grants.
 
 The migrations are additive. They do not alter existing tables or rewrite existing data.
 
@@ -128,6 +129,33 @@ Indexes:
 - `(owner_id, scope, value)`
 - `(owner_id, channel, expires_at)`
 
+## `prospect_lists`
+
+Purpose: reusable, live filter segments for businesses or professionals.
+
+Key columns:
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | uuid | primary key |
+| `owner_id` | uuid | owner and RLS key |
+| `name` | text | required, 1-160 characters after trim |
+| `description` | text | optional, up to 1,000 characters |
+| `entity_kind` | text | business or professional |
+| `filters` | jsonb | filter object; validated and normalised by audience |
+| `filter_version` | integer | defaults to 1; reserved for future filter migrations |
+| `created_at`, `updated_at` | timestamptz | timestamps |
+
+Indexes:
+
+- `(owner_id, updated_at DESC)`
+- `(owner_id, entity_kind, updated_at DESC)`
+
+Lists store filters rather than member IDs, so previews, exports and campaign queues always use
+current records. Business filters are keyword, district, sector and outreach stage. Professional
+filters are keyword, country, professional type and availability. Suppression and do-not-contact
+checks still run when a campaign queue is built.
+
 ## `outreach_campaigns`
 
 Purpose: owner-authored outreach campaign definition.
@@ -225,6 +253,7 @@ Existing fields used by the compliance layer:
 
 - `professionals`
 - `professional_business_links`
+- `prospect_lists`
 - `outreach_campaigns`
 - `outreach_campaign_steps`
 - `outreach_queue_items`
@@ -243,7 +272,8 @@ from information_schema.tables
 where table_schema = 'public'
   and table_name in (
     'professionals', 'professional_business_links', 'suppression_entries',
-    'outreach_campaigns', 'outreach_campaign_steps', 'outreach_queue_items'
+    'prospect_lists', 'outreach_campaigns', 'outreach_campaign_steps',
+    'outreach_queue_items'
   );
 
 select tablename, policyname, cmd
@@ -251,7 +281,8 @@ from pg_policies
 where schemaname = 'public'
   and tablename in (
     'professionals', 'professional_business_links', 'suppression_entries',
-    'outreach_campaigns', 'outreach_campaign_steps', 'outreach_queue_items'
+    'prospect_lists', 'outreach_campaigns', 'outreach_campaign_steps',
+    'outreach_queue_items'
   );
 ```
 

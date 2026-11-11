@@ -1680,6 +1680,42 @@ export type Database = {
         }
         Relationships: []
       }
+      prospect_lists: {
+        Row: {
+          created_at: string
+          description: string | null
+          entity_kind: string
+          filter_version: number
+          filters: Json
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          entity_kind?: string
+          filter_version?: number
+          filters?: Json
+          id?: string
+          name: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          entity_kind?: string
+          filter_version?: number
+          filters?: Json
+          id?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       outreach_campaigns: {
         Row: {
           audience_kind: string

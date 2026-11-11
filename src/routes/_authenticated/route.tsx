@@ -116,6 +116,7 @@ const NAV: NavItem[] = [
   { to: "/orders", label: "Orders", icon: ClipboardList },
   { to: "/businesses", label: "Businesses", icon: Building2 },
   { to: "/professionals", label: "Professionals", icon: Briefcase },
+  { to: "/lists", label: "Prospect lists", icon: ListChecks },
   { to: "/compliance", label: "Compliance", icon: Scale },
   { to: "/providers", label: "Providers", icon: PlugZap },
   { to: "/exports", label: "Exports", icon: Download },

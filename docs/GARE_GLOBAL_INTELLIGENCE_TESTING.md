@@ -13,19 +13,19 @@ npm run build
 Targeted checks used during this phase:
 
 ```powershell
-npx vitest run src/lib/professional-intelligence.test.ts src/lib/compliance.test.ts src/lib/provider-registry.test.ts src/lib/export-safe.test.ts src/lib/campaign.test.ts
-npx eslint src/routes/_authenticated/professionals.tsx src/routes/_authenticated/compliance.tsx src/routes/_authenticated/providers.tsx src/routes/_authenticated/exports.tsx src/routes/_authenticated/campaigns.tsx 'src/routes/_authenticated/proposals.$id.tsx' src/routes/_authenticated/route.tsx src/lib/professional-intelligence.ts src/lib/compliance.ts src/lib/provider-registry.ts src/lib/export-safe.ts src/lib/campaign.ts src/lib/professionals.functions.ts src/lib/compliance.functions.ts src/lib/campaigns.functions.ts src/lib/export.ts
+npx vitest run src/lib/professional-intelligence.test.ts src/lib/compliance.test.ts src/lib/provider-registry.test.ts src/lib/export-safe.test.ts src/lib/campaign.test.ts src/lib/prospect-lists.test.ts
+npx eslint src/routes/_authenticated/professionals.tsx src/routes/_authenticated/lists.tsx src/routes/_authenticated/compliance.tsx src/routes/_authenticated/providers.tsx src/routes/_authenticated/exports.tsx src/routes/_authenticated/campaigns.tsx 'src/routes/_authenticated/proposals.$id.tsx' src/routes/_authenticated/route.tsx src/lib/professional-intelligence.ts src/lib/compliance.ts src/lib/provider-registry.ts src/lib/export-safe.ts src/lib/campaign.ts src/lib/prospect-lists.ts src/lib/prospect-queries.server.ts src/lib/professionals.functions.ts src/lib/compliance.functions.ts src/lib/campaigns.functions.ts src/lib/prospect-lists.functions.ts src/lib/export.ts
 ```
 
 ## Current verification
 
-| Check | Result |
-| --- | --- |
-| `npx tsc --noEmit` | clean |
-| New pure-module tests | 5 files / 46 tests passing |
-| Full `npm test` | 55 files / 448 tests passing |
-| `npm run build` | successful; `/campaigns` generated |
-| Targeted ESLint/Prettier | clean |
+| Check                    | Result                                                                              |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| `npx tsc --noEmit`       | clean                                                                               |
+| Prospect-list pure-module tests | 1 file / 11 tests passing |
+| Full `npm test` | 56 files / 459 tests passing |
+| `npm run build`          | successful; `/lists` and `/campaigns` generated                                     |
+| Targeted ESLint/Prettier | clean                                                                               |
 | `npm run lint` full repo | not used as a gate; the repository has pre-existing lint issues outside this change |
 
 The full test run emitted a jsdom navigation warning from an unrelated test environment path. It
@@ -93,12 +93,27 @@ Covers:
 - approval and manual-send gates;
 - queue summaries and stable dedupe keys.
 
+### `src/lib/prospect-lists.test.ts`
+
+Covers:
+
+- filter trimming and server-side length caps;
+- clearing business-only and professional-only filters by audience;
+- shared keyword filters for both audiences;
+- malformed stored filter fallback;
+- audience-safe chips and summaries;
+- empty-filter detection;
+- name/audience/filter validation;
+- preview-row mapping and do-not-contact flags.
+
 ## Not yet covered
 
 - Server functions against a real Postgres test database.
 - RLS ownership isolation tests.
-- Browser end-to-end flows for the five new routes.
+- Browser end-to-end flows for the six new routes.
 - Campaign queue build and status-transition server tests.
+- Saved-list preview/export tests against a real database.
+- Campaign queue build from a saved list and audience-mismatch rejection.
 - Manual visual checks at mobile and desktop breakpoints.
 - Authenticated owner smoke checks against the hosted database.
 - Provider quota/billing failure paths.
@@ -106,7 +121,7 @@ Covers:
 
 ## Recommended next tests
 
-1. Add database integration tests for owner isolation on all six new tables.
+1. Add database integration tests for owner isolation on all seven new tables.
 2. Add route-level tests for the professionals CRUD and business link flow.
 3. Add an outreach guard test that proves blocked suppression prevents an activity insert.
 4. Add campaign queue tests for suppression blocking, dedupe, approval and mark-sent gates.
@@ -140,7 +155,10 @@ After applying the migration:
 - [ ] Record outreach and verify the compliance details in the activity event.
 - [ ] Open `/providers`; confirm statuses match the server environment.
 - [ ] Open `/exports`; download CSV and XLSX for a populated dataset.
+- [ ] Open `/lists`; create a business list and confirm the live count and preview.
+- [ ] Export the list as CSV and XLSX.
 - [ ] Open `/campaigns`; create a campaign and one sequence step.
+- [ ] Build a queue from the saved list; confirm the filters are applied.
 - [ ] Build a small queue; confirm suppression/DNC items are blocked and the rest need review.
 - [ ] Approve one item only after checking the lawful-basis box.
 - [ ] Confirm "mark sent" stays disabled until approval plus manual-send confirmation.

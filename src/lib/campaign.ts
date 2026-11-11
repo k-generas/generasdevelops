@@ -77,6 +77,7 @@ export type CampaignTarget = {
   country?: string | null;
   website?: string | null;
   context?: string | null;
+  doNotContact?: boolean;
 };
 
 export type CampaignQueueItem = {

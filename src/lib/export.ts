@@ -32,6 +32,7 @@ export const BACKUP_TABLES = [
   "monitoring_settings",
   "professionals",
   "professional_business_links",
+  "prospect_lists",
   "outreach_campaigns",
   "outreach_campaign_steps",
   "outreach_queue_items",

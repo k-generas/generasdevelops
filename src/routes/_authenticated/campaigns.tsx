@@ -55,6 +55,8 @@ import {
   updateQueueItem,
   type CampaignQueueResult,
 } from "@/lib/campaigns.functions";
+import { getProspectLists } from "@/lib/prospect-lists.functions";
+import { prospectFilterSummary } from "@/lib/prospect-lists";
 
 export const Route = createFileRoute("/_authenticated/campaigns")({
   head: () => ({
@@ -95,6 +97,7 @@ type StepDraft = {
 type BuildDraft = {
   stepId: string;
   limit: number;
+  listId: string;
   query: string;
   district: string;
   sector: string;
@@ -184,6 +187,7 @@ function CampaignsPage() {
   const buildFn = useServerFn(buildCampaignQueue);
   const updateFn = useServerFn(updateQueueItem);
   const deleteQueueFn = useServerFn(deleteQueueItem);
+  const prospectListsFn = useServerFn(getProspectLists);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
@@ -192,6 +196,7 @@ function CampaignsPage() {
   const [build, setBuild] = useState<BuildDraft>({
     stepId: "",
     limit: 25,
+    listId: "",
     query: "",
     district: "",
     sector: "",
@@ -210,6 +215,24 @@ function CampaignsPage() {
     queryKey: ["campaigns"],
     queryFn: () => listFn(),
   });
+
+  const prospectLists = useQuery({
+    queryKey: ["prospect-lists"],
+    queryFn: () => prospectListsFn(),
+  });
+
+  const matchingLists = useMemo(
+    () => (prospectLists.data?.rows ?? []).filter((list) => list.entityKind === draft.audienceKind),
+    [prospectLists.data, draft.audienceKind],
+  );
+
+  const activeList = matchingLists.find((list) => list.id === build.listId) ?? null;
+
+  useEffect(() => {
+    if (!build.listId) return;
+    if (matchingLists.some((list) => list.id === build.listId)) return;
+    setBuild((value) => ({ ...value, listId: "" }));
+  }, [build.listId, matchingLists]);
 
   useEffect(() => {
     if (showNew || selectedId) return;
@@ -318,6 +341,7 @@ function CampaignsPage() {
           campaignId: draft.id,
           stepId: effectiveStepId,
           limit: build.limit,
+          ...(build.listId ? { listId: build.listId } : {}),
           query: build.query,
           district: build.district,
           sector: build.sector,
@@ -787,6 +811,40 @@ function CampaignsPage() {
               </div>
 
               <div className="grid gap-2 rounded-lg border bg-background p-3 md:grid-cols-4">
+                <div className="space-y-1 md:col-span-4">
+                  <Label htmlFor="build-list">Saved prospect list (optional)</Label>
+                  <select
+                    id="build-list"
+                    className="w-full rounded border bg-background px-2 py-2 text-sm"
+                    value={build.listId}
+                    onChange={(e) => setBuild({ ...build, listId: e.target.value })}
+                    disabled={!prospectLists.data?.applied || matchingLists.length === 0}
+                  >
+                    <option value="">Use the ad-hoc filters below</option>
+                    {matchingLists.map((list) => (
+                      <option key={list.id} value={list.id}>
+                        {list.name}
+                      </option>
+                    ))}
+                  </select>
+                  {activeList && (
+                    <p className="text-xs text-muted-foreground">
+                      Saved list filters are used and the ad-hoc filters below are ignored:{" "}
+                      {prospectFilterSummary(activeList.entityKind, activeList.filters)}
+                    </p>
+                  )}
+                  {prospectLists.data && !prospectLists.data.applied && (
+                    <p className="text-xs text-amber-600">
+                      Saved lists are unavailable until the prospect lists migration is applied.
+                      Ad-hoc filters still work.
+                    </p>
+                  )}
+                  {!activeList && matchingLists.length === 0 && prospectLists.data?.applied && (
+                    <p className="text-xs text-muted-foreground">
+                      No saved {draft.audienceKind} list yet. Create one under Prospect lists.
+                    </p>
+                  )}
+                </div>
                 <Input
                   placeholder={
                     draft.audienceKind === "business"
@@ -796,6 +854,7 @@ function CampaignsPage() {
                   value={build.query}
                   onChange={(e) => setBuild({ ...build, query: e.target.value })}
                   className="md:col-span-2"
+                  disabled={!!build.listId}
                 />
                 {draft.audienceKind === "business" ? (
                   <>
@@ -803,16 +862,19 @@ function CampaignsPage() {
                       placeholder="District"
                       value={build.district}
                       onChange={(e) => setBuild({ ...build, district: e.target.value })}
+                      disabled={!!build.listId}
                     />
                     <Input
                       placeholder="Sector (exact)"
                       value={build.sector}
                       onChange={(e) => setBuild({ ...build, sector: e.target.value })}
+                      disabled={!!build.listId}
                     />
                     <Input
                       placeholder="Outreach stage (exact)"
                       value={build.stage}
                       onChange={(e) => setBuild({ ...build, stage: e.target.value })}
+                      disabled={!!build.listId}
                     />
                   </>
                 ) : (
@@ -821,16 +883,19 @@ function CampaignsPage() {
                       placeholder="Country"
                       value={build.country}
                       onChange={(e) => setBuild({ ...build, country: e.target.value })}
+                      disabled={!!build.listId}
                     />
                     <Input
                       placeholder="Type (exact)"
                       value={build.professionalType}
                       onChange={(e) => setBuild({ ...build, professionalType: e.target.value })}
+                      disabled={!!build.listId}
                     />
                     <Input
                       placeholder="Availability (exact)"
                       value={build.availability}
                       onChange={(e) => setBuild({ ...build, availability: e.target.value })}
+                      disabled={!!build.listId}
                     />
                   </>
                 )}

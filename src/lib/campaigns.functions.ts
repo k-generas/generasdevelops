@@ -31,7 +31,12 @@ import {
   type OutreachEligibility,
   type SuppressionEntry,
 } from "./compliance";
-import { normalizeUrl } from "./professional-intelligence";
+import {
+  normalizeProspectFilters,
+  readProspectFilters,
+  type ProspectFilters,
+} from "./prospect-lists";
+import { loadProspectTargets } from "./prospect-queries.server";
 
 type CampaignRow = Database["public"]["Tables"]["outreach_campaigns"]["Row"];
 type CampaignInsert = Database["public"]["Tables"]["outreach_campaigns"]["Insert"];
@@ -51,7 +56,7 @@ function isMissing(message: string): boolean {
 }
 
 function missingMessage(table: string): string {
-  return `The ${table} table is not available yet. Apply the outreach campaign migration and try again.`;
+  return `The ${table} table is not available yet. Apply the required migration and try again.`;
 }
 
 function readEligibility(value: Json): OutreachEligibility | null {
@@ -424,6 +429,7 @@ const buildInput = z.object({
   campaignId: z.string().uuid(),
   stepId: z.string().uuid(),
   limit: z.number().int().min(1).max(50).default(25),
+  listId: z.string().uuid().optional(),
   query: z.string().trim().max(160).optional().default(""),
   district: z.string().trim().max(120).optional().default(""),
   sector: z.string().trim().max(120).optional().default(""),
@@ -488,88 +494,59 @@ export const buildCampaignQueue = createServerFn({ method: "POST" })
 
     const channel = step.channel as ContactChannel;
     const kind = campaign.audience_kind as CampaignAudienceKind;
-    const targets: CampaignTarget[] = [];
-    let businessDoNotContact = new Map<string, boolean>();
-    let professionalDoNotContact = new Map<string, boolean>();
 
-    if (kind === "business") {
-      let query = context.supabase
-        .from("businesses")
-        .select(
-          "id,name,emails,phone,website,district,province,sector,industry,outreach_stage,address,contact_suppressed",
-        )
-        .eq("owner_id", context.userId);
-      if (data.query) {
-        const term = data.query.replace(/[(),]/g, " ").trim();
-        if (term) {
-          query = query.or(
-            `name.ilike.%${term}%,sector.ilike.%${term}%,industry.ilike.%${term}%,district.ilike.%${term}%`,
-          );
-        }
-      }
-      if (data.district) query = query.ilike("district", `%${data.district}%`);
-      if (data.sector) query = query.eq("sector", data.sector);
-      if (data.stage) query = query.eq("outreach_stage", data.stage);
-      const { data: rows, error } = await query
-        .order("updated_at", { ascending: false })
-        .limit(data.limit);
-      if (error) throw new Error(error.message);
-      businessDoNotContact = new Map((rows ?? []).map((row) => [row.id, !!row.contact_suppressed]));
-      for (const row of rows ?? []) {
-        const email = row.emails?.[0] ?? null;
-        const domain = normalizeUrl(row.website);
-        targets.push({
-          kind: "business",
-          id: row.id,
-          name: row.name,
-          email,
-          phone: row.phone,
-          domain,
-          country: row.province ?? row.district,
-          website: row.website,
-          context: row.sector ?? row.industry ?? row.address,
-        });
-      }
-    } else {
-      let query = context.supabase
-        .from("professionals")
-        .select(
-          "id,full_name,public_email,public_phone,website,country,headline,do_not_contact,availability_status,professional_type",
-        )
-        .eq("owner_id", context.userId);
-      if (data.query) {
-        const term = data.query.replace(/[(),]/g, " ").trim();
-        if (term) {
-          query = query.or(
-            `full_name.ilike.%${term}%,headline.ilike.%${term}%,country.ilike.%${term}%`,
-          );
-        }
-      }
-      if (data.country) query = query.ilike("country", `%${data.country}%`);
-      if (data.professionalType) query = query.eq("professional_type", data.professionalType);
-      if (data.availability) query = query.eq("availability_status", data.availability);
-      const { data: rows, error } = await query
-        .order("updated_at", { ascending: false })
-        .limit(data.limit);
+    let listFilters: ProspectFilters | null = null;
+    if (data.listId) {
+      const { data: list, error } = await context.supabase
+        .from("prospect_lists")
+        .select("*")
+        .eq("owner_id", context.userId)
+        .eq("id", data.listId)
+        .maybeSingle();
       if (error) {
-        if (isMissing(error.message)) throw new Error(missingMessage("professionals"));
+        if (isMissing(error.message)) throw new Error(missingMessage("prospect_lists"));
         throw new Error(error.message);
       }
-      professionalDoNotContact = new Map((rows ?? []).map((row) => [row.id, !!row.do_not_contact]));
-      for (const row of rows ?? []) {
-        const domain = normalizeUrl(row.website);
-        targets.push({
-          kind: "professional",
-          id: row.id,
-          name: row.full_name,
-          email: row.public_email,
-          phone: row.public_phone,
-          domain,
-          country: row.country,
-          website: row.website,
-          context: row.headline,
-        });
+      if (!list) throw new Error("Prospect list not found.");
+      if (list.entity_kind !== kind) {
+        throw new Error("This list's audience does not match the campaign audience.");
       }
+      listFilters = readProspectFilters(
+        list.filters,
+        list.entity_kind === "professional" ? "professional" : "business",
+      );
+    }
+
+    const filters =
+      listFilters ??
+      normalizeProspectFilters(
+        {
+          query: data.query,
+          district: data.district,
+          sector: data.sector,
+          stage: data.stage,
+          country: data.country,
+          professionalType: data.professionalType,
+          availability: data.availability,
+        },
+        kind,
+      );
+
+    let targets: CampaignTarget[];
+    try {
+      targets = await loadProspectTargets(
+        context.supabase,
+        context.userId,
+        kind,
+        filters,
+        data.limit,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (isMissing(message)) {
+        throw new Error(missingMessage(kind === "business" ? "businesses" : "professionals"));
+      }
+      throw error;
     }
 
     const { data: entries, error: ledgerError } = await context.supabase
@@ -593,12 +570,8 @@ export const buildCampaignQueue = createServerFn({ method: "POST" })
           professionalId: target.kind === "professional" ? target.id : null,
         },
         entries: ledger,
-        businessDoNotContact:
-          target.kind === "business" ? (businessDoNotContact.get(target.id) ?? false) : false,
-        professionalDoNotContact:
-          target.kind === "professional"
-            ? (professionalDoNotContact.get(target.id) ?? false)
-            : false,
+        businessDoNotContact: target.kind === "business" ? !!target.doNotContact : false,
+        professionalDoNotContact: target.kind === "professional" ? !!target.doNotContact : false,
         ownerConfirmedLawfulBasis: false,
       });
       const missing = missingContact(channel, target.email ?? null, target.phone ?? null);
