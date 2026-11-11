@@ -100,7 +100,7 @@ Covers:
 - Browser end-to-end flows for the five new routes.
 - Campaign queue build and status-transition server tests.
 - Manual visual checks at mobile and desktop breakpoints.
-- Hosted migration verification.
+- Authenticated owner smoke checks against the hosted database.
 - Provider quota/billing failure paths.
 - Full legal/compliance review.
 

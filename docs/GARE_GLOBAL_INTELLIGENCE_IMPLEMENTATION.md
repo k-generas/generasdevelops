@@ -2,9 +2,9 @@
 
 ## Status
 
-Foundation and campaign phases are implemented in code and tests. The additive database
-migrations are created but not yet applied to hosted Supabase because the Lovable MCP OAuth
-refresh token was invalidated during this pass.
+Foundation and campaign phases are implemented in code and tests. Both additive database
+migrations were applied to hosted Supabase on 2026-11-11. Schema verification confirmed all six
+tables exist with RLS enabled, one owner-scoped policy per table and expected indexes/grants.
 
 Verification completed:
 
@@ -170,10 +170,15 @@ The migrations are additive and do not rewrite existing rows.
 
 ## Apply steps
 
-1. Restore a valid Lovable MCP token or use an authorised SQL runner.
-2. Apply both migrations in a transaction if the runner supports it.
-3. Verify the tables, indexes and RLS policies exist.
-4. Open `/professionals`, `/compliance`, `/exports` and `/campaigns` with the owner session.
+Completed on hosted Supabase on 2026-11-11:
+
+1. Authorised the Lovable MCP connection with the project owner account.
+2. Applied both migrations.
+3. Verified all six tables, indexes, grants and owner-scoped RLS policies exist.
+
+Still to do with the owner session:
+
+4. Open `/professionals`, `/compliance`, `/exports` and `/campaigns`.
 5. Add a test professional, suppression entry and business link; confirm the owner can read and
    delete only their own rows.
 6. Create a campaign with one step, build a small queue, and confirm items are review/blocked and
@@ -183,7 +188,6 @@ The migrations are additive and do not rewrite existing rows.
 
 ## Remaining work
 
-- Apply and verify the migrations in hosted Supabase.
 - Add navigation badge counts for new records if useful.
 - Add more tests for server functions and UI flows once a test database pattern exists.
 - Integrate eligibility into any other outreach logging paths that may be added later.

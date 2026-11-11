@@ -145,7 +145,8 @@ Navigation lives in `src/routes/_authenticated/route.tsx`.
 
 ## Current limitations
 
-- The global intelligence and campaign migrations have not been applied to hosted Supabase yet.
+- Both migrations were applied to hosted Supabase on 2026-11-11; table, index and RLS checks
+  passed.
 - Provider credentials and billing are not verified.
 - The policy templates are not legal advice.
 - Professional data is manual/evidence-based; automated professional discovery is intentionally

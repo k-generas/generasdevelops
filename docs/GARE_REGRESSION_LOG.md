@@ -20,7 +20,7 @@ adding any sending integration.
 
 - **`supabase/migrations/20261111000000_outreach_campaigns.sql`** - additive
   `outreach_campaigns`, `outreach_campaign_steps` and `outreach_queue_items` tables with owner
-  indexes, unique keys, grants and RLS. Not yet applied to hosted Supabase.
+  indexes, unique keys, grants and RLS. Applied to hosted Supabase on 2026-11-11.
 - **`src/integrations/supabase/types.ts`** - types for the three campaign tables.
 - **`src/lib/campaign.ts`** + tests - status taxonomies, template rendering, opt-out insertion,
   validation, queue transitions, approval/send gates and summaries.
@@ -54,7 +54,11 @@ adding any sending integration.
 
 ### Known limitations / follow-ups
 
-- Both migrations remain unapplied in hosted Supabase because the Lovable MCP token is invalid.
+- Both migrations were applied to hosted Supabase on 2026-11-11 after re-authorising the Lovable
+  MCP connection with the project owner account.
+- Hosted verification confirmed all six tables exist, RLS is enabled, each table has one
+  owner-scoped policy using `owner_id = auth.uid()`, expected indexes are present, and
+  `authenticated` has select grants.
 - No database integration, RLS isolation or browser end-to-end tests for campaign flows yet.
 - Campaign scheduling, sending, delivery tracking and reply ingestion are intentionally absent.
 
@@ -74,7 +78,7 @@ preserving the existing Rwanda-focused discovery and revenue workflows.
 - **`docs/GARE_GLOBAL_INTELLIGENCE_MASTER_INSTRUCTION.md`** - saved the full product instruction.
 - **`supabase/migrations/20261109000000_global_intelligence_foundation.sql`** - additive
   `professionals`, `professional_business_links` and `suppression_entries` tables with owner
-  indexes, unique keys, grants and RLS. Not yet applied to hosted Supabase.
+  indexes, unique keys, grants and RLS. Applied to hosted Supabase on 2026-11-11.
 - **`src/integrations/supabase/types.ts`** - generated-style types for the new tables.
 - **`src/lib/professional-intelligence.ts`** + tests - normalisation, dedupe, validation,
   confidence, completeness and taxonomies.

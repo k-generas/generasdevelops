@@ -5,7 +5,9 @@
 - `supabase/migrations/20261109000000_global_intelligence_foundation.sql`
 - `supabase/migrations/20261111000000_outreach_campaigns.sql`
 
-Status: created in the repository, not yet applied to hosted Supabase.
+Status: applied to hosted Supabase on 2026-11-11. Verification confirmed all six tables exist,
+RLS is enabled, each table has one owner-scoped policy using `owner_id = auth.uid()`, expected
+indexes are present, and `authenticated` has select grants.
 
 The migrations are additive. They do not alter existing tables or rewrite existing data.
 
