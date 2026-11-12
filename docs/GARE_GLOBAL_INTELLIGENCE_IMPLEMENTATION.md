@@ -11,7 +11,7 @@ because filters are stored as `jsonb`.
 Verification completed:
 
 - `npx tsc --noEmit` - clean
-- `npm test` - 57 files / 471 tests passing
+- `npx vitest run` - 60 files / 483 tests passing; 1 opt-in live RLS test skipped
 - `npm run build` - successful; `/professionals`, `/compliance`, `/providers`, `/exports`,
   `/campaigns` and `/lists` generated
 - Targeted ESLint/Prettier on all new or changed files - clean
@@ -179,6 +179,10 @@ Files:
 - `src/lib/prospect-intent.ts`
 - `src/lib/prospect-intent.test.ts`
 - `src/lib/prospect-intent.functions.ts`
+- `src/lib/prospect-intent.server.ts`
+- `src/lib/prospect-intent.server.test.ts`
+- `src/lib/ai-usage.ts`
+- `src/lib/ai-usage.test.ts`
 - `src/routes/_authenticated/lists.tsx`
 
 Capabilities:
@@ -186,13 +190,19 @@ Capabilities:
 - Converts a plain-language audience request into the shared saved-list filters.
 - Uses deterministic rules by default, so it works without AI credentials or spend.
 - Optional AI runs only when the owner enables it and is schema-validated before application.
-- AI failures are returned as a truthful `fallbackReason`; rule-based filters remain usable.
+- AI interpretation is limited per owner to five calls per minute and 40 per rolling day; a
+  reached limit returns rule-based filters with a truthful reason.
+- AI failures and invalid responses are returned as a truthful `fallbackReason`; rule-based
+  filters remain usable.
 - Unsupported conditions are shown separately and are never claimed as filters. This includes
   website quality, hiring, funding, buying intent, white-label and subcontract fit.
 - The interpreted result is a preview only; the owner must click "Apply to list" before filters
   change.
 - No prospect records are created, no provider is called by the rules path, and no outreach or
   sending occurs.
+
+Usage telemetry is logged without owner identifiers, but the limiter is per server isolate and not
+durable accounting. Persistent spend accounting would require an owner-scoped usage table.
 
 ### 8. Navigation
 
@@ -251,7 +261,10 @@ Still to do with the owner session:
 - Add a retention/cleanup workflow for suppression and professional records.
 - Add saved-list membership snapshots only if reporting needs point-in-time segments; the current
   live-filter model is intentional.
-- Add rate limiting or usage accounting for optional AI prompt interpretation if usage grows.
+- Add durable, owner-scoped AI usage accounting if prompt interpretation spend grows beyond the
+  current in-process burst guard.
+- Run the opt-in live RLS integration test with two real users before relying on it as a release
+  gate.
 - Campaign scheduling, sending, delivery tracking and reply ingestion remain future work; the
   current queue is intentionally manual.
 - Complete the legal/compliance review with a qualified adviser.

@@ -11,6 +11,54 @@ npm test
 npm run build
 ```
 
+## 2026-11-12 - AI spend guard, fallback tests and prospect-query/RLS coverage
+
+Add a bounded per-owner AI burst/daily guard, make AI fallback orchestration directly testable, and
+cover owner-scoped prospect query construction plus opt-in live RLS isolation. No migration was
+needed.
+
+### Changes
+
+- **`src/lib/ai-usage.ts`** + tests - per-owner rolling burst window (5 calls/minute) and daily cap
+  (40 calls/day), with retry timing and truthful limit messages.
+- **`src/lib/prospect-intent.functions.ts`** - AI interpretation now consumes the per-owner limit
+  before spending provider credits, falls back to rules with a reason when limited, and logs
+  structured usage telemetry without owner identifiers.
+- **`src/lib/prospect-intent.server.ts`** + tests - moved AI schema/instructions and orchestration
+  behind an injectable provider caller; validates successful output, preserves unsupported
+  conditions and falls back on provider errors or malformed JSON.
+- **`src/lib/prospect-queries.server.ts`** + tests - exported owner-scoped target query builders
+  for tests and collapsed whitespace after stripping PostgREST syntax characters from free text.
+- **`src/test/prospect-rls.integration.test.ts`** - opt-in live test proving a second authenticated
+  user cannot read, update, delete or spoof a saved list; skipped unless four test credentials are
+  present.
+- **Docs** - architecture, implementation, testing and this log updated.
+
+### Non-breaking design decisions
+
+- Rules remain the default path; no provider is called unless AI is explicitly enabled.
+- A limit or provider failure never removes interpretation entirely; it returns deterministic
+  filters plus a visible reason.
+- AI output is still schema-validated and normalized against the same taxonomies as manual filters.
+- Query builders still apply `owner_id` before any filter; location remains additive.
+- Live RLS coverage is opt-in so the default suite never needs credentials and never writes to a
+  real database.
+- Limiter counters are per server isolate, so this is burst protection, not durable billing.
+
+### Verification
+
+- `npx tsc --noEmit` - clean.
+- Targeted AI/query tests - 5 files / 35 tests passing.
+- Full `npx vitest run` - 60 files / 483 tests passing; 1 opt-in RLS file / 1 test skipped.
+- `npm run build` - successful.
+- Targeted ESLint and Prettier on changed files - clean.
+
+### Known limitations / follow-ups
+
+- Durable AI usage accounting across isolates/deploys still needs an owner-scoped usage table.
+- The live RLS test has not been executed locally because test credentials were not available.
+- Hosted owner smoke checks for AI limits and saved-list location filters remain.
+
 ## 2026-11-12 - Natural-language prospecting and shared location filter
 
 Convert plain-language audience requests into editable saved-list filters, with deterministic

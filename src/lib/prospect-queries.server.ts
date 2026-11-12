@@ -24,7 +24,7 @@ const PROFESSIONAL_EXPORT_COLUMNS =
   "id,full_name,headline,professional_type,country,city,languages,expertise,skills,website,public_email,public_phone,profile_url,source_name,source_url,availability_status,relationship_stage,do_not_contact,created_at,updated_at";
 
 function term(value: string): string {
-  return value.replace(/[(),]/g, " ").trim();
+  return value.replace(/[(),]/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function applyBusinessFilters<Q extends FilterableQuery<Q>>(query: Q, filters: ProspectFilters): Q {
@@ -70,12 +70,12 @@ function applyProfessionalFilters<Q extends FilterableQuery<Q>>(
   return next;
 }
 
-function businessTargetQuery(client: Client, ownerId: string, filters: ProspectFilters) {
+export function businessTargetQuery(client: Client, ownerId: string, filters: ProspectFilters) {
   const query = client.from("businesses").select(BUSINESS_TARGET_COLUMNS).eq("owner_id", ownerId);
   return applyBusinessFilters(query, filters);
 }
 
-function professionalTargetQuery(client: Client, ownerId: string, filters: ProspectFilters) {
+export function professionalTargetQuery(client: Client, ownerId: string, filters: ProspectFilters) {
   const query = client
     .from("professionals")
     .select(PROFESSIONAL_TARGET_COLUMNS)

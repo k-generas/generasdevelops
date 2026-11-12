@@ -13,24 +13,40 @@ npm run build
 Targeted checks used during this phase:
 
 ```powershell
-npx vitest run src/lib/professional-intelligence.test.ts src/lib/compliance.test.ts src/lib/provider-registry.test.ts src/lib/export-safe.test.ts src/lib/campaign.test.ts src/lib/prospect-lists.test.ts src/lib/prospect-intent.test.ts
-npx eslint src/routes/_authenticated/professionals.tsx src/routes/_authenticated/lists.tsx src/routes/_authenticated/compliance.tsx src/routes/_authenticated/providers.tsx src/routes/_authenticated/exports.tsx src/routes/_authenticated/campaigns.tsx 'src/routes/_authenticated/proposals.$id.tsx' src/routes/_authenticated/route.tsx src/lib/professional-intelligence.ts src/lib/compliance.ts src/lib/provider-registry.ts src/lib/export-safe.ts src/lib/campaign.ts src/lib/prospect-lists.ts src/lib/prospect-intent.ts src/lib/prospect-intent.functions.ts src/lib/prospect-queries.server.ts src/lib/professionals.functions.ts src/lib/compliance.functions.ts src/lib/campaigns.functions.ts src/lib/prospect-lists.functions.ts src/lib/export.ts
+npx vitest run src/lib/ai-usage.test.ts src/lib/prospect-intent.server.test.ts src/lib/prospect-intent.test.ts src/lib/prospect-lists.test.ts src/lib/prospect-queries.server.test.ts
+npx eslint src/lib/ai-usage.ts src/lib/ai-usage.test.ts src/lib/prospect-intent.server.ts src/lib/prospect-intent.server.test.ts src/lib/prospect-intent.functions.ts src/lib/prospect-queries.server.ts src/lib/prospect-queries.server.test.ts src/test/prospect-rls.integration.test.ts
+npx prettier --check docs/GARE_GLOBAL_INTELLIGENCE_ARCHITECTURE.md docs/GARE_GLOBAL_INTELLIGENCE_IMPLEMENTATION.md docs/GARE_GLOBAL_INTELLIGENCE_TESTING.md docs/GARE_REGRESSION_LOG.md
 ```
+
+The live RLS integration test is opt-in and requires four environment variables. It never runs as
+part of the default suite because it creates and deletes one temporary owner-scoped list:
+
+```powershell
+$env:TEST_SUPABASE_URL="https://<project>.supabase.co"
+$env:TEST_SUPABASE_PUBLISHABLE_KEY="<publishable-key>"
+$env:TEST_OWNER_ACCESS_TOKEN="<owner-access-token>"
+$env:TEST_OTHER_ACCESS_TOKEN="<different-user-access-token>"
+npx vitest run src/test/prospect-rls.integration.test.ts
+```
+
+The two tokens must belong to different users. Do not commit them.
 
 ## Current verification
 
-| Check                             | Result                                                                              |
-| --------------------------------- | ----------------------------------------------------------------------------------- |
-| `npx tsc --noEmit`                | clean                                                                               |
-| Prospect-list pure-module tests   | 1 file / 11 tests passing                                                           |
-| Prospect-intent pure-module tests | 1 file / 12 tests passing                                                           |
-| Full `npm test`                   | 57 files / 471 tests passing                                                        |
-| `npm run build`                   | successful; `/lists`, `/campaigns` and prospect-intent assets generated             |
-| Targeted ESLint/Prettier          | clean                                                                               |
-| `npm run lint` full repo          | not used as a gate; the repository has pre-existing lint issues outside this change |
+| Check                           | Result                                                                              |
+| ------------------------------- | ----------------------------------------------------------------------------------- |
+| `npx tsc --noEmit`              | clean                                                                               |
+| AI usage limiter tests          | 1 file / 4 tests passing                                                            |
+| AI orchestration fallback tests | 1 file / 4 tests passing                                                            |
+| Prospect-query builder tests    | 1 file / 4 tests passing                                                            |
+| Live RLS integration test       | 1 file / 1 test skipped without test credentials                                    |
+| Full `npx vitest run`           | 60 files / 483 tests passing, 1 file / 1 test skipped                               |
+| `npm run build`                 | successful; `/lists`, `/campaigns` and prospect-intent assets generated             |
+| Targeted ESLint/Prettier        | clean                                                                               |
+| `npm run lint` full repo        | not used as a gate; the repository has pre-existing lint issues outside this change |
 
-The full test run emitted a jsdom navigation warning from an unrelated test environment path. It
-did not fail the suite.
+The full test run emitted the known jsdom navigation warning from an unrelated test environment
+path and took about 194 seconds. It did not fail the suite.
 
 ## Test files and coverage
 
@@ -119,10 +135,51 @@ Covers:
 - AI result validation and unsupported taxonomy rejection;
 - empty-prompt rejection.
 
+### `src/lib/ai-usage.test.ts`
+
+Covers:
+
+- per-minute burst limit and retry timing;
+- rolling daily cap;
+- burst-window reset without losing the daily count;
+- daily reset after a rolling day;
+- separate counters per owner;
+- truthful limit messages.
+
+### `src/lib/prospect-intent.server.test.ts`
+
+Covers:
+
+- injectable AI call with the expected instructions, prompt, function name and schema;
+- validated AI output with unsupported conditions preserved;
+- provider failure falling back to deterministic rules;
+- malformed JSON falling back to deterministic rules;
+- long provider errors being truncated in `fallbackReason`.
+
+### `src/lib/prospect-queries.server.test.ts`
+
+Covers:
+
+- owner scoping on business and professional target queries;
+- business location search across district, province and address;
+- professional location search across country, region and city;
+- keyword and taxonomy filters;
+- empty-filter queries still scoped to the owner;
+- removal of PostgREST syntax characters from free-text filters.
+
+### `src/test/prospect-rls.integration.test.ts`
+
+Opt-in against a real Supabase project. Covers:
+
+- an owner can create and read a saved list with a location filter;
+- a different authenticated user cannot read, update or delete it;
+- a different authenticated user cannot insert a list with the owner's `owner_id`;
+- cleanup removes the temporary test list.
+
 ## Not yet covered
 
-- Server functions against a real Postgres test database.
-- RLS ownership isolation tests.
+- Running the opt-in RLS integration test in CI requires four test credentials and two users.
+- Persistent AI usage accounting across isolates and deploys.
 - Browser end-to-end flows for the six new routes.
 - Campaign queue build and status-transition server tests.
 - Saved-list preview/export tests against a real database.
@@ -135,12 +192,12 @@ Covers:
 
 ## Recommended next tests
 
-1. Add database integration tests for owner isolation on all seven new tables.
+1. Run the opt-in RLS test in CI and extend owner isolation to all seven new tables.
 2. Add route-level tests for the professionals CRUD and business link flow.
 3. Add an outreach guard test that proves blocked suppression prevents an activity insert.
 4. Add campaign queue tests for suppression blocking, dedupe, approval and mark-sent gates.
 5. Add a backup test that includes the new tables.
-6. Add a server-function test that proves optional AI failure falls back to rules.
+6. Add a durable owner-scoped AI usage table if spend accounting must survive deploys.
 7. Add responsive smoke tests for the new routes.
 8. Apply the migrations in a staging project and repeat the full suite.
 
@@ -176,6 +233,8 @@ After applying the migration:
       applied" and is not used as a filter.
 - [ ] Optionally enable AI interpretation; if AI is unavailable, confirm the rule-based fallback
       message is shown.
+- [ ] Enable AI repeatedly; confirm the per-minute message appears after five calls and rules are
+      still returned.
 - [ ] Export the list as CSV and XLSX.
 - [ ] Open `/campaigns`; create a campaign and one sequence step.
 - [ ] Build a queue from the saved list; confirm the filters are applied.
