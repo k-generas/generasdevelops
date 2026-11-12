@@ -99,6 +99,7 @@ type BuildDraft = {
   limit: number;
   listId: string;
   query: string;
+  location: string;
   district: string;
   sector: string;
   stage: string;
@@ -198,6 +199,7 @@ function CampaignsPage() {
     limit: 25,
     listId: "",
     query: "",
+    location: "",
     district: "",
     sector: "",
     stage: "",
@@ -343,6 +345,7 @@ function CampaignsPage() {
           limit: build.limit,
           ...(build.listId ? { listId: build.listId } : {}),
           query: build.query,
+          location: build.location,
           district: build.district,
           sector: build.sector,
           stage: build.stage,
@@ -854,6 +857,12 @@ function CampaignsPage() {
                   value={build.query}
                   onChange={(e) => setBuild({ ...build, query: e.target.value })}
                   className="md:col-span-2"
+                  disabled={!!build.listId}
+                />
+                <Input
+                  placeholder="Location (district, province, address or country)"
+                  value={build.location}
+                  onChange={(e) => setBuild({ ...build, location: e.target.value })}
                   disabled={!!build.listId}
                 />
                 {draft.audienceKind === "business" ? (

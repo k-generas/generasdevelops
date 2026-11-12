@@ -4,6 +4,7 @@ export type ProspectEntityKind = (typeof PROSPECT_ENTITY_KINDS)[number];
 
 export type ProspectFilters = {
   query: string;
+  location: string;
   district: string;
   sector: string;
   stage: string;
@@ -25,6 +26,7 @@ export type ProspectList = {
 
 export const PROSPECT_FILTER_LIMITS = {
   query: 160,
+  location: 120,
   district: 120,
   sector: 120,
   stage: 80,
@@ -82,6 +84,7 @@ export function prospectEntityLabel(kind: ProspectEntityKind): string {
 export function emptyProspectFilters(): ProspectFilters {
   return {
     query: "",
+    location: "",
     district: "",
     sector: "",
     stage: "",
@@ -102,6 +105,7 @@ export function normalizeProspectFilters(
   const value = input ?? {};
   const normalized: ProspectFilters = {
     query: clean(value.query, PROSPECT_FILTER_LIMITS.query),
+    location: clean(value.location, PROSPECT_FILTER_LIMITS.location),
     district: clean(value.district, PROSPECT_FILTER_LIMITS.district),
     sector: clean(value.sector, PROSPECT_FILTER_LIMITS.sector),
     stage: clean(value.stage, PROSPECT_FILTER_LIMITS.stage),
@@ -140,6 +144,7 @@ export function prospectFilterChips(
   const filters = normalizeProspectFilters(filtersInput, kind);
   const chips: string[] = [];
   if (filters.query) chips.push(`Keyword: ${filters.query}`);
+  if (filters.location) chips.push(`Location: ${filters.location}`);
   if (kind === "business") {
     if (filters.district) chips.push(`District: ${filters.district}`);
     if (filters.sector) chips.push(`Sector: ${filters.sector}`);

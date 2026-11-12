@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { Download, ListChecks, Plus, Save, ShieldAlert, Trash2 } from "lucide-react";
+import { Download, ListChecks, Plus, Save, ShieldAlert, Sparkles, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,8 @@ import {
   type ProspectFilters,
   type ProspectList,
 } from "@/lib/prospect-lists";
+import { interpretProspectPrompt } from "@/lib/prospect-intent.functions";
+import type { ProspectInterpretation } from "@/lib/prospect-intent";
 import {
   deleteProspectList,
   getProspectLists,
@@ -78,12 +80,18 @@ function ProspectListsPage() {
   const saveFn = useServerFn(saveProspectList);
   const deleteFn = useServerFn(deleteProspectList);
   const resultsFn = useServerFn(getProspectResults);
+  const interpretFn = useServerFn(interpretProspectPrompt);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [draft, setDraft] = useState<ListDraft>(emptyDraft);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [exporting, setExporting] = useState<"csv" | "xlsx" | null>(null);
+  const [prompt, setPrompt] = useState("");
+  const [useAi, setUseAi] = useState(false);
+  const [interpreting, setInterpreting] = useState(false);
+  const [interpretation, setInterpretation] = useState<ProspectInterpretation | null>(null);
+  const [interpretError, setInterpretError] = useState<string | null>(null);
 
   const lists = useQuery({
     queryKey: ["prospect-lists"],
@@ -103,6 +111,7 @@ function ProspectListsPage() {
       "prospect-preview",
       draft.entityKind,
       draft.filters.query,
+      draft.filters.location,
       draft.filters.district,
       draft.filters.sector,
       draft.filters.stage,
@@ -233,6 +242,42 @@ function ProspectListsPage() {
     }
   };
 
+  const interpretAudience = async () => {
+    const text = prompt.trim();
+    if (text.length < 3 || interpreting) return;
+    setInterpreting(true);
+    setInterpretation(null);
+    setInterpretError(null);
+    try {
+      const result = await interpretFn({ data: { prompt: text, useAi } });
+      setInterpretation(result);
+    } catch (error) {
+      setInterpretError(describeError(error).title);
+    } finally {
+      setInterpreting(false);
+    }
+  };
+
+  const updatePrompt = (value: string) => {
+    setPrompt(value);
+    setInterpretation(null);
+    setInterpretError(null);
+  };
+
+  const applyInterpretation = () => {
+    if (!interpretation) return;
+    setDraft((current) => ({
+      ...current,
+      entityKind: interpretation.entityKind,
+      name: current.name.trim() ? current.name : interpretation.prompt.slice(0, 120),
+      filters: interpretation.filters,
+    }));
+    setMessage({
+      ok: true,
+      text: "Interpreted filters applied. Review the audience and filters before saving.",
+    });
+  };
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -267,6 +312,98 @@ function ProspectListsPage() {
           onRetry={() => void lists.refetch()}
         />
       )}
+
+      <div className="space-y-3 rounded-lg border bg-card p-4">
+        <div>
+          <h2 className="flex items-center gap-2 font-semibold">
+            <Sparkles className="h-4 w-4" /> Describe an audience
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Turn a plain-language request into editable filters. Interpreted filters are shown
+            before they are applied. Conditions GARE cannot verify are listed separately and are
+            never used to invent prospects.
+          </p>
+        </div>
+        <Textarea
+          value={prompt}
+          maxLength={500}
+          rows={2}
+          onChange={(event) => updatePrompt(event.target.value)}
+          placeholder="Find dental clinics in Kigali, or professionals available for work in Kenya"
+        />
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            onClick={() => void interpretAudience()}
+            disabled={interpreting || prompt.trim().length < 3}
+          >
+            <Sparkles /> {interpreting ? "Interpreting..." : "Interpret"}
+          </Button>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={useAi}
+              onChange={(event) => {
+                setUseAi(event.target.checked);
+                setInterpretation(null);
+              }}
+            />
+            Use AI interpretation (may use configured AI credits; falls back to rules)
+          </label>
+        </div>
+
+        {interpretError && <p className="text-sm text-destructive">{interpretError}</p>}
+
+        {interpretation && (
+          <div className="space-y-2 rounded border bg-background p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={interpretation.entityKind === "business" ? "secondary" : "outline"}>
+                {prospectEntityLabel(interpretation.entityKind)}
+              </Badge>
+              <Badge variant="outline">
+                {interpretation.source === "ai" ? "AI interpretation" : "Rule-based interpretation"}
+              </Badge>
+              <div className="ml-auto">
+                <Button size="sm" onClick={applyInterpretation}>
+                  Apply to list
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {prospectFilterChips(interpretation.entityKind, interpretation.filters).map(
+                (chip) => (
+                  <Badge key={chip} variant="outline">
+                    {chip}
+                  </Badge>
+                ),
+              )}
+            </div>
+            {interpretation.warnings.length > 0 && (
+              <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+                {interpretation.warnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            )}
+            {interpretation.unsupported.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium">Not applied</p>
+                <div className="flex flex-wrap gap-1">
+                  {interpretation.unsupported.map((condition) => (
+                    <Badge key={condition} variant="destructive">
+                      {condition}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            {interpretation.fallbackReason && (
+              <p className="rounded border border-amber-500/40 bg-amber-500/5 p-2 text-xs">
+                {interpretation.fallbackReason}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
         <aside className="space-y-2">
@@ -399,6 +536,12 @@ function ProspectListsPage() {
                 onChange={(e) => setFilter("query", e.target.value)}
                 maxLength={160}
                 className="md:col-span-2"
+              />
+              <Input
+                placeholder="Location (district, province, address or country)"
+                value={draft.filters.location}
+                onChange={(e) => setFilter("location", e.target.value)}
+                maxLength={120}
               />
               {draft.entityKind === "business" ? (
                 <>

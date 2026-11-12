@@ -60,9 +60,15 @@ describe("prospect list filters", () => {
     expect(normalized.stage).toBe("");
   });
 
-  it("keeps shared keyword filters for both audiences", () => {
+  it("keeps shared keyword and location filters for both audiences", () => {
     expect(normalizeProspectFilters({ query: " hotel " }, "business").query).toBe("hotel");
     expect(normalizeProspectFilters({ query: " hotel " }, "professional").query).toBe("hotel");
+    expect(normalizeProspectFilters({ location: " Cape Town " }, "business").location).toBe(
+      "Cape Town",
+    );
+    expect(normalizeProspectFilters({ location: " Cape Town " }, "professional").location).toBe(
+      "Cape Town",
+    );
   });
 
   it("reads malformed stored filters as an empty set", () => {
@@ -72,10 +78,16 @@ describe("prospect list filters", () => {
   });
 
   it("builds readable chips and summaries", () => {
-    const business = filters({ query: "clinic", district: "Kigali", sector: "Dental" });
+    const business = filters({
+      query: "clinic",
+      location: "Kigali",
+      district: "Gasabo",
+      sector: "Dental",
+    });
     expect(prospectFilterChips("business", business)).toEqual([
       "Keyword: clinic",
-      "District: Kigali",
+      "Location: Kigali",
+      "District: Gasabo",
       "Sector: Dental",
     ]);
     expect(prospectFilterSummary("business", business)).toContain("Sector: Dental");
@@ -117,6 +129,13 @@ describe("prospect list filters", () => {
         filters: filters({ country: "x".repeat(81) }),
       }).errors,
     ).toContain("The country filter is too long.");
+    expect(
+      validateProspectList({
+        name: "Too long",
+        entityKind: "business",
+        filters: filters({ location: "x".repeat(121) }),
+      }).errors,
+    ).toContain("The location filter is too long.");
   });
 
   it("maps business preview rows with safe contact fallbacks", () => {

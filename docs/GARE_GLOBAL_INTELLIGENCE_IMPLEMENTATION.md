@@ -2,15 +2,16 @@
 
 ## Status
 
-Foundation, campaign and saved-prospect-list phases are implemented in code and tests. All three
-additive database migrations were applied to hosted Supabase on 2026-11-11. Schema verification
-confirmed all seven tables exist with RLS enabled, one owner-scoped policy per table and expected
-indexes/grants.
+Foundation, campaign, saved-prospect-list and natural-language prospecting phases are implemented
+in code and tests. All three additive database migrations were applied to hosted Supabase on
+2026-11-11. Schema verification confirmed all seven tables exist with RLS enabled, one owner-scoped
+policy per table and expected indexes/grants. Natural-language prospecting needed no migration
+because filters are stored as `jsonb`.
 
 Verification completed:
 
 - `npx tsc --noEmit` - clean
-- `npm test` - 56 files / 459 tests passing
+- `npm test` - 57 files / 471 tests passing
 - `npm run build` - successful; `/professionals`, `/compliance`, `/providers`, `/exports`,
   `/campaigns` and `/lists` generated
 - Targeted ESLint/Prettier on all new or changed files - clean
@@ -149,6 +150,9 @@ Files:
 
 - `src/lib/prospect-lists.ts`
 - `src/lib/prospect-lists.test.ts`
+- `src/lib/prospect-intent.ts`
+- `src/lib/prospect-intent.test.ts`
+- `src/lib/prospect-intent.functions.ts`
 - `src/lib/prospect-queries.server.ts`
 - `src/lib/prospect-lists.functions.ts`
 - `src/routes/_authenticated/lists.tsx`
@@ -156,15 +160,39 @@ Files:
 Capabilities:
 
 - Owner-scoped saved lists for businesses or professionals.
-- Filters: keyword, district, sector, outreach stage, country, professional type and availability,
-  with audience-irrelevant filters cleared.
+- Filters: keyword, location, district, sector, outreach stage, country, professional type and
+  availability, with audience-irrelevant filters cleared. Location searches business
+  district/province/address and professional country/region/city.
 - Validation for name, audience, filter lengths and stored filter shapes.
 - Live preview count and sample rows; lists store filters, not frozen prospect IDs.
 - Safe CSV/XLSX export of up to 5,000 current matches using formula-neutralised cells.
-- List management UI with create, edit, delete and audience chips.
+- List management UI with create, edit, delete, audience chips and natural-language prompt
+  interpretation.
 - Campaign queue builder can use a saved list; audience mismatch is rejected.
 - Prospect lists remain filters only: suppression, do-not-contact, lawful-basis and contact
   completeness checks still run when the manual queue is built.
+
+### 7a. Natural-language prospecting
+
+Files:
+
+- `src/lib/prospect-intent.ts`
+- `src/lib/prospect-intent.test.ts`
+- `src/lib/prospect-intent.functions.ts`
+- `src/routes/_authenticated/lists.tsx`
+
+Capabilities:
+
+- Converts a plain-language audience request into the shared saved-list filters.
+- Uses deterministic rules by default, so it works without AI credentials or spend.
+- Optional AI runs only when the owner enables it and is schema-validated before application.
+- AI failures are returned as a truthful `fallbackReason`; rule-based filters remain usable.
+- Unsupported conditions are shown separately and are never claimed as filters. This includes
+  website quality, hiring, funding, buying intent, white-label and subcontract fit.
+- The interpreted result is a preview only; the owner must click "Apply to list" before filters
+  change.
+- No prospect records are created, no provider is called by the rules path, and no outreach or
+  sending occurs.
 
 ### 8. Navigation
 
@@ -209,8 +237,8 @@ Still to do with the owner session:
 4. Open `/professionals`, `/lists`, `/compliance`, `/exports` and `/campaigns`.
 5. Add a test professional, suppression entry and business link; confirm the owner can read and
    delete only their own rows.
-6. Create a saved list, verify its live preview and export, then build a small campaign queue from
-   it and confirm items are review/blocked and never sent.
+6. Create a saved list, try a plain-language audience prompt, verify its live preview and export,
+   then build a small campaign queue from it and confirm items are review/blocked and never sent.
 7. Run the check in `/compliance` and confirm a suppression match returns blocked.
 8. Run the full test and build commands again.
 
@@ -223,6 +251,7 @@ Still to do with the owner session:
 - Add a retention/cleanup workflow for suppression and professional records.
 - Add saved-list membership snapshots only if reporting needs point-in-time segments; the current
   live-filter model is intentional.
+- Add rate limiting or usage accounting for optional AI prompt interpretation if usage grows.
 - Campaign scheduling, sending, delivery tracking and reply ingestion remain future work; the
   current queue is intentionally manual.
 - Complete the legal/compliance review with a qualified adviser.

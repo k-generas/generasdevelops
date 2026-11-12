@@ -35,6 +35,12 @@ function applyBusinessFilters<Q extends FilterableQuery<Q>>(query: Q, filters: P
       `name.ilike.%${search}%,sector.ilike.%${search}%,industry.ilike.%${search}%,district.ilike.%${search}%`,
     );
   }
+  const location = term(filters.location);
+  if (location) {
+    next = next.or(
+      `district.ilike.%${location}%,province.ilike.%${location}%,address.ilike.%${location}%`,
+    );
+  }
   if (filters.district) next = next.ilike("district", `%${filters.district}%`);
   if (filters.sector) next = next.eq("sector", filters.sector);
   if (filters.stage) next = next.eq("outreach_stage", filters.stage);
@@ -49,7 +55,13 @@ function applyProfessionalFilters<Q extends FilterableQuery<Q>>(
   const search = term(filters.query);
   if (search) {
     next = next.or(
-      `full_name.ilike.%${search}%,headline.ilike.%${search}%,country.ilike.%${search}%`,
+      `full_name.ilike.%${search}%,headline.ilike.%${search}%,country.ilike.%${search}%,city.ilike.%${search}%`,
+    );
+  }
+  const location = term(filters.location);
+  if (location) {
+    next = next.or(
+      `country.ilike.%${location}%,region.ilike.%${location}%,city.ilike.%${location}%`,
     );
   }
   if (filters.country) next = next.ilike("country", `%${filters.country}%`);

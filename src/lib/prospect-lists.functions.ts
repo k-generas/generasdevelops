@@ -51,6 +51,7 @@ function toProspectList(row: ListRow): ProspectList {
 
 const filterInput = z.object({
   query: z.string().max(160).optional().default(""),
+  location: z.string().max(120).optional().default(""),
   district: z.string().max(120).optional().default(""),
   sector: z.string().max(120).optional().default(""),
   stage: z.string().max(80).optional().default(""),

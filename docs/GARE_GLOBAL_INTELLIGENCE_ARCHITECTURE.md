@@ -54,6 +54,8 @@ Pure, testable modules with no network or database access:
   approval gates and summaries.
 - `src/lib/prospect-lists.ts` - saved-list filter normalisation, validation, preview rows and
   audience-safe chips.
+- `src/lib/prospect-intent.ts` - deterministic natural-language prompt interpretation, AI result
+  validation and unsupported-condition reporting.
 
 ### Server functions
 
@@ -67,6 +69,8 @@ Authenticated TanStack server functions:
   from ad-hoc filters or a saved list, queue status updates and queue deletion.
 - `src/lib/prospect-lists.functions.ts` - saved-list CRUD, live counts, previews and bounded
   export rows.
+- `src/lib/prospect-intent.functions.ts` - authenticated prompt interpretation; deterministic
+  rules by default, optional AI with validated output and rule-based fallback.
 - `src/lib/prospect-queries.server.ts` - owner-scoped business/professional filter queries shared
   by lists and campaign queue builds.
 - `src/lib/system.functions.ts` - runtime provider configuration status without exposing keys.
@@ -79,7 +83,8 @@ Authenticated pages under `src/routes/_authenticated/`:
 
 - `/professionals` - evidence-based professional directory with filters, edit dialog, confidence,
   completeness and business links.
-- `/lists` - saved business/professional prospect filters with live preview and safe exports.
+- `/lists` - saved business/professional prospect filters, natural-language audience
+  interpretation, live preview and safe exports.
 - `/compliance` - suppression ledger, eligibility checker, business do-not-contact and policy
   checklists.
 - `/providers` - truthful provider availability and compliance notes.
@@ -125,6 +130,17 @@ Navigation lives in `src/routes/_authenticated/route.tsx`.
 4. A campaign can select a matching list; list filters replace ad-hoc filters and mismatched
    audience kinds are rejected.
 5. Every preview, export and queue build remains subject to compliance checks at queue time.
+
+### Natural-language prospect interpretation
+
+1. Owner describes an audience in plain language on `/lists`.
+2. The authenticated server function interprets it with deterministic rules by default.
+3. Optional AI is used only when the owner enables it; AI output is schema-validated and then
+   checked against the same supported filter taxonomies before it can be applied.
+4. Unsupported conditions, such as website quality, hiring, funding or buying intent, are
+   returned as "not applied" warnings and are never turned into fabricated filters.
+5. The interpreted audience, filters and warnings are shown for review; nothing changes until the
+   owner clicks "Apply to list".
 
 ### Campaign queue
 

@@ -11,6 +11,60 @@ npm test
 npm run build
 ```
 
+## 2026-11-12 - Natural-language prospecting and shared location filter
+
+Convert plain-language audience requests into editable saved-list filters, with deterministic
+rules by default and optional, validated AI. No migration was required because saved-list filters
+are stored as `jsonb`.
+
+### Changes
+
+- **`src/lib/prospect-lists.ts`** + tests - shared `location` filter, length validation and
+  audience-safe chips.
+- **`src/lib/prospect-lists.functions.ts`** - saved-list filter input accepts `location`.
+- **`src/lib/prospect-queries.server.ts`** - location searches business
+  district/province/address and professional country/region/city; professional keyword search
+  also covers city.
+- **`src/lib/prospect-intent.ts`** + tests - deterministic prompt interpretation, AI result
+  validation, entity/location/keyword detection, taxonomy parsing and unsupported-condition
+  warnings.
+- **`src/lib/prospect-intent.functions.ts`** - authenticated prompt interpretation; rules by
+  default, AI only when explicitly enabled, with schema validation and truthful fallback reason.
+- **`src/routes/_authenticated/lists.tsx`** - describe-an-audience prompt, optional AI toggle,
+  interpretation preview, warnings, "Not applied" conditions, apply action and location inputs.
+- **`src/lib/campaigns.functions.ts`** and **`src/routes/_authenticated/campaigns.tsx`** -
+  campaign queue build accepts and propagates `location`.
+- **Docs** - architecture, implementation, testing and this log updated.
+
+### Non-breaking design decisions
+
+- Rule-based interpretation remains the default and works without AI credentials or spend.
+- AI output is never trusted directly; it is normalised and checked against supported taxonomies.
+- Unsupported conditions such as website quality, hiring, funding or buying intent are surfaced
+  as "not applied" and never converted into fake filters.
+- Interpreted filters change nothing until the owner clicks "Apply to list".
+- Location is a shared filter in the existing `jsonb` shape, so no migration or data rewrite was
+  needed.
+- No prospect records, outreach events, provider calls or sends are created by interpretation.
+
+### Verification
+
+- `npx tsc --noEmit` - clean.
+- Targeted `npx vitest run src/lib/prospect-intent.test.ts src/lib/prospect-lists.test.ts` -
+  2 files / 23 tests passing.
+- `npm test` - 57 files / 471 tests passing.
+- `npm run build` - successful; `/lists`, `/campaigns`, `prospect-intent` and
+  `prospect-intent.functions` assets generated.
+- Targeted ESLint and Prettier on changed files - clean.
+
+### Known limitations / follow-ups
+
+- Optional AI provider availability and credits are environment-dependent; failures intentionally
+  fall back to rules.
+- No rate limiting or usage accounting for optional AI interpretation yet.
+- No database-level test for saved-list location queries or a live AI server-function test.
+- Hosted owner smoke checks for prompt interpretation and location filters remain.
+
 ## 2026-11-11 - Saved prospect lists and campaign list targeting
 
 Add reusable owner-scoped prospect filters with live previews, safe exports and optional campaign

@@ -431,6 +431,7 @@ const buildInput = z.object({
   limit: z.number().int().min(1).max(50).default(25),
   listId: z.string().uuid().optional(),
   query: z.string().trim().max(160).optional().default(""),
+  location: z.string().trim().max(120).optional().default(""),
   district: z.string().trim().max(120).optional().default(""),
   sector: z.string().trim().max(120).optional().default(""),
   stage: z.string().trim().max(80).optional().default(""),
@@ -522,6 +523,7 @@ export const buildCampaignQueue = createServerFn({ method: "POST" })
       normalizeProspectFilters(
         {
           query: data.query,
+          location: data.location,
           district: data.district,
           sector: data.sector,
           stage: data.stage,
