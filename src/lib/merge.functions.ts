@@ -14,17 +14,26 @@ const inputSchema = z.object({
 
 const SIMPLE_REFS: { table: string; column: string }[] = [
   { table: "business_activity_events", column: "business_id" },
+  { table: "business_audits", column: "business_id" },
   { table: "business_facts", column: "business_id" },
   { table: "business_notes", column: "business_id" },
   { table: "company_events", column: "business_id" },
   { table: "expenses", column: "business_id" },
   { table: "investigations", column: "business_id" },
   { table: "invoices", column: "business_id" },
-  { table: "payments", column: "business_id" },
+  { table: "maintenance_records", column: "business_id" },
+  { table: "opportunities", column: "business_id" },
+  { table: "opportunity_signals", column: "business_id" },
   { table: "orders", column: "business_id" },
+  { table: "outreach_queue_items", column: "business_id" },
   { table: "partner_handoffs", column: "business_id" },
+  { table: "payments", column: "business_id" },
+  { table: "professional_business_links", column: "business_id" },
   { table: "proposals", column: "business_id" },
   { table: "revenue_leaks", column: "business_id" },
+  { table: "social_business_matches", column: "business_id" },
+  { table: "social_leads", column: "business_id" },
+  { table: "solution_recommendations", column: "business_id" },
   { table: "subscriptions", column: "business_id" },
   { table: "tasks", column: "business_id" },
 ];
@@ -71,6 +80,10 @@ const FILL_FIELDS = [
 
 function isBlank(value: unknown): boolean {
   return value == null || value === "" || (Array.isArray(value) && value.length === 0);
+}
+
+function isMissingTable(message: string): boolean {
+  return /relation .* does not exist|could not find the table|schema cache/i.test(message);
 }
 
 function jsonObject(value: unknown): Record<string, unknown> {
@@ -183,8 +196,35 @@ export const mergeBusinesses = createServerFn({ method: "POST" })
         .update({ [column]: data.keepId } as never)
         .in(column, mergeIds)
         .select("id");
-      if (updateError) throw new Error(`${table}: ${updateError.message}`);
+      if (updateError) {
+        if (isMissingTable(updateError.message)) return;
+        throw new Error(`${table}: ${updateError.message}`);
+      }
       if (updated?.length) moved[table] = (moved[table] ?? 0) + updated.length;
+    }
+
+    const { data: keepSolutions, error: keepSolutionsError } = await supabase
+      .from("solution_recommendations")
+      .select("dedupe_key")
+      .eq("business_id", data.keepId);
+    if (keepSolutionsError && !isMissingTable(keepSolutionsError.message)) {
+      throw new Error(`solution_recommendations: ${keepSolutionsError.message}`);
+    }
+    if (keepSolutions?.length) {
+      const { data: mergeSolutions, error: mergeSolutionsError } = await supabase
+        .from("solution_recommendations")
+        .select("dedupe_key")
+        .in("business_id", mergeIds);
+      if (mergeSolutionsError && !isMissingTable(mergeSolutionsError.message)) {
+        throw new Error(`solution_recommendations: ${mergeSolutionsError.message}`);
+      }
+      const keepKeys = new Set(keepSolutions.map((row) => row.dedupe_key));
+      const conflict = (mergeSolutions ?? []).find((row) => keepKeys.has(row.dedupe_key));
+      if (conflict) {
+        throw new Error(
+          "Cannot merge safely: both businesses have the same solution recommendation. Remove or rename the duplicate solution first.",
+        );
+      }
     }
 
     // Tables with a unique key that includes business_id need conflict cleanup
@@ -232,6 +272,64 @@ export const mergeBusinesses = createServerFn({ method: "POST" })
       }
     }
     await moveBusinessRefs("search_run_results", "business_id");
+
+    const { data: keepMatches, error: keepMatchesError } = await supabase
+      .from("social_business_matches")
+      .select("social_lead_id")
+      .eq("business_id", data.keepId);
+    if (keepMatchesError && !isMissingTable(keepMatchesError.message)) {
+      throw new Error(`social_business_matches: ${keepMatchesError.message}`);
+    }
+    if (keepMatches?.length) {
+      const keepLeadIds = new Set(keepMatches.map((row) => row.social_lead_id));
+      const { data: mergeMatches, error: mergeMatchesError } = await supabase
+        .from("social_business_matches")
+        .select("id, social_lead_id")
+        .in("business_id", mergeIds);
+      if (mergeMatchesError && !isMissingTable(mergeMatchesError.message)) {
+        throw new Error(`social_business_matches: ${mergeMatchesError.message}`);
+      }
+      const conflictIds = (mergeMatches ?? [])
+        .filter((row) => keepLeadIds.has(row.social_lead_id))
+        .map((row) => row.id);
+      if (conflictIds.length) {
+        const { error: deleteError } = await supabase
+          .from("social_business_matches")
+          .delete()
+          .in("id", conflictIds);
+        if (deleteError) throw new Error(`social_business_matches: ${deleteError.message}`);
+      }
+    }
+
+    const { data: keepProfessionalLinks, error: keepProfessionalLinksError } = await supabase
+      .from("professional_business_links")
+      .select("professional_id, relationship_type")
+      .eq("business_id", data.keepId);
+    if (keepProfessionalLinksError && !isMissingTable(keepProfessionalLinksError.message)) {
+      throw new Error(`professional_business_links: ${keepProfessionalLinksError.message}`);
+    }
+    if (keepProfessionalLinks?.length) {
+      const keyOf = (row: { professional_id: string; relationship_type: string }) =>
+        `${row.professional_id}|${row.relationship_type}`;
+      const keepLinkKeys = new Set(keepProfessionalLinks.map(keyOf));
+      const { data: mergeProfessionalLinks, error: mergeProfessionalLinksError } = await supabase
+        .from("professional_business_links")
+        .select("id, professional_id, relationship_type")
+        .in("business_id", mergeIds);
+      if (mergeProfessionalLinksError && !isMissingTable(mergeProfessionalLinksError.message)) {
+        throw new Error(`professional_business_links: ${mergeProfessionalLinksError.message}`);
+      }
+      const conflictIds = (mergeProfessionalLinks ?? [])
+        .filter((row) => keepLinkKeys.has(keyOf(row)))
+        .map((row) => row.id);
+      if (conflictIds.length) {
+        const { error: deleteError } = await supabase
+          .from("professional_business_links")
+          .delete()
+          .in("id", conflictIds);
+        if (deleteError) throw new Error(`professional_business_links: ${deleteError.message}`);
+      }
+    }
 
     for (const ref of SIMPLE_REFS) await moveBusinessRefs(ref.table, ref.column);
 

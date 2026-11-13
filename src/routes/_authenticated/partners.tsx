@@ -316,6 +316,7 @@ function PartnersPage() {
                 partner={p}
                 onEdit={() => setDraft(draftFrom(p))}
                 onDelete={() => {
+                  if (!window.confirm("Remove this partner? This cannot be undone.")) return;
                   removePartner({ data: { id: p.id! } })
                     .then(() => {
                       setMessage("Partner removed.");

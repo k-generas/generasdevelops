@@ -48,7 +48,9 @@ function UpdatesPage() {
       .update({ read_at: new Date().toISOString() })
       .is("read_at", null)
       .then(() => {
-        if (!cancelled) qc.invalidateQueries({ queryKey: ["updates-unread"] });
+        if (cancelled) return;
+        qc.invalidateQueries({ queryKey: ["updates-unread"] });
+        qc.invalidateQueries({ queryKey: ["daily-digests"] });
       });
     return () => {
       cancelled = true;

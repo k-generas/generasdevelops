@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Invoice } from "@/lib/invoices";
+import { isMissingSchemaError } from "@/lib/db-errors";
 
 export type InvoiceRow = Invoice & { businesses: { name: string } | null };
 
@@ -20,7 +21,10 @@ export function useInvoices() {
           "id,number,business_id,proposal_id,currency,amount,status,issued_at,due_at,paid_at,notes,businesses(name)",
         )
         .order("created_at", { ascending: false });
-      if (error) return { invoices: [], persisted: false };
+      if (error) {
+        if (isMissingSchemaError(error)) return { invoices: [], persisted: false };
+        throw new Error(error.message);
+      }
       return { invoices: (data ?? []) as unknown as InvoiceRow[], persisted: true };
     },
   });

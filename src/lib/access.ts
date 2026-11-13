@@ -24,8 +24,6 @@ function readName(metadata: unknown): string | null {
   return null;
 }
 
-// Returns null when access can't be determined yet (table not migrated, or no
-// session); callers treat null as "no restriction" so the app keeps working.
 export async function fetchAccessInfo(): Promise<AccessInfo | null> {
   const { data: sessionData } = await supabase.auth.getSession();
   const user = sessionData.session?.user;
@@ -35,7 +33,7 @@ export async function fetchAccessInfo(): Promise<AccessInfo | null> {
     .select("access_status, is_admin")
     .eq("id", user.id)
     .maybeSingle();
-  if (error) return null;
+  if (error) throw new Error(error.message);
   return {
     status: data?.access_status ?? "pending",
     email: user.email ?? "",

@@ -14,6 +14,7 @@ import {
   type SocialLeadStoreStatus,
   type SocialLeadWebsiteStatus,
 } from "./social-leads";
+import { safeFetch } from "./safe-url.server";
 
 const DEFAULT_GRAPH_VERSION = "v23.0";
 const GRAPH_URL = "https://graph.facebook.com";
@@ -274,14 +275,17 @@ export async function probeWebsite(url: string | null | undefined): Promise<Webs
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), WEBSITE_TIMEOUT_MS);
   try {
-    const response = await fetch(value, {
-      redirect: "follow",
-      signal: controller.signal,
-      headers: {
-        "user-agent": "GARE-SocialLeadCheck/1.0 (+https://generasdevelops.lovable.app)",
-        accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
+    const response = await safeFetch(
+      value,
+      {
+        signal: controller.signal,
+        headers: {
+          "user-agent": "GARE-SocialLeadCheck/1.0 (+https://generasdevelops.lovable.app)",
+          accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
+        },
       },
-    });
+      { maxRedirects: 3 },
+    );
     const finalUrl = response.url || value;
     if ([401, 403, 429].includes(response.status)) {
       return {

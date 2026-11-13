@@ -4,6 +4,7 @@ const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_maps";
 // (e.g. running locally without the gateway keys). Sign up — no credit card — at
 // https://myprojects.geoapify.com and set GEOAPIFY_API_KEY.
 const GEOAPIFY_GEOCODE_URL = "https://api.geoapify.com/v1/geocode/search";
+const PLACES_TIMEOUT_MS = 20_000;
 export const GEOAPIFY_PLACE_ID_PREFIX = "geoapify:";
 
 export type RecentReview = {
@@ -174,6 +175,7 @@ async function searchPlacesGoogle(
         "X-Goog-FieldMask": fields.join(","),
       },
       body: JSON.stringify({ textQuery, pageSize: maxResults }),
+      signal: AbortSignal.timeout(PLACES_TIMEOUT_MS),
     });
 
   let res = await call([...BASE_FIELDS, ...ACTIVITY_FIELDS]);
@@ -212,6 +214,7 @@ async function searchPlacesGoogleDirect(
         "X-Goog-FieldMask": mask,
       },
       body: JSON.stringify({ textQuery, maxResultCount: maxResults }),
+      signal: AbortSignal.timeout(PLACES_TIMEOUT_MS),
     });
   let res = await call(fieldMask);
   if (res.status === 400) res = await call(BASE_FIELDS.join(","));
@@ -274,7 +277,10 @@ async function geoapifyFeatures(
   url.searchParams.set("format", "geojson");
   url.searchParams.set("apiKey", apiKey);
   if (amenityOnly) url.searchParams.set("type", "amenity");
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  const res = await fetch(url, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(PLACES_TIMEOUT_MS),
+  });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     if (res.status === 401 || res.status === 403)

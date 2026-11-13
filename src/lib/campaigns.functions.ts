@@ -296,15 +296,15 @@ export const saveCampaignSteps = createServerFn({ method: "POST" })
       );
     }
 
-    const { error: deleteError } = await context.supabase
+    const { data: existing, error: existingError } = await context.supabase
       .from("outreach_campaign_steps")
-      .delete()
+      .select("id")
       .eq("owner_id", context.userId)
       .eq("campaign_id", data.campaignId);
-    if (deleteError) {
-      if (isMissing(deleteError.message))
+    if (existingError) {
+      if (isMissing(existingError.message))
         throw new Error(missingMessage("outreach_campaign_steps"));
-      throw new Error(deleteError.message);
+      throw new Error(existingError.message);
     }
 
     const rows: StepInsert[] = steps.map((step) => ({
@@ -320,12 +320,25 @@ export const saveCampaignSteps = createServerFn({ method: "POST" })
     }));
     const { data: saved, error } = await context.supabase
       .from("outreach_campaign_steps")
-      .insert(rows)
+      .upsert(rows, { onConflict: "owner_id,campaign_id,step_order" })
       .select("*")
       .order("step_order", { ascending: true });
     if (error) {
       if (isMissing(error.message)) throw new Error(missingMessage("outreach_campaign_steps"));
       throw new Error(error.message);
+    }
+    const savedIds = new Set((saved ?? []).map((row) => row.id));
+    const staleIds = (existing ?? []).map((row) => row.id).filter((id) => !savedIds.has(id));
+    if (staleIds.length) {
+      const { error: deleteError } = await context.supabase
+        .from("outreach_campaign_steps")
+        .delete()
+        .in("id", staleIds);
+      if (deleteError) {
+        if (isMissing(deleteError.message))
+          throw new Error(missingMessage("outreach_campaign_steps"));
+        throw new Error(deleteError.message);
+      }
     }
     return (saved ?? []).map(toStep);
   });

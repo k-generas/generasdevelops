@@ -108,297 +108,304 @@ export const runDiscovery = createServerFn({ method: "POST" })
         .eq("id", run.id);
     };
 
-    let places;
     try {
-      places = await searchPlaces(textQuery, data.maxResults);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      // A fresh serverless isolate can briefly miss the Google Maps connector
-      // env. Retrying costs nothing when there is no provider (no paid call is
-      // made), and clears the transient failure that otherwise looks scary.
-      if (!/no places provider is configured/i.test(msg)) {
-        await markFailed(msg);
-        throw new Error(msg);
-      }
-      await new Promise((r) => setTimeout(r, 1500));
+      let places;
       try {
         places = await searchPlaces(textQuery, data.maxResults);
-      } catch (e2) {
-        const msg2 = e2 instanceof Error ? e2.message : String(e2);
-        await markFailed(msg2);
-        throw new Error(msg2);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        // A fresh serverless isolate can briefly miss the Google Maps connector
+        // env. Retrying costs nothing when there is no provider (no paid call is
+        // made), and clears the transient failure that otherwise looks scary.
+        if (!/no places provider is configured/i.test(msg)) {
+          await markFailed(msg);
+          throw new Error(msg);
+        }
+        await new Promise((r) => setTimeout(r, 1500));
+        try {
+          places = await searchPlaces(textQuery, data.maxResults);
+        } catch (e2) {
+          const msg2 = e2 instanceof Error ? e2.message : String(e2);
+          await markFailed(msg2);
+          throw new Error(msg2);
+        }
       }
-    }
 
-    // Load everything already known so a business is never counted twice: first
-    // by Google place_id, then by domain/phone/name identity, so the same lead
-    // reached through another source (or an earlier run) is not re-added.
-    type KnownBusiness = {
-      id: string;
-      place_id: string | null;
-      name: string;
-      website: string | null;
-      phone: string | null;
-      address: string | null;
-      rating?: number | null;
-      review_count?: number | null;
-      business_status?: string | null;
-      reviews_last_90d?: number | null;
-      open_now?: boolean | null;
-      last_activity_at?: string | null;
-      activity_checked_at?: string | null;
-    };
-    const EXISTING_COLUMNS =
-      "id, place_id, name, website, phone, address, rating, review_count, business_status, reviews_last_90d, open_now, last_activity_at, activity_checked_at";
-    const BASE_COLUMNS = "id, place_id, name, website, phone, address";
-    async function loadKnown(columns: string): Promise<KnownBusiness[]> {
-      const rows: KnownBusiness[] = [];
-      for (let from = 0; ; from += 1000) {
-        const { data, error } = await supabase
-          .from("businesses")
-          .select(columns)
-          .order("id")
-          .range(from, from + 999);
-        if (error) throw new Error(error.message);
-        const batch = (data ?? []) as unknown as KnownBusiness[];
-        rows.push(...batch);
-        if (batch.length < 1000) break;
+      // Load everything already known so a business is never counted twice: first
+      // by Google place_id, then by domain/phone/name identity, so the same lead
+      // reached through another source (or an earlier run) is not re-added.
+      type KnownBusiness = {
+        id: string;
+        place_id: string | null;
+        name: string;
+        website: string | null;
+        phone: string | null;
+        address: string | null;
+        rating?: number | null;
+        review_count?: number | null;
+        business_status?: string | null;
+        reviews_last_90d?: number | null;
+        open_now?: boolean | null;
+        last_activity_at?: string | null;
+        activity_checked_at?: string | null;
+      };
+      const EXISTING_COLUMNS =
+        "id, place_id, name, website, phone, address, rating, review_count, business_status, reviews_last_90d, open_now, last_activity_at, activity_checked_at";
+      const BASE_COLUMNS = "id, place_id, name, website, phone, address";
+      async function loadKnown(columns: string): Promise<KnownBusiness[]> {
+        const rows: KnownBusiness[] = [];
+        for (let from = 0; ; from += 1000) {
+          const { data, error } = await supabase
+            .from("businesses")
+            .select(columns)
+            .order("id")
+            .range(from, from + 999);
+          if (error) throw new Error(error.message);
+          const batch = (data ?? []) as unknown as KnownBusiness[];
+          rows.push(...batch);
+          if (batch.length < 1000) break;
+        }
+        return rows;
       }
-      return rows;
-    }
-    let existing: KnownBusiness[];
-    try {
-      existing = await loadKnown(EXISTING_COLUMNS);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      if (!/column .* does not exist|could not find|schema cache/i.test(message)) {
-        throw new Error(message);
+      let existing: KnownBusiness[];
+      try {
+        existing = await loadKnown(EXISTING_COLUMNS);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        if (!/column .* does not exist|could not find|schema cache/i.test(message)) {
+          throw new Error(message);
+        }
+        existing = await loadKnown(BASE_COLUMNS);
       }
-      existing = await loadKnown(BASE_COLUMNS);
-    }
-    const knownByPlaceId = new Map<string, string>();
-    const existingById = new Map(existing.map((e) => [e.id, e]));
-    for (const e of existing) if (e.place_id) knownByPlaceId.set(e.place_id, e.id);
+      const knownByPlaceId = new Map<string, string>();
+      const existingById = new Map(existing.map((e) => [e.id, e]));
+      for (const e of existing) if (e.place_id) knownByPlaceId.set(e.place_id, e.id);
 
-    // place_id -> resolved business id (existing match or newly inserted row).
-    const resolved = new Map<string, string>();
-    const fresh: typeof places = [];
-    for (const p of places) {
-      const byPlace = knownByPlaceId.get(p.place_id);
-      if (byPlace) {
-        resolved.set(p.place_id, byPlace);
-        continue;
+      // place_id -> resolved business id (existing match or newly inserted row).
+      const resolved = new Map<string, string>();
+      const fresh: typeof places = [];
+      for (const p of places) {
+        const byPlace = knownByPlaceId.get(p.place_id);
+        if (byPlace) {
+          resolved.set(p.place_id, byPlace);
+          continue;
+        }
+        const dup = existing.find((e) => sameBusinessRecord(e, p));
+        if (dup) {
+          resolved.set(p.place_id, dup.id);
+          continue;
+        }
+        if (fresh.some((f) => sameBusinessRecord(f, p))) continue;
+        fresh.push(p);
       }
-      const dup = existing.find((e) => sameBusinessRecord(e, p));
-      if (dup) {
-        resolved.set(p.place_id, dup.id);
-        continue;
-      }
-      if (fresh.some((f) => sameBusinessRecord(f, p))) continue;
-      fresh.push(p);
-    }
 
-    type InsertedRow = { id: string; place_id: string; name: string };
-    let inserted: InsertedRow[] = [];
-    if (fresh.length) {
-      const rows = fresh.map((p) => ({ ...p, owner_id: userId, discovery_run_id: run.id }));
-      let insErr: string | null = null;
-      {
-        const res = await supabase.from("businesses").insert(rows).select("id, place_id, name");
-        inserted = (res.data ?? []) as InsertedRow[];
-        insErr = res.error?.message ?? null;
+      type InsertedRow = { id: string; place_id: string; name: string };
+      let inserted: InsertedRow[] = [];
+      if (fresh.length) {
+        const rows = fresh.map((p) => ({ ...p, owner_id: userId, discovery_run_id: run.id }));
+        let insErr: string | null = null;
+        {
+          const res = await supabase.from("businesses").insert(rows).select("id, place_id, name");
+          inserted = (res.data ?? []) as InsertedRow[];
+          insErr = res.error?.message ?? null;
+        }
+        // Older databases may not have the activity-signal columns yet; retry without them
+        // so discovery still works until the migration is applied.
+        if (insErr && /column .*does not exist|could not find|schema cache/i.test(insErr)) {
+          const stripped = rows.map((r) => {
+            const c: Record<string, unknown> = { ...r };
+            for (const k of ACTIVITY_COLUMNS) delete c[k];
+            return c;
+          });
+          const res = await supabase
+            .from("businesses")
+            .insert(stripped as never)
+            .select("id, place_id, name");
+          inserted = (res.data ?? []) as InsertedRow[];
+          insErr = res.error?.message ?? null;
+        }
+        if (insErr) throw new Error(insErr);
+        for (const b of inserted) resolved.set(b.place_id, b.id);
+        await supabase.from("business_activity_events").insert(
+          inserted.map((b) => ({
+            owner_id: userId,
+            business_id: b.id,
+            event_type: "discovered",
+            summary: `Discovered via search “${title}”`,
+            ref_table: "discovery_runs",
+            ref_id: run.id,
+          })),
+        );
       }
-      // Older databases may not have the activity-signal columns yet; retry without them
-      // so discovery still works until the migration is applied.
-      if (insErr && /column .*does not exist|could not find|schema cache/i.test(insErr)) {
-        const stripped = rows.map((r) => {
-          const c: Record<string, unknown> = { ...r };
-          for (const k of ACTIVITY_COLUMNS) delete c[k];
-          return c;
-        });
-        const res = await supabase
-          .from("businesses")
-          .insert(stripped as never)
-          .select("id, place_id, name");
-        inserted = (res.data ?? []) as InsertedRow[];
-        insErr = res.error?.message ?? null;
-      }
-      if (insErr) throw new Error(insErr);
-      for (const b of inserted) resolved.set(b.place_id, b.id);
-      await supabase.from("business_activity_events").insert(
-        inserted.map((b) => ({
-          owner_id: userId,
-          business_id: b.id,
-          event_type: "discovered",
-          summary: `Discovered via search “${title}”`,
-          ref_table: "discovery_runs",
-          ref_id: run.id,
-        })),
+
+      // Verify "no website" claims up front. Only a completed check marks a
+      // business as confirmed no-website; if a website is found we store it so the
+      // lead is no longer shown as website-less.
+      const freshByPlaceId = new Map(fresh.map((p) => [p.place_id, p]));
+      const effectiveWebsiteByPlaceId = new Map(
+        places.map((p) => [p.place_id, p.website?.trim() || null]),
       );
-    }
+      const noSite = inserted.filter((b) => !freshByPlaceId.get(b.place_id)?.website);
+      let verifiedNoWebsite = 0;
+      if (noSite.length) {
+        const deadline = Date.now() + VERIFY_BUDGET_MS;
+        for (let i = 0; i < noSite.length; i += VERIFY_CONCURRENCY) {
+          if (Date.now() >= deadline) break;
+          await Promise.allSettled(
+            noSite.slice(i, i + VERIFY_CONCURRENCY).map(async (b) => {
+              const place = freshByPlaceId.get(b.place_id);
+              if (!place) return;
+              const check = await verifyWebsite(
+                {
+                  place_id: place.place_id,
+                  name: place.name,
+                  address: place.address,
+                  website: null,
+                },
+                {
+                  maxDomainCandidates: VERIFY_MAX_DOMAINS,
+                  maxFreeHostingCandidates: VERIFY_MAX_FREE_HOSTS,
+                  perRequestMs: VERIFY_PER_REQUEST_MS,
+                  deadlineMs: deadline,
+                },
+              );
+              const now = new Date().toISOString();
+              const websiteCheck = websiteCheckJson(check);
+              if (check.website) {
+                effectiveWebsiteByPlaceId.set(b.place_id, check.website);
+                await supabase
+                  .from("businesses")
+                  .update({
+                    website: check.website,
+                    website_source: check.source,
+                    website_checked_at: now,
+                    website_check: websiteCheck,
+                  })
+                  .eq("id", b.id);
+                await supabase.from("business_activity_events").insert({
+                  owner_id: userId,
+                  business_id: b.id,
+                  event_type: "website_found",
+                  summary: `Website found during discovery (${check.source}): ${check.website}`,
+                });
+              } else if (check.confidence === "none_found") {
+                if (!check.truncated) verifiedNoWebsite += 1;
+                await supabase
+                  .from("businesses")
+                  .update({ website_checked_at: now, website_check: websiteCheck })
+                  .eq("id", b.id);
+              }
+            }),
+          );
+        }
+      }
 
-    // Verify "no website" claims up front. Only a completed check marks a
-    // business as confirmed no-website; if a website is found we store it so the
-    // lead is no longer shown as website-less.
-    const freshByPlaceId = new Map(fresh.map((p) => [p.place_id, p]));
-    const effectiveWebsiteByPlaceId = new Map(
-      places.map((p) => [p.place_id, p.website?.trim() || null]),
-    );
-    const noSite = inserted.filter((b) => !freshByPlaceId.get(b.place_id)?.website);
-    let verifiedNoWebsite = 0;
-    if (noSite.length) {
-      const deadline = Date.now() + VERIFY_BUDGET_MS;
-      for (let i = 0; i < noSite.length; i += VERIFY_CONCURRENCY) {
-        if (Date.now() >= deadline) break;
-        await Promise.allSettled(
-          noSite.slice(i, i + VERIFY_CONCURRENCY).map(async (b) => {
-            const place = freshByPlaceId.get(b.place_id);
-            if (!place) return;
-            const check = await verifyWebsite(
-              {
-                place_id: place.place_id,
-                name: place.name,
-                address: place.address,
-                website: null,
-              },
-              {
-                maxDomainCandidates: VERIFY_MAX_DOMAINS,
-                maxFreeHostingCandidates: VERIFY_MAX_FREE_HOSTS,
-                perRequestMs: VERIFY_PER_REQUEST_MS,
-                deadlineMs: deadline,
-              },
-            );
-            const now = new Date().toISOString();
-            const websiteCheck = websiteCheckJson(check);
-            if (check.website) {
-              effectiveWebsiteByPlaceId.set(b.place_id, check.website);
-              await supabase
+      // Probe the websites returned by this run so Discover can focus on businesses
+      // that need a site, a repair or ongoing maintenance. Bounded and parallel so
+      // one slow host cannot stall the whole run.
+      const probeByBusinessId = new Map<string, WebsiteProbe>();
+      const probeTargets: { id: string; website: string }[] = [];
+      const seenProbeIds = new Set<string>();
+      for (const p of places) {
+        const id = resolved.get(p.place_id);
+        const website = effectiveWebsiteByPlaceId.get(p.place_id);
+        if (!id || !website || seenProbeIds.has(id)) continue;
+        seenProbeIds.add(id);
+        probeTargets.push({ id, website });
+      }
+      if (probeTargets.length) {
+        const deadline = Date.now() + PROBE_BUDGET_MS;
+        for (let i = 0; i < probeTargets.length; i += PROBE_CONCURRENCY) {
+          if (Date.now() >= deadline) break;
+          await Promise.allSettled(
+            probeTargets.slice(i, i + PROBE_CONCURRENCY).map(async ({ id, website }) => {
+              const findings = await probeWebsite(website, {
+                timeoutMs: PROBE_TIMEOUT_MS,
+                collectEmails: false,
+                maxHtmlBytes: PROBE_MAX_HTML_BYTES,
+              });
+              const checkedAt = new Date().toISOString();
+              const probe = websiteProbeJson(findings, checkedAt);
+              const { error: updateError } = await supabase
                 .from("businesses")
                 .update({
-                  website: check.website,
-                  website_source: check.source,
-                  website_checked_at: now,
-                  website_check: websiteCheck,
+                  website_probe: probe as unknown as Json,
+                  website_probed_at: checkedAt,
                 })
-                .eq("id", b.id);
-              await supabase.from("business_activity_events").insert({
-                owner_id: userId,
-                business_id: b.id,
-                event_type: "website_found",
-                summary: `Website found during discovery (${check.source}): ${check.website}`,
-              });
-            } else if (check.confidence === "none_found") {
-              if (!check.truncated) verifiedNoWebsite += 1;
-              await supabase
-                .from("businesses")
-                .update({ website_checked_at: now, website_check: websiteCheck })
-                .eq("id", b.id);
-            }
+                .eq("id", id);
+              if (!updateError) probeByBusinessId.set(id, probe);
+            }),
+          );
+        }
+      }
+
+      const assessments = new Map<string, ReturnType<typeof assessWebsite>>();
+      for (const p of places) {
+        const id = resolved.get(p.place_id);
+        if (!id || assessments.has(id)) continue;
+        assessments.set(
+          id,
+          assessWebsite({
+            website: effectiveWebsiteByPlaceId.get(p.place_id) ?? null,
+            websiteProbe: probeByBusinessId.get(id) ?? null,
           }),
         );
       }
-    }
-
-    // Probe the websites returned by this run so Discover can focus on businesses
-    // that need a site, a repair or ongoing maintenance. Bounded and parallel so
-    // one slow host cannot stall the whole run.
-    const probeByBusinessId = new Map<string, WebsiteProbe>();
-    const probeTargets: { id: string; website: string }[] = [];
-    const seenProbeIds = new Set<string>();
-    for (const p of places) {
-      const id = resolved.get(p.place_id);
-      const website = effectiveWebsiteByPlaceId.get(p.place_id);
-      if (!id || !website || seenProbeIds.has(id)) continue;
-      seenProbeIds.add(id);
-      probeTargets.push({ id, website });
-    }
-    if (probeTargets.length) {
-      const deadline = Date.now() + PROBE_BUDGET_MS;
-      for (let i = 0; i < probeTargets.length; i += PROBE_CONCURRENCY) {
-        if (Date.now() >= deadline) break;
-        await Promise.allSettled(
-          probeTargets.slice(i, i + PROBE_CONCURRENCY).map(async ({ id, website }) => {
-            const findings = await probeWebsite(website, {
-              timeoutMs: PROBE_TIMEOUT_MS,
-              collectEmails: false,
-              maxHtmlBytes: PROBE_MAX_HTML_BYTES,
-            });
-            const checkedAt = new Date().toISOString();
-            const probe = websiteProbeJson(findings, checkedAt);
-            const { error: updateError } = await supabase
-              .from("businesses")
-              .update({
-                website_probe: probe as unknown as Json,
-                website_probed_at: checkedAt,
-              })
-              .eq("id", id);
-            if (!updateError) probeByBusinessId.set(id, probe);
-          }),
-        );
+      const counts = { noWebsite: 0, siteIssues: 0, healthy: 0, uncheckedSites: 0 };
+      for (const assessment of assessments.values()) {
+        if (assessment.state === "no_website") counts.noWebsite += 1;
+        else if (assessment.state === "needs_work") counts.siteIssues += 1;
+        else if (assessment.state === "healthy") counts.healthy += 1;
+        else counts.uncheckedSites += 1;
       }
-    }
 
-    const assessments = new Map<string, ReturnType<typeof assessWebsite>>();
-    for (const p of places) {
-      const id = resolved.get(p.place_id);
-      if (!id || assessments.has(id)) continue;
-      assessments.set(
-        id,
-        assessWebsite({
-          website: effectiveWebsiteByPlaceId.get(p.place_id) ?? null,
-          websiteProbe: probeByBusinessId.get(id) ?? null,
+      const freshIds = new Set(fresh.map((p) => p.place_id));
+      const links = places
+        .filter((p) => resolved.has(p.place_id))
+        .map((p) => ({
+          owner_id: userId,
+          run_id: run.id,
+          business_id: resolved.get(p.place_id)!,
+          was_new: freshIds.has(p.place_id),
+        }));
+      if (links.length) await supabase.from("search_run_results").insert(links);
+
+      const { error: completeError } = await supabase
+        .from("discovery_runs")
+        .update({
+          status: "completed",
+          results_count: places.length,
+          new_count: fresh.length,
+          completed_at: new Date().toISOString(),
+        })
+        .eq("id", run.id);
+      if (completeError) throw new Error(completeError.message);
+
+      // Places we already knew came back with fresh (already paid for) data.
+      // Refresh their activity fields and record meaningful changes as signals.
+      await Promise.allSettled(
+        places.flatMap((p) => {
+          const id = knownByPlaceId.get(p.place_id);
+          const before = id ? existingById.get(id) : undefined;
+          if (!before) return [];
+          return [recordPlaceChanges(supabase, userId, before, p)];
         }),
       );
+
+      return {
+        runId: run.id,
+        found: places.length,
+        added: fresh.length,
+        duplicates: places.length - fresh.length,
+        verifiedNoWebsite,
+        ...counts,
+        gareLeads: counts.noWebsite + counts.siteIssues,
+      };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      await markFailed(msg);
+      throw e instanceof Error ? e : new Error(msg);
     }
-    const counts = { noWebsite: 0, siteIssues: 0, healthy: 0, uncheckedSites: 0 };
-    for (const assessment of assessments.values()) {
-      if (assessment.state === "no_website") counts.noWebsite += 1;
-      else if (assessment.state === "needs_work") counts.siteIssues += 1;
-      else if (assessment.state === "healthy") counts.healthy += 1;
-      else counts.uncheckedSites += 1;
-    }
-
-    const freshIds = new Set(fresh.map((p) => p.place_id));
-    const links = places
-      .filter((p) => resolved.has(p.place_id))
-      .map((p) => ({
-        owner_id: userId,
-        run_id: run.id,
-        business_id: resolved.get(p.place_id)!,
-        was_new: freshIds.has(p.place_id),
-      }));
-    if (links.length) await supabase.from("search_run_results").insert(links);
-
-    await supabase
-      .from("discovery_runs")
-      .update({
-        status: "completed",
-        results_count: places.length,
-        new_count: fresh.length,
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", run.id);
-
-    // Places we already knew came back with fresh (already paid for) data.
-    // Refresh their activity fields and record meaningful changes as signals.
-    await Promise.allSettled(
-      places.flatMap((p) => {
-        const id = knownByPlaceId.get(p.place_id);
-        const before = id ? existingById.get(id) : undefined;
-        if (!before) return [];
-        return [recordPlaceChanges(supabase, userId, before, p)];
-      }),
-    );
-
-    return {
-      runId: run.id,
-      found: places.length,
-      added: fresh.length,
-      duplicates: places.length - fresh.length,
-      verifiedNoWebsite,
-      ...counts,
-      gareLeads: counts.noWebsite + counts.siteIssues,
-    };
   });
 
 // Probes saved websites that have never been checked, so older leads can be

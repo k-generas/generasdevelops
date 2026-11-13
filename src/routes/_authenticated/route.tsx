@@ -46,6 +46,7 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 import { ThemeMenu } from "@/components/ThemeMenu";
 import { recordLoginEvent, useAccessInfo } from "@/lib/access";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -310,6 +311,28 @@ function Shell() {
 
   if (access.isPending) {
     return <div className="min-h-dvh bg-background" />;
+  }
+
+  if (access.isError) {
+    return (
+      <div className="grid min-h-dvh place-items-center bg-background px-4">
+        <div className="max-w-md space-y-3 rounded-lg border p-6 text-center">
+          <AlertTriangle className="mx-auto h-8 w-8 text-destructive" />
+          <h1 className="text-lg font-semibold">Could not verify access</h1>
+          <p className="text-sm text-muted-foreground">
+            {access.error instanceof Error
+              ? access.error.message
+              : "The access check failed. Check your connection and try again."}
+          </p>
+          <div className="flex justify-center gap-2">
+            <Button onClick={() => void access.refetch()}>Retry</Button>
+            <Button variant="outline" onClick={signOut}>
+              Sign out
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (access.data && accessStatus !== "approved") {

@@ -141,12 +141,13 @@ function Orders() {
   }
 
   async function setStatus(o: OrderRow, status: string) {
+    const now = new Date().toISOString();
     const { error } = await supabase
       .from("orders")
       .update({
         status,
-        fulfilled_at: status === "FULFILLED" ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString(),
+        fulfilled_at: status === "FULFILLED" ? (o.fulfilled_at ?? now) : o.fulfilled_at,
+        updated_at: now,
       })
       .eq("id", o.id!);
     if (error) {
@@ -166,10 +167,14 @@ function Orders() {
   }
 
   async function updateChecklist(o: OrderRow, c: ChecklistItem[]) {
-    await supabase
+    const { error } = await supabase
       .from("orders")
       .update({ checklist: c, updated_at: new Date().toISOString() })
       .eq("id", o.id!);
+    if (error) {
+      const d = describeError(error, "Update checklist");
+      setMsg(`${d.title}: ${d.message} How to fix: ${d.fix}`);
+    }
     await orders.refetch();
   }
 

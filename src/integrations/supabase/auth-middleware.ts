@@ -106,11 +106,12 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
       .eq('id', data.claims.sub)
       .maybeSingle();
 
-    if (!profileError) {
-      const accessStatus = profile?.access_status ?? 'pending';
-      if (accessStatus !== 'approved') {
-        throw new Error(`Access ${accessStatus}: this account has not been approved for GARE access`);
-      }
+    if (profileError) {
+      throw new Error('Unauthorized: could not verify account access. Try again.');
+    }
+    const accessStatus = profile?.access_status ?? 'pending';
+    if (accessStatus !== 'approved') {
+      throw new Error(`Access ${accessStatus}: this account has not been approved for GARE access`);
     }
 
     return next({

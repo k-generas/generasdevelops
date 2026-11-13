@@ -185,7 +185,9 @@ function OffersPage() {
                         size="sm"
                         variant="ghost"
                         className="text-destructive"
-                        onClick={() =>
+                        onClick={() => {
+                          if (!window.confirm("Remove this offer kit? This cannot be undone."))
+                            return;
                           removeKit({ data: { offer: o.name } })
                             .then(() => {
                               setMessage("Kit removed.");
@@ -193,8 +195,8 @@ function OffersPage() {
                             })
                             .catch((e) =>
                               setMessage(e instanceof Error ? e.message : "Could not remove."),
-                            )
-                        }
+                            );
+                        }}
                       >
                         Remove
                       </Button>

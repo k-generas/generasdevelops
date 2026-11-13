@@ -3,6 +3,7 @@
 // 2) guess likely domains from the business name and verify the page actually
 // mentions the business.
 import { GEOAPIFY_PLACE_ID_PREFIX } from "./places.server";
+import { safeFetch } from "./safe-url.server";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/google_maps";
 const GEOAPIFY_PLACE_DETAILS_URL = "https://api.geoapify.com/v2/place-details";
@@ -120,6 +121,7 @@ async function placeDetailsWebsite(placeId: string): Promise<PlaceDetailsResult>
           "X-Connection-Api-Key": mapsKey,
           "X-Goog-FieldMask": "websiteUri",
         },
+        signal: AbortSignal.timeout(15000),
       });
       if (res.ok) {
         anyOk = true;
@@ -135,7 +137,10 @@ async function placeDetailsWebsite(placeId: string): Promise<PlaceDetailsResult>
     try {
       const res = await fetch(
         `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
-        { headers: { "X-Goog-Api-Key": mapsKey, "X-Goog-FieldMask": "websiteUri" } },
+        {
+          headers: { "X-Goog-Api-Key": mapsKey, "X-Goog-FieldMask": "websiteUri" },
+          signal: AbortSignal.timeout(15000),
+        },
       );
       if (res.ok) {
         anyOk = true;
@@ -155,7 +160,10 @@ async function placeDetailsWebsite(placeId: string): Promise<PlaceDetailsResult>
       const url = new URL(GEOAPIFY_PLACE_DETAILS_URL);
       url.searchParams.set("id", id);
       url.searchParams.set("apiKey", geoKey);
-      const res = await fetch(url, { headers: { Accept: "application/json" } });
+      const res = await fetch(url, {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(15000),
+      });
       if (res.ok) {
         anyOk = true;
         const d = (await res.json()) as {
@@ -182,11 +190,11 @@ async function pageMentions(url: string, tokens: string[], timeoutMs = 7000): Pr
 
 async function mentionsAt(url: string, tokens: string[], timeoutMs = 7000): Promise<boolean> {
   try {
-    const r = await fetch(url, {
-      redirect: "follow",
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; GARE-Investigator/1.0)" },
-      signal: AbortSignal.timeout(timeoutMs),
-    });
+    const r = await safeFetch(
+      url,
+      { headers: { "User-Agent": "Mozilla/5.0 (compatible; GARE-Investigator/1.0)" } },
+      { timeoutMs },
+    );
     if (!r.ok) return false;
     const html = (await r.text()).slice(0, 200_000).toLowerCase();
     // Parked/for-sale domains are not the business's website.

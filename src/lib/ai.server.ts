@@ -17,6 +17,7 @@ export function aiModelLabel(provider: AiProvider): string {
 const OPENAI_URL = "https://api.openai.com/v1/responses";
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 const LOVABLE_URL = "https://ai.gateway.lovable.dev/v1/responses";
+const AI_TIMEOUT_MS = Number(process.env["AI_TIMEOUT_MS"]) || 120_000;
 
 function openaiKey() {
   return process.env["OPENAI_API_KEY"];
@@ -61,6 +62,7 @@ async function callOpenAI(
       input,
       text: { format: { type: "json_schema", name, strict: true, schema } },
     }),
+    signal: AbortSignal.timeout(AI_TIMEOUT_MS),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -156,6 +158,7 @@ async function callGemini(
             response_schema: toGeminiSchema(schema),
           },
         }),
+        signal: AbortSignal.timeout(AI_TIMEOUT_MS),
       });
       if (res.ok) {
         const data = (await res.json()) as {
@@ -215,6 +218,7 @@ async function callLovable(
       reasoning: { effort: "low" },
       text: { format: { type: "json_schema", name, strict: true, schema } },
     }),
+    signal: AbortSignal.timeout(AI_TIMEOUT_MS),
   });
   if (!res.ok || !res.body) {
     const body = await res.text().catch(() => "");

@@ -7,6 +7,7 @@ import {
   type SocialProbeResult,
   type SocialProfileStatus,
 } from "./social-profiles";
+import { safeFetch } from "./safe-url.server";
 
 const USER_AGENT =
   "GARE-SocialPresence/1.0 (+https://generasdevelops.lovable.app; public profile check)";
@@ -65,16 +66,19 @@ export async function probeSocialProfile(profile: ParsedSocialProfile): Promise<
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const response = await fetch(profile.url, {
-      method: "GET",
-      redirect: "follow",
-      signal: controller.signal,
-      headers: {
-        "user-agent": USER_AGENT,
-        accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
-        "accept-language": "en",
+    const response = await safeFetch(
+      profile.url,
+      {
+        method: "GET",
+        signal: controller.signal,
+        headers: {
+          "user-agent": USER_AGENT,
+          accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
+          "accept-language": "en",
+        },
       },
-    });
+      { maxRedirects: 3 },
+    );
 
     if ([401, 403].includes(response.status)) {
       return result(

@@ -64,15 +64,20 @@ function PendingScreen({
     setBusy(true);
     setError(null);
     setSuccess(null);
-    const result = await redeemAccessCode(code);
-    if (result.ok) {
-      setSuccess("Access approved. Loading your workspace…");
-      toast.success("Access approved", { description: "Welcome to GARE." });
-      onRedeemed();
-    } else {
-      setError(redeemErrorMessage(result.error));
+    try {
+      const result = await redeemAccessCode(code);
+      if (result.ok) {
+        setSuccess("Access approved. Loading your workspace…");
+        toast.success("Access approved", { description: "Welcome to GARE." });
+        onRedeemed();
+      } else {
+        setError(redeemErrorMessage(result.error));
+      }
+    } catch {
+      setError(redeemErrorMessage("unknown_error"));
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   return (

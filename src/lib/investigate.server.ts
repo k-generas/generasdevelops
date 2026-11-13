@@ -1,4 +1,5 @@
 import { callResponsesJSON, type AiProvider } from "./ai.server";
+import { safeFetch } from "./safe-url.server";
 // Real website probe + AI analysis. Nothing here invents data: AI only interprets
 // the evidence collected below, and is told to say "unknown" when evidence is missing.
 
@@ -55,12 +56,17 @@ async function collectEmails(html: string, baseUrl: string): Promise<string[]> {
     )?.[1];
     if (href) {
       try {
-        const url = new URL(href, baseUrl).toString();
-        const r = await fetch(url, {
-          headers: { "User-Agent": "Mozilla/5.0 (compatible; GARE-Investigator/1.0)" },
-          signal: AbortSignal.timeout(10000),
-        });
-        if (r.ok) for (const e of emailsIn((await r.text()).slice(0, 300_000))) set.add(e);
+        const base = new URL(baseUrl);
+        const url = new URL(href, base);
+        const baseHost = base.hostname.replace(/^www\./i, "");
+        if (url.hostname.replace(/^www\./i, "") === baseHost) {
+          const r = await safeFetch(
+            url,
+            { headers: { "User-Agent": "Mozilla/5.0 (compatible; GARE-Investigator/1.0)" } },
+            { timeoutMs: 10000 },
+          );
+          if (r.ok) for (const e of emailsIn((await r.text()).slice(0, 300_000))) set.add(e);
+        }
       } catch {
         /* ignore */
       }
@@ -138,11 +144,14 @@ export async function probeWebsite(
   if (!url) return empty;
   const started = Date.now();
   try {
-    const res = await fetch(url, {
-      redirect: "follow",
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; GARE-Investigator/1.0)" },
-      signal: AbortSignal.timeout(options.timeoutMs ?? 15000),
-    });
+    const res = await safeFetch(
+      url,
+      {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; GARE-Investigator/1.0)" },
+      },
+      { timeoutMs: options.timeoutMs ?? 15000 },
+    );
+    const finalUrl = res.url || url;
     const html = (await res.text()).slice(0, options.maxHtmlBytes ?? 400_000);
     const lower = html.toLowerCase();
     const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.trim() ?? null;
@@ -162,7 +171,7 @@ export async function probeWebsite(
       ...empty,
       reachable: res.ok,
       status: res.status,
-      https: res.url.startsWith("https://"),
+      https: finalUrl.startsWith("https://"),
       load_ms: Date.now() - started,
       title,
       meta_description: desc,
@@ -175,7 +184,7 @@ export async function probeWebsite(
       copyright_year: years.length ? Math.max(...years) : null,
       html_kb: Math.round(html.length / 1024),
       text_excerpt: text || null,
-      emails: options.collectEmails === false ? [] : await collectEmails(html, res.url),
+      emails: options.collectEmails === false ? [] : await collectEmails(html, finalUrl),
       socials: Object.fromEntries(
         Object.entries(SOCIAL_PATTERNS)
           .map(([k, re]) => [k, html.match(re)?.[0]] as const)

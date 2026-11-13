@@ -27,7 +27,7 @@ describe("website finder", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
-        const url = typeof input === "string" ? input : input.toString();
+        const url = (typeof input === "string" ? input : input.toString()).replace(/\/$/, "");
         calls.push(url);
         if (url === "https://roasters.wordpress.com") {
           return response(true, "<html><body>KC Roasters coffee in Kigali</body></html>");

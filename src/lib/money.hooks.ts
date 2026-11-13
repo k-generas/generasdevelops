@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { monthRangeUtc } from "@/lib/money";
+import { isMissingSchemaError } from "@/lib/db-errors";
 
 export type PaymentRow = {
   id: string;
@@ -50,7 +51,10 @@ export function usePayments() {
         .order("received_at", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(5000);
-      if (error) return { rows: [], persisted: false };
+      if (error) {
+        if (isMissingSchemaError(error)) return { rows: [], persisted: false };
+        throw new Error(error.message);
+      }
       return { rows: (data ?? []) as unknown as PaymentRow[], persisted: true };
     },
   });
@@ -68,7 +72,10 @@ export function useExpenses() {
         .order("paid_at", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(5000);
-      if (error) return { rows: [], persisted: false };
+      if (error) {
+        if (isMissingSchemaError(error)) return { rows: [], persisted: false };
+        throw new Error(error.message);
+      }
       return { rows: (data ?? []) as unknown as ExpenseRow[], persisted: true };
     },
   });

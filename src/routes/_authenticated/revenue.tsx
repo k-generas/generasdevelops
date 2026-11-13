@@ -320,6 +320,7 @@ function RevenuePage() {
                     .catch((e) => setMessage(e instanceof Error ? e.message : "Could not update."))
                 }
                 onDelete={() => {
+                  if (!window.confirm("Remove this subscription? This cannot be undone.")) return;
                   remove({ data: { id: s.id! } })
                     .then(() => {
                       setMessage("Subscription removed.");

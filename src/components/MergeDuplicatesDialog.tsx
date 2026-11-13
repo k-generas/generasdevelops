@@ -37,6 +37,14 @@ export function MergeDuplicatesDialog({
     const keepId = keepFor(group);
     const mergeIds = group.businesses.filter((b) => b.id !== keepId).map((b) => b.id);
     if (mergeIds.length === 0) return;
+    const keepName = group.businesses.find((b) => b.id === keepId)?.name ?? "the selected record";
+    if (
+      !window.confirm(
+        `Merge ${mergeIds.length} record${mergeIds.length === 1 ? "" : "s"} into "${keepName}"?\n\nThe other records will be permanently deleted after their linked history is moved.`,
+      )
+    ) {
+      return;
+    }
     setBusyKey(group.key);
     setMessage(null);
     try {

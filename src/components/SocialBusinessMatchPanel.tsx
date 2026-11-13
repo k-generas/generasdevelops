@@ -263,7 +263,15 @@ function MatchCard({
             type="button"
             size="sm"
             variant="outline"
-            onClick={() => onReview({ matchId: match.id, action: "reject" })}
+            onClick={() => {
+              if (
+                linked &&
+                !window.confirm("Reject this match and unlink the social lead from the business?")
+              ) {
+                return;
+              }
+              onReview({ matchId: match.id, action: "reject" });
+            }}
             disabled={busy}
           >
             <X /> {linked ? "Reject and unlink" : "Reject"}

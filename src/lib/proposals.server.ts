@@ -322,13 +322,13 @@ export async function createOutreachPack(supabase: any, userId: string, o: Outre
   if (kept.length === 0) throw new Error("The AI returned no usable messages.");
   const counts = packChannelCounts(kept);
 
-  // Replace earlier unsent pack drafts so re-running stays tidy; keep sent ones.
-  await supabase
+  const { data: oldDrafts, error: oldDraftsError } = await supabase
     .from("proposals")
-    .delete()
+    .select("id")
     .eq("business_id", ctx.biz.id)
     .eq("mode", OUTREACH_PACK_MODE)
     .in("status", ["DRAFT", "READY_TO_SEND"]);
+  if (oldDraftsError) throw new Error(oldDraftsError.message);
 
   const inserts = kept.map((m) => ({
     owner_id: userId,
@@ -351,6 +351,11 @@ export async function createOutreachPack(supabase: any, userId: string, o: Outre
     .insert(inserts)
     .select("id, body");
   if (error) throw new Error(error.message);
+
+  const oldDraftIds = ((oldDrafts ?? []) as { id: string }[]).map((row) => row.id);
+  if (oldDraftIds.length) {
+    await supabase.from("proposals").delete().in("id", oldDraftIds);
+  }
 
   const savedRows = (saved ?? []) as { id: string; body: string }[];
   if (savedRows.length) {

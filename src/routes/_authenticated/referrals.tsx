@@ -293,6 +293,7 @@ function ReferralsPage() {
                     className="text-destructive"
                     onClick={() => {
                       if (!r.id) return;
+                      if (!window.confirm("Delete this referral? This cannot be undone.")) return;
                       remove({ data: { id: r.id } })
                         .then(() => {
                           setMessage("Referral removed.");

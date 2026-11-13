@@ -188,11 +188,12 @@ function Editor() {
         );
         return;
       }
-      await supabase
+      const { error: proposalError } = await supabase
         .from("proposals")
         .update({ status: "SENT", sent_at: at, sent_channel: ch })
         .eq("id", id);
-      await supabase.from("business_activity_events").insert({
+      if (proposalError) throw proposalError;
+      const { error: eventError } = await supabase.from("business_activity_events").insert({
         business_id: p.business_id,
         event_type: "proposal_outreach",
         summary: outreachSummary(ch, response),
@@ -210,6 +211,15 @@ function Editor() {
           },
         },
       });
+      if (eventError) {
+        setComplianceMessage(
+          `Outreach status saved, but the activity feed could not be updated: ${eventError.message}`,
+        );
+        qc.invalidateQueries({ queryKey: ["proposal", id] });
+        qc.invalidateQueries({ queryKey: ["proposal-outreach", id] });
+        qc.invalidateQueries({ queryKey: ["biz-events", p.business_id] });
+        return;
+      }
       await supabase
         .from("tasks")
         .update({ status: "done", completed_at: new Date().toISOString() })
