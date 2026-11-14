@@ -42,6 +42,72 @@ export type OpeningHours = {
   weekdayDescriptions?: string[];
 };
 
+export type PlacesRequestEvent = {
+  provider: "google" | "geoapify";
+  operation: "places_search_text";
+  status: "success" | "failed";
+  httpStatus: number | null;
+  durationMs: number;
+  units: number;
+  errorCode: string | null;
+  errorMessage: string | null;
+  metadata?: Record<string, unknown>;
+};
+
+export type PlacesRequestObserver = (event: PlacesRequestEvent) => void | Promise<void>;
+
+async function notifyRequest(
+  observer: PlacesRequestObserver | undefined,
+  event: PlacesRequestEvent,
+): Promise<void> {
+  if (!observer) return;
+  try {
+    await observer(event);
+  } catch {
+    // Usage logging must never break the paid request or its response.
+  }
+}
+
+async function observedFetch(
+  input: Parameters<typeof fetch>[0],
+  init: Parameters<typeof fetch>[1],
+  observer: PlacesRequestObserver | undefined,
+  context: {
+    provider: PlacesRequestEvent["provider"];
+    metadata?: Record<string, unknown>;
+  },
+): Promise<Response> {
+  const startedAt = Date.now();
+  try {
+    const response = await fetch(input, init);
+    await notifyRequest(observer, {
+      provider: context.provider,
+      operation: "places_search_text",
+      status: response.ok ? "success" : "failed",
+      httpStatus: response.status,
+      durationMs: Date.now() - startedAt,
+      units: 1,
+      errorCode: response.ok ? null : `http_${response.status}`,
+      errorMessage: response.ok ? null : `HTTP ${response.status}`,
+      ...(context.metadata ? { metadata: context.metadata } : {}),
+    });
+    return response;
+  } catch (error) {
+    await notifyRequest(observer, {
+      provider: context.provider,
+      operation: "places_search_text",
+      status: "failed",
+      httpStatus: null,
+      durationMs: Date.now() - startedAt,
+      units: 1,
+      errorCode: "network_error",
+      errorMessage: error instanceof Error ? error.message : String(error),
+      ...(context.metadata ? { metadata: context.metadata } : {}),
+    });
+    throw error;
+  }
+}
+
 type RawReview = {
   rating?: number;
   text?: { text?: string };
@@ -164,19 +230,25 @@ async function searchPlacesGoogle(
   maxResults: number,
   lovableKey: string,
   mapsKey: string,
+  observer?: PlacesRequestObserver,
 ): Promise<PlaceResult[]> {
   const call = (fields: string[]) =>
-    fetch(`${GATEWAY_URL}/places/v1/places:searchText`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableKey}`,
-        "X-Connection-Api-Key": mapsKey,
-        "Content-Type": "application/json",
-        "X-Goog-FieldMask": fields.join(","),
+    observedFetch(
+      `${GATEWAY_URL}/places/v1/places:searchText`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${lovableKey}`,
+          "X-Connection-Api-Key": mapsKey,
+          "Content-Type": "application/json",
+          "X-Goog-FieldMask": fields.join(","),
+        },
+        body: JSON.stringify({ textQuery, pageSize: maxResults }),
+        signal: AbortSignal.timeout(PLACES_TIMEOUT_MS),
       },
-      body: JSON.stringify({ textQuery, pageSize: maxResults }),
-      signal: AbortSignal.timeout(PLACES_TIMEOUT_MS),
-    });
+      observer,
+      { provider: "google", metadata: { mode: "connector", max_results: maxResults } },
+    );
 
   let res = await call([...BASE_FIELDS, ...ACTIVITY_FIELDS]);
   if (res.status === 400) {
@@ -203,19 +275,25 @@ async function searchPlacesGoogleDirect(
   textQuery: string,
   maxResults: number,
   apiKey: string,
+  observer?: PlacesRequestObserver,
 ): Promise<PlaceResult[]> {
   const fieldMask = [...BASE_FIELDS, ...ACTIVITY_FIELDS].join(",");
   const call = (mask: string) =>
-    fetch(GOOGLE_PLACES_SEARCH_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask": mask,
+    observedFetch(
+      GOOGLE_PLACES_SEARCH_URL,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": apiKey,
+          "X-Goog-FieldMask": mask,
+        },
+        body: JSON.stringify({ textQuery, maxResultCount: maxResults }),
+        signal: AbortSignal.timeout(PLACES_TIMEOUT_MS),
       },
-      body: JSON.stringify({ textQuery, maxResultCount: maxResults }),
-      signal: AbortSignal.timeout(PLACES_TIMEOUT_MS),
-    });
+      observer,
+      { provider: "google", metadata: { mode: "direct", max_results: maxResults } },
+    );
   let res = await call(fieldMask);
   if (res.status === 400) res = await call(BASE_FIELDS.join(","));
   if (res.status === 403) {
@@ -270,6 +348,7 @@ async function geoapifyFeatures(
   maxResults: number,
   apiKey: string,
   amenityOnly: boolean,
+  observer?: PlacesRequestObserver,
 ): Promise<GeoapifyFeature[]> {
   const url = new URL(GEOAPIFY_GEOCODE_URL);
   url.searchParams.set("text", textQuery);
@@ -277,10 +356,15 @@ async function geoapifyFeatures(
   url.searchParams.set("format", "geojson");
   url.searchParams.set("apiKey", apiKey);
   if (amenityOnly) url.searchParams.set("type", "amenity");
-  const res = await fetch(url, {
-    headers: { Accept: "application/json" },
-    signal: AbortSignal.timeout(PLACES_TIMEOUT_MS),
-  });
+  const res = await observedFetch(
+    url,
+    {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(PLACES_TIMEOUT_MS),
+    },
+    observer,
+    { provider: "geoapify", metadata: { max_results: maxResults, amenity_only: amenityOnly } },
+  );
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     if (res.status === 401 || res.status === 403)
@@ -336,12 +420,13 @@ async function searchPlacesGeoapify(
   textQuery: string,
   maxResults: number,
   apiKey: string,
+  observer?: PlacesRequestObserver,
 ): Promise<PlaceResult[]> {
   // Prefer amenity (business) results; if the query is too broad and that returns
   // nothing, retry unfiltered and keep whatever has a name.
-  let features = await geoapifyFeatures(textQuery, maxResults, apiKey, true);
+  let features = await geoapifyFeatures(textQuery, maxResults, apiKey, true, observer);
   if (features.length === 0)
-    features = await geoapifyFeatures(textQuery, maxResults, apiKey, false);
+    features = await geoapifyFeatures(textQuery, maxResults, apiKey, false, observer);
   const checkedAt = new Date().toISOString();
   return features
     .map((f) => toGeoapifyPlace(f, checkedAt))
@@ -369,14 +454,19 @@ export function detectPlacesProvider(): {
 
 // Provider selection: the Lovable Google Maps connector wins when configured,
 // then a direct Google Places key, then Geoapify (free, local-friendly).
-export async function searchPlaces(textQuery: string, maxResults: number): Promise<PlaceResult[]> {
+export async function searchPlaces(
+  textQuery: string,
+  maxResults: number,
+  observer?: PlacesRequestObserver,
+): Promise<PlaceResult[]> {
   const lovableKey = process.env["LOVABLE_API_KEY"];
   const mapsKey = process.env["GOOGLE_MAPS_API_KEY"];
-  if (lovableKey && mapsKey) return searchPlacesGoogle(textQuery, maxResults, lovableKey, mapsKey);
-  if (mapsKey) return searchPlacesGoogleDirect(textQuery, maxResults, mapsKey);
+  if (lovableKey && mapsKey)
+    return searchPlacesGoogle(textQuery, maxResults, lovableKey, mapsKey, observer);
+  if (mapsKey) return searchPlacesGoogleDirect(textQuery, maxResults, mapsKey, observer);
 
   const geoKey = process.env["GEOAPIFY_API_KEY"];
-  if (geoKey) return searchPlacesGeoapify(textQuery, maxResults, geoKey);
+  if (geoKey) return searchPlacesGeoapify(textQuery, maxResults, geoKey, observer);
 
   throw new Error(
     "No places provider is configured. Connect Google Maps in Lovable (Settings → Integrations), " +

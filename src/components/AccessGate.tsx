@@ -1,13 +1,14 @@
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { Check, Copy, KeyRound, Loader2, LogOut, Mail, MessageCircle, ShieldX } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { redeemAccessCode } from "@/lib/access.functions";
 import {
   ADMIN_EMAIL,
   accessEmailText,
-  redeemAccessCode,
   redeemErrorMessage,
   whatsappAccessLink,
   type AccessInfo,
@@ -42,6 +43,7 @@ function PendingScreen({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const redeem = useServerFn(redeemAccessCode);
 
   async function copyEmailRequest() {
     try {
@@ -65,7 +67,7 @@ function PendingScreen({
     setError(null);
     setSuccess(null);
     try {
-      const result = await redeemAccessCode(code);
+      const result = await redeem({ data: { code: code.trim() } });
       if (result.ok) {
         setSuccess("Access approved. Loading your workspace…");
         toast.success("Access approved", { description: "Welcome to GARE." });

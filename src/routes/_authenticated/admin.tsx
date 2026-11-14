@@ -5,8 +5,10 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   Check,
   Copy,
+  Gauge,
   Loader2,
   MailCheck,
+  Save,
   ShieldCheck,
   ShieldX,
   UserCheck,
@@ -33,14 +35,17 @@ import {
   getAdminOverview,
   issueAccessCode,
   listAccessCodes,
+  listApiRequestLogs,
   listAuditLogs,
   listLoginHistory,
   listUsers,
   revokeAccessCode,
   setUserAccessStatus,
+  setUserDiscoveryQuota,
   type AccessCodeRow,
   type AdminOverview,
   type AdminUserRow,
+  type ApiRequestRow,
   type AuditRow,
   type LoginEventRow,
 } from "@/lib/admin.functions";
@@ -116,6 +121,9 @@ function Overview() {
         <StatCard label="Administrators" value={d.admins} />
         <StatCard label="Successful logins (24h)" value={d.logins24h} />
         <StatCard label="Active access codes" value={d.activeCodes} />
+        <StatCard label="Discovery runs (24h)" value={d.discoveryRuns24h} />
+        <StatCard label="API requests (24h)" value={d.apiRequests24h} />
+        <StatCard label="Google requests (24h)" value={d.googleRequests24h} />
       </div>
     </div>
   );
@@ -196,6 +204,7 @@ function UsersTab() {
             <TableHead>Registered</TableHead>
             <TableHead>Last login</TableHead>
             <TableHead className="text-right">Logins</TableHead>
+            <TableHead className="text-right">Runs today</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -211,6 +220,9 @@ function UsersTab() {
                 {when(u.last_login_at)}
               </TableCell>
               <TableCell className="text-right tabular-nums">{u.login_count}</TableCell>
+              <TableCell className="text-right tabular-nums">
+                {u.discovery_runs_today}/{u.discovery_daily_limit}
+              </TableCell>
               <TableCell>
                 <div className="flex justify-end gap-1">
                   {busyId === u.id ? (
@@ -568,6 +580,250 @@ function AuditTab() {
   );
 }
 
+type QuotaDraft = {
+  dailyLimit: string;
+  cooldownSeconds: string;
+  maxResults: string;
+};
+
+function defaultQuotaDraft(user: AdminUserRow): QuotaDraft {
+  return {
+    dailyLimit: String(user.discovery_daily_limit),
+    cooldownSeconds: String(user.discovery_cooldown_seconds),
+    maxResults: String(user.discovery_max_results),
+  };
+}
+
+function QuotasTab() {
+  const qc = useQueryClient();
+  const load = useServerFn(listUsers);
+  const save = useServerFn(setUserDiscoveryQuota);
+  const q = useQuery<AdminUserRow[]>({ queryKey: ["admin-users"], queryFn: () => load() });
+  const [drafts, setDrafts] = useState<Record<string, QuotaDraft>>({});
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: (vars: {
+      userId: string;
+      dailyLimit: number;
+      cooldownSeconds: number;
+      maxResults: number;
+    }) => save({ data: vars }),
+    onSuccess: (res, vars) => {
+      if (!res.ok) {
+        toast.error("Could not save discovery quota", { description: res.error });
+      } else {
+        toast.success("Discovery quota saved");
+        setDrafts((prev) => {
+          const next = { ...prev };
+          delete next[vars.userId];
+          return next;
+        });
+        void qc.invalidateQueries({ queryKey: ["admin-users"] });
+        void qc.invalidateQueries({ queryKey: ["admin-overview"] });
+      }
+      setBusyId(null);
+    },
+    onError: (err) => {
+      const d = describeError(err, "Save discovery quota");
+      toast.error(d.title, { description: `${d.message} ${d.fix}` });
+      setBusyId(null);
+    },
+  });
+
+  function updateDraft(user: AdminUserRow, key: keyof QuotaDraft, value: string) {
+    setDrafts((prev) => ({
+      ...prev,
+      [user.id]: { ...(prev[user.id] ?? defaultQuotaDraft(user)), [key]: value },
+    }));
+  }
+
+  function submit(user: AdminUserRow) {
+    const draft = drafts[user.id] ?? defaultQuotaDraft(user);
+    setBusyId(user.id);
+    mutation.mutate({
+      userId: user.id,
+      dailyLimit: Math.max(0, Math.trunc(Number(draft.dailyLimit) || 0)),
+      cooldownSeconds: Math.max(0, Math.trunc(Number(draft.cooldownSeconds) || 0)),
+      maxResults: Math.max(1, Math.trunc(Number(draft.maxResults) || 1)),
+    });
+  }
+
+  if (q.isLoading) return <p className="py-6 text-sm text-muted-foreground">Loading...</p>;
+  if (q.isError)
+    return (
+      <ErrorBanner error={q.error} context="Discovery quotas" onRetry={() => void q.refetch()} />
+    );
+  const users = q.data ?? [];
+  if (users.length === 0) {
+    return (
+      <EmptyState title="No accounts yet" why="Quota controls appear after the first signup." />
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-lg border bg-card p-4 text-sm text-muted-foreground">
+        <p className="flex items-center gap-2 font-medium text-foreground">
+          <Gauge className="h-4 w-4 text-primary" />
+          Google Places protection
+        </p>
+        <p className="mt-1 text-xs">
+          Daily limit is enforced before any paid Google request. Set it to 0 to block discovery.
+          Minimum gap blocks rapid repeat runs; leave it at 0 to allow batches.
+        </p>
+      </div>
+      <div className="overflow-x-auto rounded-xl border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Email</TableHead>
+              <TableHead className="text-right">Runs today</TableHead>
+              <TableHead>Daily limit</TableHead>
+              <TableHead>Minimum gap (sec)</TableHead>
+              <TableHead>Max results</TableHead>
+              <TableHead>Last run</TableHead>
+              <TableHead className="text-right">Save</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users.map((u) => {
+              const draft = drafts[u.id] ?? defaultQuotaDraft(u);
+              return (
+                <TableRow key={u.id}>
+                  <TableCell className="font-medium">{u.email}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {u.discovery_runs_today}/{u.discovery_daily_limit}
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      className="w-24"
+                      type="number"
+                      min={0}
+                      max={1000}
+                      value={draft.dailyLimit}
+                      onChange={(e) => updateDraft(u, "dailyLimit", e.target.value)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      className="w-28"
+                      type="number"
+                      min={0}
+                      max={86400}
+                      value={draft.cooldownSeconds}
+                      onChange={(e) => updateDraft(u, "cooldownSeconds", e.target.value)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      className="w-24"
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={draft.maxResults}
+                      onChange={(e) => updateDraft(u, "maxResults", e.target.value)}
+                    />
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {when(u.last_discovery_at)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busyId === u.id}
+                      onClick={() => submit(u)}
+                    >
+                      {busyId === u.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4" /> Save
+                        </>
+                      )}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+function ApiUsageTab() {
+  const load = useServerFn(listApiRequestLogs);
+  const q = useQuery<ApiRequestRow[]>({ queryKey: ["admin-api-usage"], queryFn: () => load() });
+
+  if (q.isLoading) return <p className="py-6 text-sm text-muted-foreground">Loading...</p>;
+  if (q.isError)
+    return <ErrorBanner error={q.error} context="API usage" onRetry={() => void q.refetch()} />;
+  const rows = q.data ?? [];
+  if (rows.length === 0) {
+    return (
+      <EmptyState
+        title="No API requests logged yet"
+        why="Every Google or Geoapify Places request is recorded here after the quota migration is applied."
+      />
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-xl border bg-card">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>When</TableHead>
+            <TableHead>User</TableHead>
+            <TableHead>Provider</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">HTTP</TableHead>
+            <TableHead className="text-right">ms</TableHead>
+            <TableHead>Run</TableHead>
+            <TableHead>Error</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((r) => (
+            <TableRow key={r.id}>
+              <TableCell className="text-xs text-muted-foreground">{when(r.created_at)}</TableCell>
+              <TableCell className="text-xs">{r.owner_email ?? r.owner_id}</TableCell>
+              <TableCell className="text-xs capitalize">{r.provider}</TableCell>
+              <TableCell>
+                <span
+                  className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
+                    r.status === "success"
+                      ? "border-emerald-500/40 text-emerald-700 dark:text-emerald-400"
+                      : r.status === "blocked"
+                        ? "border-amber-500/40 text-amber-700 dark:text-amber-400"
+                        : "border-destructive/40 text-destructive"
+                  }`}
+                >
+                  {r.status}
+                </span>
+              </TableCell>
+              <TableCell className="text-right tabular-nums">{r.http_status ?? "-"}</TableCell>
+              <TableCell className="text-right tabular-nums">{r.duration_ms ?? "-"}</TableCell>
+              <TableCell className="font-mono text-xs text-muted-foreground">
+                {r.discovery_run_id ? r.discovery_run_id.slice(0, 8) : "-"}
+              </TableCell>
+              <TableCell
+                className="max-w-xs truncate text-xs text-muted-foreground"
+                title={r.error_message ?? r.error_code ?? undefined}
+              >
+                {r.error_code ?? r.error_message ?? "-"}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 function AdminPage() {
   const access = useAccessInfo();
 
@@ -603,6 +859,8 @@ function AdminPage() {
         <TabsList className="h-auto flex-wrap justify-start gap-1 sm:h-9 sm:justify-center">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="quotas">Discovery quotas</TabsTrigger>
+          <TabsTrigger value="api">API usage</TabsTrigger>
           <TabsTrigger value="codes">Access codes</TabsTrigger>
           <TabsTrigger value="logins">Logins</TabsTrigger>
           <TabsTrigger value="audit">Audit</TabsTrigger>
@@ -612,6 +870,12 @@ function AdminPage() {
         </TabsContent>
         <TabsContent value="users">
           <UsersTab />
+        </TabsContent>
+        <TabsContent value="quotas">
+          <QuotasTab />
+        </TabsContent>
+        <TabsContent value="api">
+          <ApiUsageTab />
         </TabsContent>
         <TabsContent value="codes">
           <AccessCodesTab />

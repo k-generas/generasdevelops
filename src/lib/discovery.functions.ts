@@ -3,6 +3,13 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Json } from "@/integrations/supabase/types";
 import { searchPlaces } from "./places.server";
+import { discoveryQuotaError } from "./discovery-quota";
+import {
+  claimDiscoveryRun,
+  readDiscoveryQuota,
+  recordApiRequest,
+  type DiscoveryQuotaSnapshot,
+} from "./discovery-quota.server";
 import {
   probeWebsite,
   analyzeWithAI,
@@ -69,6 +76,12 @@ const ACTIVITY_COLUMNS = [
   "opening_hours",
 ] as const;
 
+export const getMyDiscoveryQuota = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<DiscoveryQuotaSnapshot> => {
+    return readDiscoveryQuota(context.supabase, context.userId);
+  });
+
 export const runDiscovery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
@@ -87,19 +100,18 @@ export const runDiscovery = createServerFn({ method: "POST" })
     const textQuery = data.location ? `${data.query} in ${data.location}` : data.query;
     const title = data.title || `${data.query}${data.location ? ` in ${data.location}` : ""}`;
 
-    const { data: run, error: runErr } = await supabase
-      .from("discovery_runs")
-      .insert({
-        owner_id: userId,
-        query: data.query,
-        location: data.location || null,
-        title,
-        status: "running",
-        rerun_of: data.rerunOf ?? null,
-      })
-      .select("id")
-      .single();
-    if (runErr) throw new Error(runErr.message);
+    const claim = await claimDiscoveryRun(supabase, userId, {
+      query: data.query,
+      location: data.location || null,
+      title,
+      rerunOf: data.rerunOf ?? null,
+    });
+    if (!claim.ok) throw discoveryQuotaError(claim.message);
+
+    const run = { id: claim.runId };
+    const maxResults = Math.min(data.maxResults, claim.limits.maxResults);
+    const logPlacesRequest = (event: Parameters<typeof recordApiRequest>[3]) =>
+      recordApiRequest(supabase, userId, run.id, event);
 
     const markFailed = async (msg: string) => {
       await supabase
@@ -111,7 +123,7 @@ export const runDiscovery = createServerFn({ method: "POST" })
     try {
       let places;
       try {
-        places = await searchPlaces(textQuery, data.maxResults);
+        places = await searchPlaces(textQuery, maxResults, logPlacesRequest);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         // A fresh serverless isolate can briefly miss the Google Maps connector
@@ -123,7 +135,7 @@ export const runDiscovery = createServerFn({ method: "POST" })
         }
         await new Promise((r) => setTimeout(r, 1500));
         try {
-          places = await searchPlaces(textQuery, data.maxResults);
+          places = await searchPlaces(textQuery, maxResults, logPlacesRequest);
         } catch (e2) {
           const msg2 = e2 instanceof Error ? e2.message : String(e2);
           await markFailed(msg2);
@@ -400,6 +412,15 @@ export const runDiscovery = createServerFn({ method: "POST" })
         verifiedNoWebsite,
         ...counts,
         gareLeads: counts.noWebsite + counts.siteIssues,
+        quota: {
+          usedToday: claim.usedToday,
+          remaining: claim.remaining,
+          dailyLimit: claim.limits.dailyLimit,
+          cooldownSeconds: claim.limits.cooldownSeconds,
+          maxResults: claim.limits.maxResults,
+          nextAvailableAt: claim.nextAvailableAt,
+          resetAt: claim.resetAt,
+        },
       };
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

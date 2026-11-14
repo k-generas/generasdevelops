@@ -53,6 +53,7 @@ if (!supabaseUrl || !publishableKey) {
 const expectedTables = [
   "access_code_attempts",
   "access_codes",
+  "api_request_logs",
   "audit_logs",
   "business_activity_events",
   "business_audits",
@@ -142,6 +143,12 @@ const expectedBusinessColumns = [
   "website_source",
 ];
 
+const expectedProfileColumns = [
+  "discovery_cooldown_seconds",
+  "discovery_daily_limit",
+  "discovery_max_results",
+];
+
 const headers = {
   apikey: publishableKey,
   Authorization: `Bearer ${publishableKey}`,
@@ -163,8 +170,8 @@ async function checkTable(table) {
   return `HTTP ${result.status}: ${result.body.slice(0, 160)}`;
 }
 
-async function checkBusinessColumn(column) {
-  const result = await get(`businesses?select=${column}&limit=1`);
+async function checkColumn(table, column) {
+  const result = await get(`${table}?select=${column}&limit=1`);
   if (result.ok) return null;
   if (result.body.includes("42703") || result.body.includes("PGRST204")) return "missing column";
   return `HTTP ${result.status}: ${result.body.slice(0, 160)}`;
@@ -181,8 +188,12 @@ for (const table of expectedTables) {
 
 const missingColumns = [];
 for (const column of expectedBusinessColumns) {
-  const problem = await checkBusinessColumn(column);
+  const problem = await checkColumn("businesses", column);
   if (problem) missingColumns.push(`businesses.${column} (${problem})`);
+}
+for (const column of expectedProfileColumns) {
+  const problem = await checkColumn("user_profiles", column);
+  if (problem) missingColumns.push(`user_profiles.${column} (${problem})`);
 }
 
 let siteOk = false;

@@ -69,14 +69,6 @@ export function whatsappAccessLink(info: AccessInfo): string {
   return `https://wa.me/${ADMIN_WHATSAPP}?text=${encodeURIComponent(accessRequestBody(info))}`;
 }
 
-export type RedeemResult = { ok: boolean; error?: string };
-
-export async function redeemAccessCode(code: string): Promise<RedeemResult> {
-  const { data, error } = await supabase.rpc("redeem_access_code", { p_code: code.trim() });
-  if (error) return { ok: false, error: error.message };
-  return (data as RedeemResult | null) ?? { ok: false, error: "unknown_error" };
-}
-
 export const REDEEM_ERROR_MESSAGES: Record<string, string> = {
   not_authenticated: "You are not signed in. Sign in and try again.",
   empty_code: "Enter an access code first.",
@@ -87,6 +79,8 @@ export const REDEEM_ERROR_MESSAGES: Record<string, string> = {
   code_exhausted: "That access code has reached its usage limit.",
   code_not_assigned: "That access code was issued to a different email address.",
   rate_limited: "Too many attempts. Wait a few minutes before trying again.",
+  redeem_unavailable:
+    "Access code redemption is temporarily unavailable. Ask the administrator to approve your account.",
   unknown_error: "Could not verify the code. Try again.",
 };
 

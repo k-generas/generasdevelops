@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { checkStoredWebsites, runDiscovery } from "@/lib/discovery.functions";
+import { checkStoredWebsites, getMyDiscoveryQuota, runDiscovery } from "@/lib/discovery.functions";
+import { isDiscoveryQuotaErrorMessage } from "@/lib/discovery-quota";
 import { assessWebsite, type WebsiteProbe } from "@/lib/website-opportunity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +65,7 @@ function Discover() {
   const qc = useQueryClient();
   const isAdmin = useAccessInfo().data?.isAdmin === true;
   const discover = useServerFn(runDiscovery);
+  const loadQuota = useServerFn(getMyDiscoveryQuota);
   const checkSites = useServerFn(checkStoredWebsites);
   const [query, setQuery] = useState("");
   const [location, setLocation] = useState("");
@@ -108,6 +110,10 @@ function Discover() {
       return data;
     },
   });
+  const quota = useQuery({
+    queryKey: ["discovery-quota"],
+    queryFn: () => loadQuota(),
+  });
 
   async function onRun(e: React.FormEvent) {
     e.preventDefault();
@@ -133,14 +139,17 @@ function Discover() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(
-        isAdmin
-          ? `${msg} — Check Settings → Integrations for a valid Maps/Places key. Each run is a paid Google request, so also verify quota/billing. Then try again.`
-          : "Discovery could not run right now. Please try again in a moment.",
+        isDiscoveryQuotaErrorMessage(msg)
+          ? msg
+          : isAdmin
+            ? `${msg} — Check Settings → Integrations for a valid Maps/Places key. Each run is a paid Google request, so also verify quota/billing. Then try again.`
+            : "Discovery could not run right now. Please try again in a moment.",
       );
     }
     setBusy(false);
     qc.invalidateQueries({ queryKey: ["businesses"] });
     qc.invalidateQueries({ queryKey: ["runs"] });
+    qc.invalidateQueries({ queryKey: ["discovery-quota"] });
   }
 
   const BATCH_LIMIT = 12;
@@ -160,14 +169,21 @@ function Discover() {
           ...l,
           `  ${label}: ${r.found} found · ${r.added} new · ${r.duplicates} known · ${r.gareLeads} GARE leads (${r.noWebsite} no site, ${r.siteIssues} site issues)`,
         ]);
+        if (r.quota.remaining === 0 && i < locs.length - 1) {
+          setBatchLog((l) => [...l, "  Daily discovery limit reached. Batch stopped."]);
+          break;
+        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         setBatchLog((l) => [
           ...l,
-          isAdmin
-            ? `  ${label}: failed — ${msg.slice(0, 120)}`
-            : `  ${label}: could not run. Try again later.`,
+          isDiscoveryQuotaErrorMessage(msg)
+            ? `  ${label}: ${msg}`
+            : isAdmin
+              ? `  ${label}: failed — ${msg.slice(0, 120)}`
+              : `  ${label}: could not run. Try again later.`,
         ]);
+        if (isDiscoveryQuotaErrorMessage(msg)) break;
       }
     }
     setBatchLog((l) => [
@@ -177,6 +193,7 @@ function Discover() {
     setBatchBusy(false);
     qc.invalidateQueries({ queryKey: ["businesses"] });
     qc.invalidateQueries({ queryKey: ["runs"] });
+    qc.invalidateQueries({ queryKey: ["discovery-quota"] });
   }
 
   async function onCheckSites() {
@@ -376,6 +393,19 @@ function Discover() {
           it freely (or choose “Custom — type my own”). Up to 20 real results per run from Google
           Maps. Each run is a paid Google request, so search deliberately.
         </p>
+        {quota.data && (
+          <p className="mt-1 font-mono text-xs text-muted-foreground">
+            Discovery quota: {quota.data.usedToday}/{quota.data.limits.dailyLimit} runs today |{" "}
+            {quota.data.remaining} left | up to {quota.data.limits.maxResults} results
+            {quota.data.limits.cooldownSeconds > 0
+              ? ` | minimum ${quota.data.limits.cooldownSeconds}s between runs`
+              : ""}
+            {quota.data.nextAvailableAt
+              ? ` | next run after ${new Date(quota.data.nextAvailableAt).toLocaleTimeString()}`
+              : ""}
+            {quota.data.disabled ? " | discovery disabled by an admin" : ""}
+          </p>
+        )}
         {result && <p className="mt-3 font-mono text-sm">{result}</p>}
         {error && (
           <p className="mt-3 rounded-md border border-destructive/40 bg-card px-3 py-2 font-mono text-sm text-destructive">

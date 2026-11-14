@@ -3,7 +3,8 @@
 // job (which has no user session and uses the service-role client).
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { searchPlaces, type PlaceResult } from "./places.server";
+import { searchPlaces, type PlaceResult, type PlacesRequestEvent } from "./places.server";
+import { recordApiRequest } from "./discovery-quota.server";
 import { recordPlaceChanges } from "./signals.server";
 import { buildScanPlan, estimateScanCost, type ScanScope } from "./rwanda-scan";
 import { dedupeBusinesses } from "./company-identity";
@@ -100,6 +101,9 @@ export async function performRwandaScan(
     .single();
   if (runErr) throw new Error(runErr.message);
 
+  const logPlacesRequest = (event: PlacesRequestEvent) =>
+    recordApiRequest(supabase, userId, run.id, event);
+
   // Durable scan bookkeeping (migration 0008). Absent table => skip silently.
   let scanId: string | null = null;
   {
@@ -122,7 +126,7 @@ export async function performRwandaScan(
   for (const q of plan.queries) {
     const textQuery = q.location ? `${q.query} in ${q.location}` : q.query;
     try {
-      const places = await searchPlaces(textQuery, 20);
+      const places = await searchPlaces(textQuery, 20, logPlacesRequest);
       for (const p of places) {
         collected.push({
           ...p,

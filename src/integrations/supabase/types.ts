@@ -2876,6 +2876,9 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           created_at: string
+          discovery_cooldown_seconds: number
+          discovery_daily_limit: number
+          discovery_max_results: number
           email: string
           id: string
           is_admin: boolean
@@ -2892,6 +2895,9 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           created_at?: string
+          discovery_cooldown_seconds?: number
+          discovery_daily_limit?: number
+          discovery_max_results?: number
           email: string
           id: string
           is_admin?: boolean
@@ -2908,6 +2914,9 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           created_at?: string
+          discovery_cooldown_seconds?: number
+          discovery_daily_limit?: number
+          discovery_max_results?: number
           email?: string
           id?: string
           is_admin?: boolean
@@ -2941,6 +2950,62 @@ export type Database = {
           created_at?: string
         }
         Relationships: []
+      }
+      api_request_logs: {
+        Row: {
+          created_at: string
+          discovery_run_id: string | null
+          duration_ms: number | null
+          error_code: string | null
+          error_message: string | null
+          http_status: number | null
+          id: string
+          metadata: Json
+          operation: string
+          owner_id: string
+          provider: string
+          status: string
+          units: number
+        }
+        Insert: {
+          created_at?: string
+          discovery_run_id?: string | null
+          duration_ms?: number | null
+          error_code?: string | null
+          error_message?: string | null
+          http_status?: number | null
+          id?: string
+          metadata?: Json
+          operation: string
+          owner_id?: string
+          provider: string
+          status?: string
+          units?: number
+        }
+        Update: {
+          created_at?: string
+          discovery_run_id?: string | null
+          duration_ms?: number | null
+          error_code?: string | null
+          error_message?: string | null
+          http_status?: number | null
+          id?: string
+          metadata?: Json
+          operation?: string
+          owner_id?: string
+          provider?: string
+          status?: string
+          units?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_request_logs_discovery_run_id_fkey"
+            columns: ["discovery_run_id"]
+            isOneToOne: false
+            referencedRelation: "discovery_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       access_codes: {
         Row: {
@@ -3110,6 +3175,15 @@ export type Database = {
           p_user_id: string
           p_status: Database["public"]["Enums"]["access_status"]
           p_note?: string | null
+        }
+        Returns: Json
+      }
+      claim_discovery_run: {
+        Args: {
+          p_query: string
+          p_location?: string | null
+          p_title?: string | null
+          p_rerun_of?: string | null
         }
         Returns: Json
       }
