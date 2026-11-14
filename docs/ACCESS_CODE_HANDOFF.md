@@ -1,6 +1,6 @@
 # Access Code Fix Handoff
 
-Status: implemented, deployed from an uncommitted working tree, not fully live-tested.
+Status: implemented and deployed, not fully live-tested.
 
 ## What changed
 
@@ -22,11 +22,22 @@ Unapplied files:
 
 Correct function bodies are also in `docs/APPLY_PENDING_MIGRATIONS.sql`. Root cause: hosted Supabase project `lfhzponzmkdconaovolq` has the old functions pinned to `SET search_path = public`, while pgcrypto is installed in `extensions`.
 
+## Discovery quotas
+
+- `supabase/migrations/20261114000000_discovery_quotas.sql` adds per-profile daily/cooldown/max-results limits, `api_request_logs`, the admin run-log policy, and the atomic `claim_discovery_run` RPC.
+- `drizzle/migrations/0032_discovery_quotas.sql` mirrors it for the Drizzle path.
+- Discovery claims quota before calling Places, caps results to the admin maximum, and logs every Google/Geoapify search attempt, including failed retries.
+- Rwanda scans use the same request logging and still create `discovery_runs` rows that count toward the daily limit.
+- Admin has quota controls per user plus recent API usage.
+- This migration is **not applied** to `lfhzponzmkdconaovolq` yet; without it the app uses default limits and request logging is skipped.
+
 ## Deployment
 
 - Worker: `https://k-generas-generasdevelops.healthrootrw.workers.dev`
-- Deployed version: `27dc5c2c-4c2d-47fa-8c1e-2e86f7933ed0`
-- `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` were set as worker secrets.
+- Deployed version: `e50c0f4d-7552-43f7-b2e7-27d93ed03fd8`
+- Deployed from commit `2065887` (`feat: add access-code recovery and discovery quotas`).
+- HTTP 200, title `GARE - Generas Autonomous Revenue Engine`.
+- `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` are set as worker secrets.
 - `SUPABASE_SERVICE_ROLE_KEY` is still missing.
 
 ## Remaining blocker
@@ -43,9 +54,8 @@ Live testing also needs a fresh owner session. All four saved owner refresh toke
 ## Verification already done
 
 - `npx tsc --noEmit` clean.
-- Targeted tests: 11 passed.
-- Full suite before the new test: 483 passed, 1 skipped.
-- Touched-file ESLint clean.
+- Targeted access-code/quota tests: 13 passed.
+- Full suite: 496 passed, 1 skipped.
+- Touched-file ESLint and Prettier clean.
 - `npm run build` succeeded.
-
-Do not lose the uncommitted files above when switching tasks.
+- Worker deployed and returns HTTP 200.
