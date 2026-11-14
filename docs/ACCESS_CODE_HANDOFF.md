@@ -46,8 +46,8 @@ Code issuance works through the admin-RLS fallback. Redemption returns `redeem_u
 
 To finish, do one of:
 
-1. Apply the pgcrypto/search-path migration to `lfhzponzmkdconaovolq`, or
-2. Set a valid `SUPABASE_SERVICE_ROLE_KEY` for `lfhzponzmkdconaovolq` on the worker.
+1. In Lovable, open **More → Database → Manage → SQL editor**, paste all of `docs/APPLY_PENDING_MIGRATIONS.sql`, and run it. That file now includes both the access-code function fixes and the discovery quota migration.
+2. Or set a valid `SUPABASE_SERVICE_ROLE_KEY` for `lfhzponzmkdconaovolq` on the worker. That fixes redemption but not the quota migration.
 
 Live testing also needs a fresh owner session. All four saved owner refresh tokens in the VS Code browser LevelDB were invalid (`400 Invalid Refresh Token`).
 
