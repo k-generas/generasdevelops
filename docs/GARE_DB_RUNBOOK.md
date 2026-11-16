@@ -39,11 +39,15 @@ uses. Keep both in sync:
 | `0023_opportunity_signals.sql` | `opportunity_signals` |
 | `0024_opportunities_qualification.sql` | `opportunities` |
 | `0025_outreach_columns_repair.sql` | forward-only repair for the outreach columns |
+| `0031_fix_access_code_pgcrypto.sql` | access-code RPC `search_path` fix |
+| `0032_discovery_quotas.sql` | profile quotas, `api_request_logs`, `claim_discovery_run` |
 
 Lovable Cloud migrations (`supabase/migrations/`, newest first):
 
 | File | Adds |
 | --- | --- |
+| `20261114000000_discovery_quotas.sql` | profile quotas, `api_request_logs`, `claim_discovery_run` |
+| `20261113000000_fix_access_code_pgcrypto.sql` | access-code RPC `search_path` fix |
 | `20261102000000_outreach_columns_repair.sql` | forward-only outreach column repair |
 | `20261031000000_opportunities_qualification.sql` | `opportunities` |
 | `20261030000000_opportunity_signals.sql` | `opportunity_signals` |
@@ -57,6 +61,8 @@ Lovable Cloud migrations (`supabase/migrations/`, newest first):
 
 Pushing to `main` syncs the files, but sync alone does not run
 externally-authored migrations. Use one of these, in order of preference:
+
+**If the SQL editor asks for payment:** use the Lovable MCP server's free `query_database` tool with the same SQL instead.
 
 1. **Lovable SQL editor (guaranteed):** More → Database → Manage → SQL editor,
    paste all of `docs/APPLY_PENDING_MIGRATIONS.sql`, and run it.
@@ -86,14 +92,17 @@ The same mistake must not be repeated: every new `drizzle/migrations/*.sql` file
 needs a matching entry in `drizzle/migrations/meta/_journal.json`, and new entries
 must have a `when` timestamp greater than the newest already-applied entry.
 
-### Current hosted status (checked 2026-11-02)
+### Current hosted status (checked 2026-11-16)
 
-The hosted database (`lfhzponzmkdconaovolq`) is missing:
+The previously missing items (`business_audits`, `opportunity_signals`,
+`opportunities`, and the outreach columns) were applied. The access-code
+pgcrypto fix and discovery-quota migration were also applied on 2026-11-16 via
+Lovable MCP `query_database`:
 
-- `business_audits`
-- `opportunity_signals`
-- `opportunities`
-- `businesses.outreach_stage`, `businesses.last_contacted_at`, `businesses.outreach_note`
+- `api_request_logs` exists.
+- All three `user_profiles` quota columns exist.
+- `claim_discovery_run(text, text, text, uuid)` exists.
+- `redeem_access_code` and `admin_issue_access_code` use `search_path=public, extensions`.
 
 Paste-ready fallback: `docs/APPLY_PENDING_MIGRATIONS.sql`.
 
@@ -137,6 +146,17 @@ select to_regclass('public.business_audits') is not null as business_audits_exis
 select column_name from information_schema.columns
 where table_schema = 'public' and table_name = 'businesses'
   and column_name in ('outreach_stage','last_contacted_at','outreach_note');
+
+-- 20261113 / 20261114
+select to_regclass('public.api_request_logs') is not null as api_request_logs_exists,
+       (select count(*) from information_schema.columns
+        where table_schema = 'public' and table_name = 'user_profiles'
+          and column_name in ('discovery_daily_limit','discovery_cooldown_seconds','discovery_max_results')) as quota_columns,
+       exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+               where n.nspname = 'public' and p.proname = 'claim_discovery_run') as claim_discovery_run_exists;
+select proname, proconfig from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public' and proname in ('redeem_access_code','admin_issue_access_code');
 ```
 
 Or simply run `npm run db:verify`.

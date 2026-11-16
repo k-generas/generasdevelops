@@ -1,6 +1,6 @@
 # Access Code Fix Handoff
 
-Status: implemented and deployed, not fully live-tested.
+Status: implemented, deployed, and migrations applied, not fully live-tested.
 
 ## What changed
 
@@ -14,13 +14,13 @@ Status: implemented and deployed, not fully live-tested.
 
 ## Database fix
 
-Unapplied files:
+Applied files:
 
 - `supabase/migrations/20261113000000_fix_access_code_pgcrypto.sql`
 - `drizzle/migrations/0031_fix_access_code_pgcrypto.sql`
 - `drizzle/migrations/meta/_journal.json`
 
-Correct function bodies are also in `docs/APPLY_PENDING_MIGRATIONS.sql`. Root cause: hosted Supabase project `lfhzponzmkdconaovolq` has the old functions pinned to `SET search_path = public`, while pgcrypto is installed in `extensions`.
+Applied to `lfhzponzmkdconaovolq` on 2026-11-16 through the Lovable MCP `query_database` tool. Both RPCs now report `search_path=public, extensions`. Root cause: the old functions were pinned to `SET search_path = public`, while pgcrypto is installed in `extensions`.
 
 ## Discovery quotas
 
@@ -29,7 +29,7 @@ Correct function bodies are also in `docs/APPLY_PENDING_MIGRATIONS.sql`. Root ca
 - Discovery claims quota before calling Places, caps results to the admin maximum, and logs every Google/Geoapify search attempt, including failed retries.
 - Rwanda scans use the same request logging and still create `discovery_runs` rows that count toward the daily limit.
 - Admin has quota controls per user plus recent API usage.
-- This migration is **not applied** to `lfhzponzmkdconaovolq` yet; without it the app uses default limits and request logging is skipped.
+- Applied to `lfhzponzmkdconaovolq` on 2026-11-16 via Lovable MCP `query_database`: `api_request_logs` exists, all three profile quota columns exist, and `claim_discovery_run` is installed.
 
 ## Deployment
 
@@ -40,16 +40,13 @@ Correct function bodies are also in `docs/APPLY_PENDING_MIGRATIONS.sql`. Root ca
 - `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` are set as worker secrets.
 - `SUPABASE_SERVICE_ROLE_KEY` is still missing.
 
-## Remaining blocker
+## Remaining verification
 
-Code issuance works through the admin-RLS fallback. Redemption returns `redeem_unavailable` because the RPC is broken and the service-role fallback has no key.
+The database fix is applied. `redeem_access_code` and `admin_issue_access_code` now use `search_path=public, extensions`; `SUPABASE_SERVICE_ROLE_KEY` is no longer required for redemption.
 
-To finish, do one of:
+Live testing still needs a fresh owner session. All four saved owner refresh tokens in the VS Code browser LevelDB were invalid (`400 Invalid Refresh Token`).
 
-1. In Lovable, open **More → Database → Manage → SQL editor**, paste all of `docs/APPLY_PENDING_MIGRATIONS.sql`, and run it. That file now includes both the access-code function fixes and the discovery quota migration.
-2. Or set a valid `SUPABASE_SERVICE_ROLE_KEY` for `lfhzponzmkdconaovolq` on the worker. That fixes redemption but not the quota migration.
-
-Live testing also needs a fresh owner session. All four saved owner refresh tokens in the VS Code browser LevelDB were invalid (`400 Invalid Refresh Token`).
+If Lovable's SQL editor asks for payment, use the Lovable MCP server's `query_database` tool instead; it is available on the free plan and was used to apply these migrations.
 
 ## Verification already done
 
@@ -59,3 +56,4 @@ Live testing also needs a fresh owner session. All four saved owner refresh toke
 - Touched-file ESLint and Prettier clean.
 - `npm run build` succeeded.
 - Worker deployed and returns HTTP 200.
+- DB probe: `claim_discovery_run('probe')` returns the expected unauthenticated JSON, `redeem_access_code('probe')` returns `not_authenticated`, and `extensions.digest` works.
