@@ -161,7 +161,7 @@ function Dashboard() {
         <Button asChild>
           <Link to="/discover">
             <Compass className="h-4 w-4" />
-            Run discovery
+            Find new leads
           </Link>
         </Button>
       </header>

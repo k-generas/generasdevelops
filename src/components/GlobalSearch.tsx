@@ -141,7 +141,7 @@ export function GlobalSearch() {
       <Input
         ref={ref}
         value={q}
-        placeholder="Search everything…  ⌘K"
+        placeholder="Find saved leads, proposals, notes…"
         className="h-10 text-sm sm:h-8"
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
@@ -164,10 +164,24 @@ export function GlobalSearch() {
       />
       {open && q.trim().length >= 2 && (
         <div className="absolute left-0 right-0 top-11 z-50 max-h-[min(24rem,50dvh)] overflow-auto rounded-md border bg-popover shadow-lg sm:top-9">
+          <div className="border-b px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Saved in your GARE workspace
+          </div>
           {hits.length === 0 ? (
-            <p className="p-3 text-xs text-muted-foreground">
-              Nothing saved matches “{q}”. Try a business name, domain, email or search title.
-            </p>
+            <div className="space-y-2 p-3 text-xs text-muted-foreground">
+              <p>Nothing saved matches “{q}”. This search only looks at data already in GARE.</p>
+              <button
+                type="button"
+                onMouseDown={() => {
+                  setOpen(false);
+                  setQ("");
+                  navigate({ to: "/discover", search: { query: q.trim() } });
+                }}
+                className="text-left font-medium text-primary underline underline-offset-2"
+              >
+                Look for new businesses instead →
+              </button>
+            </div>
           ) : (
             hits.map((h, i) => (
               <button

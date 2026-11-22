@@ -33,6 +33,10 @@ export const Route = createFileRoute("/_authenticated/discover")({
       { property: "og:description", content: "Find and queue real businesses from Google Maps." },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>): { query?: string | undefined } => ({
+    query:
+      typeof search["query"] === "string" && search["query"].trim() ? search["query"] : undefined,
+  }),
   component: Discover,
 });
 
@@ -67,7 +71,8 @@ function Discover() {
   const discover = useServerFn(runDiscovery);
   const loadQuota = useServerFn(getMyDiscoveryQuota);
   const checkSites = useServerFn(checkStoredWebsites);
-  const [query, setQuery] = useState("");
+  const initialQuery = Route.useSearch().query ?? "";
+  const [query, setQuery] = useState(initialQuery);
   const [location, setLocation] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -82,6 +87,9 @@ function Discover() {
   const [batchExpanded, setBatchExpanded] = useState(false);
   const queryInputRef = useRef<HTMLInputElement>(null);
   const locationInputRef = useRef<HTMLInputElement>(null);
+  const [mobileTab, setMobileTab] = useState<"find" | "pipeline">("find");
+  const [visibleCount, setVisibleCount] = useState(20);
+  const [showAllRuns, setShowAllRuns] = useState(false);
 
   const queryIsPreset = BUSINESS_CATEGORIES.some((group) => group.items.includes(query));
   const locationIsPreset = LOCATION_PRESETS.some((preset) => preset.value === location);
@@ -129,12 +137,13 @@ function Discover() {
         setError(
           "The search returned no results. Try a broader query (e.g. 'restaurants' instead of a specific name), a different location, or check the source health below.",
         );
-      } else if (window.matchMedia("(max-width: 639px)").matches) {
-        requestAnimationFrame(() =>
+      } else if (window.matchMedia("(max-width: 1023px)").matches) {
+        setMobileTab("pipeline");
+        setTimeout(() => {
           document
             .getElementById("pipeline")
-            ?.scrollIntoView({ behavior: "smooth", block: "start" }),
-        );
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 50);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -274,6 +283,30 @@ function Discover() {
           }}
         />
       )}
+      <div className="sticky top-14 z-20 -mx-4 flex gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur lg:hidden">
+        <Button
+          size="sm"
+          variant={mobileTab === "find" ? "default" : "outline"}
+          className="flex-1"
+          onClick={() => {
+            setMobileTab("find");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        >
+          Find leads
+        </Button>
+        <Button
+          size="sm"
+          variant={mobileTab === "pipeline" ? "default" : "outline"}
+          className="flex-1"
+          onClick={() => {
+            setMobileTab("pipeline");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        >
+          My leads ({list.length})
+        </Button>
+      </div>
       <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
         <Stat label="Businesses" value={total} />
         <Stat
@@ -291,16 +324,20 @@ function Discover() {
           value={siteIssues}
           hint="Broken, insecure, slow, not mobile-ready or outdated"
         />
-        <Stat label="Investigated" value={investigated} />
+        <Stat label="Investigated" value={investigated} className="hidden sm:block" />
         <Stat
           label="Revenue (real payments)"
           value="$0"
           hint="No payment system connected yet"
-          className="col-span-2 sm:col-span-1"
+          className="col-span-2 hidden sm:col-span-1 sm:block"
         />
       </section>
 
-      <section className="rounded-lg border bg-card p-4 sm:p-6">
+      <section
+        className={`rounded-lg border bg-card p-4 sm:p-6 ${
+          mobileTab === "pipeline" ? "hidden lg:block" : ""
+        }`}
+      >
         <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">01 · Discover</p>
         <form onSubmit={onRun} className="mt-4 flex flex-col gap-3">
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -384,11 +421,14 @@ function Discover() {
               className="sm:max-w-xs"
             />
             <Button type="submit" disabled={busy}>
-              {busy ? "Searching…" : "Run discovery"}
+              {busy ? "Searching…" : "Find new leads"}
             </Button>
           </div>
         </form>
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-2 text-xs text-muted-foreground sm:hidden">
+          Up to 20 real results per run. Each run is a paid Google request.
+        </p>
+        <p className="mt-2 hidden text-xs text-muted-foreground sm:block">
           Presets and manual typing share the same fields — pick a preset to fill the box, then edit
           it freely (or choose “Custom — type my own”). Up to 20 real results per run from Google
           Maps. Each run is a paid Google request, so search deliberately.
@@ -414,7 +454,7 @@ function Discover() {
         )}
         {!!runs.data?.length && (
           <div className="mt-4 flex flex-wrap gap-2">
-            {runs.data.map((r) => (
+            {(showAllRuns ? runs.data : runs.data.slice(0, 3)).map((r) => (
               <span
                 key={r.id}
                 className="rounded border px-2 py-1 font-mono text-xs text-muted-foreground"
@@ -424,6 +464,15 @@ function Discover() {
                 {r.status === "failed" ? "failed" : `+${r.new_count}`}
               </span>
             ))}
+            {runs.data.length > 3 && (
+              <button
+                type="button"
+                onClick={() => setShowAllRuns((v) => !v)}
+                className="rounded border px-2 py-1 font-mono text-xs text-primary"
+              >
+                {showAllRuns ? "Show less" : `+${runs.data.length - 3} more`}
+              </button>
+            )}
           </div>
         )}
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-3 text-xs">
@@ -452,7 +501,11 @@ function Discover() {
         </div>
       </section>
 
-      <section className="rounded-lg border bg-card p-4 sm:p-6">
+      <section
+        className={`rounded-lg border bg-card p-4 sm:p-6 ${
+          mobileTab === "pipeline" ? "hidden lg:block" : ""
+        }`}
+      >
         <div className="flex items-start justify-between gap-3">
           <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
             01b · Batch scan
@@ -547,7 +600,10 @@ function Discover() {
         </div>
       </section>
 
-      <section id="pipeline" className="scroll-mt-4">
+      <section
+        id="pipeline"
+        className={`scroll-mt-32 ${mobileTab === "find" ? "hidden lg:block" : ""}`}
+      >
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <p className="mr-auto font-mono text-xs uppercase tracking-[0.3em] text-primary">
             02 · Pipeline
@@ -565,12 +621,18 @@ function Discover() {
               {checkSitesBusy ? "Checking websites…" : `Check website health (${unprobedSites})`}
             </Button>
           )}
+        </div>
+        <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
           {DISCOVER_FILTERS.map(({ key, label }) => (
             <Button
               key={key}
               size="sm"
+              className="shrink-0"
               variant={filter === key ? "default" : "outline"}
-              onClick={() => setFilter(key)}
+              onClick={() => {
+                setFilter(key);
+                setVisibleCount(20);
+              }}
             >
               {label}
             </Button>
@@ -613,7 +675,7 @@ function Discover() {
           />
         ) : (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {list.map((b) => {
+            {list.slice(0, visibleCount).map((b) => {
               const closedPermanently = b.business_status === "CLOSED_PERMANENTLY";
               const closedTemporarily = b.business_status === "CLOSED_TEMPORARILY";
               const assessment = stateOf(b);
@@ -677,6 +739,15 @@ function Discover() {
               );
             })}
           </div>
+        )}
+        {list.length > visibleCount && (
+          <Button
+            variant="outline"
+            className="mt-3 w-full"
+            onClick={() => setVisibleCount((n) => n + 20)}
+          >
+            Show more leads ({list.length - visibleCount} left)
+          </Button>
         )}
       </section>
     </div>
