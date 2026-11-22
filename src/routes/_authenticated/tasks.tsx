@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 import { describeError } from "@/lib/errors";
 import { toast } from "sonner";
 
@@ -33,12 +34,19 @@ type Task = {
 
 const PRIORITIES = ["low", "normal", "high"] as const;
 
+const TABS = [
+  { key: "list", label: "List" },
+  { key: "new", label: "Create" },
+  { key: "issues", label: "Issues" },
+];
+
 function isOverdue(t: Task) {
   return t.due_at != null && new Date(t.due_at).getTime() < Date.now();
 }
 
 function Tasks() {
   const qc = useQueryClient();
+  const [tab, setTab] = useState("list");
   const [showDone, setShowDone] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -146,6 +154,9 @@ function Tasks() {
         </Button>
       </header>
 
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
+
+      <MobilePane name="issues" value={tab}>
       {(tasks.isError || businesses.isError) && (
         <ErrorBanner
           error={(tasks.error ?? businesses.error) as Error}
@@ -156,7 +167,9 @@ function Tasks() {
           }}
         />
       )}
+      </MobilePane>
 
+      <MobilePane name="new" value={tab}>
       <form onSubmit={create} className="rounded-xl border bg-card p-4">
         <div className="grid gap-3 sm:grid-cols-2">
           <Input
@@ -207,7 +220,9 @@ function Tasks() {
           {createErr && <p className="mt-2 text-sm text-destructive">{createErr}</p>}
         </div>
       </form>
+      </MobilePane>
 
+      <MobilePane name="list" value={tab}>
       <div className="divide-y rounded-xl border bg-card">
         {tasks.isError ? (
           <div className="p-4">
@@ -279,6 +294,7 @@ function Tasks() {
           ))
         )}
       </div>
+      </MobilePane>
     </div>
   );
 }

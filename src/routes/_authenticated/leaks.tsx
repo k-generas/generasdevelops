@@ -59,6 +59,7 @@ function LeaksPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | LeakStatus>("open");
   const [severityFilter, setSeverityFilter] = useState<"all" | "high" | "medium" | "low">("all");
   const [message, setMessage] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const leaks = useQuery({ queryKey: ["revenue-leaks"], queryFn: () => load() });
   const defaults = useQuery({ queryKey: ["feasibility-defaults"], queryFn: () => loadDefaults() });
@@ -238,7 +239,7 @@ function LeaksPage() {
         />
       ) : (
         <div className="space-y-3">
-          {rows.map((leak) => (
+          {rows.map((leak, i) => (
             <LeakCard
               key={leak.id}
               leak={leak}
@@ -249,9 +250,20 @@ function LeaksPage() {
                 planMutation.mutate({ offer, businessId: leak.business_id })
               }
               busy={statusMutation.isPending || planMutation.isPending}
+              hidden={i >= 20 && !showAll}
             />
           ))}
         </div>
+      )}
+      {rows.length > 20 && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="xl:hidden"
+          onClick={() => setShowAll(!showAll)}
+        >
+          {showAll ? "Show less" : "Show more"}
+        </Button>
       )}
     </div>
   );
@@ -396,6 +408,7 @@ function LeakCard({
   onStatus,
   onPlanDelivery,
   busy,
+  hidden,
 }: {
   leak: LeakWithBusiness;
   assumptions: FeasibilityAssumptions | undefined;
@@ -403,6 +416,7 @@ function LeakCard({
   onStatus: (status: LeakStatus) => void;
   onPlanDelivery: (offer: string) => void;
   busy: boolean;
+  hidden: boolean;
 }) {
   const [showProfit, setShowProfit] = useState(false);
   const effort = (leak.effort as Effort | null) ?? "medium";
@@ -418,7 +432,9 @@ function LeakCard({
   }, [assumptions, price, hours, leak.recurring]);
 
   return (
-    <article className="space-y-2 rounded-lg border bg-card p-4">
+    <article
+      className={`space-y-2 rounded-lg border bg-card p-4 ${hidden ? "hidden xl:block" : ""}`}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant={SEVERITY_VARIANT[leak.severity] ?? "outline"}>{leak.severity}</Badge>
         <h2 className="font-semibold">{leak.label}</h2>

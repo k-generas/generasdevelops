@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { EmptyState, ErrorBanner } from "@/components/ErrorBanner";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 import { describeError } from "@/lib/errors";
 import {
   deleteProfessional,
@@ -80,6 +81,12 @@ type Draft = {
 };
 
 const PAGE_SIZE = 20;
+
+const TABS = [
+  { key: "people", label: "People" },
+  { key: "filters", label: "Filters" },
+  { key: "stats", label: "Stats" },
+];
 
 function emptyDraft(): Draft {
   return {
@@ -182,6 +189,7 @@ function ProfessionalsPage() {
   const [linkBusinessId, setLinkBusinessId] = useState("");
   const [linkType, setLinkType] = useState<ProfessionalLinkType>("works_at");
   const [linkRole, setLinkRole] = useState("");
+  const [tab, setTab] = useState("people");
 
   const professionals = useQuery({
     queryKey: ["professionals", page, query, country, type, verification, availability, stage],
@@ -398,65 +406,71 @@ function ProfessionalsPage() {
         />
       )}
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-        <Stat label="People" value={summary.data?.total ?? 0} />
-        <Stat label="Verified" value={summary.data?.verified ?? 0} />
-        <Stat label="Open to work" value={summary.data?.openToWork ?? 0} />
-        <Stat label="With email" value={summary.data?.withEmail ?? 0} />
-        <Stat label="With phone" value={summary.data?.withPhone ?? 0} />
-        <Stat label="Do not contact" value={summary.data?.doNotContact ?? 0} tone="danger" />
-      </section>
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
 
-      <section className="grid gap-2 rounded-lg border bg-card p-3 md:grid-cols-6">
-        <div className="relative md:col-span-2">
-          <Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            className="pl-8"
-            placeholder="Search name, role, email, city..."
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
+      <MobilePane name="stats" value={tab}>
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+          <Stat label="People" value={summary.data?.total ?? 0} />
+          <Stat label="Verified" value={summary.data?.verified ?? 0} />
+          <Stat label="Open to work" value={summary.data?.openToWork ?? 0} />
+          <Stat label="With email" value={summary.data?.withEmail ?? 0} />
+          <Stat label="With phone" value={summary.data?.withPhone ?? 0} />
+          <Stat label="Do not contact" value={summary.data?.doNotContact ?? 0} tone="danger" />
+        </section>
+      </MobilePane>
+
+      <MobilePane name="filters" value={tab}>
+        <section className="grid gap-2 rounded-lg border bg-card p-3 md:grid-cols-6">
+          <div className="relative md:col-span-2">
+            <Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              className="pl-8"
+              placeholder="Search name, role, email, city..."
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <SelectBox
+            value={country}
+            onChange={(v) => {
+              setCountry(v);
               setPage(1);
             }}
+            placeholder="All countries"
+            options={[...new Set(rows.map((r) => r.country).filter(Boolean))] as string[]}
           />
-        </div>
-        <SelectBox
-          value={country}
-          onChange={(v) => {
-            setCountry(v);
-            setPage(1);
-          }}
-          placeholder="All countries"
-          options={[...new Set(rows.map((r) => r.country).filter(Boolean))] as string[]}
-        />
-        <SelectBox
-          value={type}
-          onChange={(v) => {
-            setType(v);
-            setPage(1);
-          }}
-          placeholder="All types"
-          options={[...PROFESSIONAL_TYPES]}
-        />
-        <SelectBox
-          value={verification}
-          onChange={(v) => {
-            setVerification(v);
-            setPage(1);
-          }}
-          placeholder="All verification"
-          options={[...PROFESSIONAL_VERIFICATION_STATUSES]}
-        />
-        <SelectBox
-          value={stage}
-          onChange={(v) => {
-            setStage(v);
-            setPage(1);
-          }}
-          placeholder="All stages"
-          options={[...PROFESSIONAL_STAGES]}
-        />
-      </section>
+          <SelectBox
+            value={type}
+            onChange={(v) => {
+              setType(v);
+              setPage(1);
+            }}
+            placeholder="All types"
+            options={[...PROFESSIONAL_TYPES]}
+          />
+          <SelectBox
+            value={verification}
+            onChange={(v) => {
+              setVerification(v);
+              setPage(1);
+            }}
+            placeholder="All verification"
+            options={[...PROFESSIONAL_VERIFICATION_STATUSES]}
+          />
+          <SelectBox
+            value={stage}
+            onChange={(v) => {
+              setStage(v);
+              setPage(1);
+            }}
+            placeholder="All stages"
+            options={[...PROFESSIONAL_STAGES]}
+          />
+        </section>
+      </MobilePane>
 
       {draft && (
         <section className="space-y-4 rounded-lg border bg-card p-4">
@@ -754,112 +768,118 @@ function ProfessionalsPage() {
         </section>
       )}
 
-      <section className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">People</h2>
-          <span className="text-xs text-muted-foreground">
-            {total} record{total === 1 ? "" : "s"}
-          </span>
-        </div>
-
-        {professionals.isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading professionals...</p>
-        ) : rows.length === 0 ? (
-          <EmptyState
-            title={applied ? "No professionals yet" : "Professional workspace needs setup"}
-            why={
-              applied
-                ? "Add a person you lawfully observed, record the public source, then link them to a business. Keeping the source visible prevents guesses from becoming facts."
-                : "Apply the additive global intelligence migration to create the professionals, links and suppression tables."
-            }
-            action={
-              applied ? (
-                <Button size="sm" onClick={openNew}>
-                  <Plus className="mr-1 h-4 w-4" /> Add the first person
-                </Button>
-              ) : undefined
-            }
-          />
-        ) : (
-          <div className="space-y-2">
-            {rows.map((p) => {
-              const completeness = professionalCompleteness(p);
-              const personLinks = linksByProfessional.get(p.id!) ?? [];
-              const evidenceCount = (p.evidence ?? []).length;
-              return (
-                <article key={p.id} className="rounded-lg border bg-card p-4">
-                  <div className="flex flex-wrap items-start gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-semibold">{p.fullName}</h3>
-                        <Badge variant="secondary">
-                          {professionalTypeLabel(p.professionalType ?? "other")}
-                        </Badge>
-                        {p.verificationStatus && p.verificationStatus !== "unverified" && (
-                          <Badge variant="outline">{p.verificationStatus.replace(/_/g, " ")}</Badge>
-                        )}
-                        {p.availabilityStatus === "open" && <Badge>open to work</Badge>}
-                        {p.doNotContact && <Badge variant="destructive">do not contact</Badge>}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {[p.headline, p.city, p.country].filter(Boolean).join(" - ") ||
-                          "No role or location recorded"}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                        {p.publicEmail && <span>{p.publicEmail}</span>}
-                        {p.publicPhone && <span>{p.publicPhone}</span>}
-                        <span>{professionalStageLabel(p.relationshipStage ?? "researching")}</span>
-                        <span>confidence {Math.round((p.confidence ?? 0) * 100)}%</span>
-                        <span>
-                          profile {completeness.score}% complete
-                          {completeness.missing.length > 0
-                            ? ` (missing ${completeness.missing.slice(0, 3).join(", ")})`
-                            : ""}
-                        </span>
-                        <span>
-                          {evidenceCount} evidence item{evidenceCount === 1 ? "" : "s"}
-                        </span>
-                      </div>
-                      {personLinks.length > 0 && (
-                        <p className="mt-2 text-xs text-muted-foreground">
-                          Linked to: {personLinks.map((l) => l.businessName).join(", ")}
-                        </p>
-                      )}
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => openEdit(p)}>
-                      Edit
-                    </Button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-
-        {total > PAGE_SIZE && (
-          <div className="flex items-center justify-between pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage(page - 1)}
-            >
-              Previous
-            </Button>
+      <MobilePane name="people" value={tab}>
+        <section className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">People</h2>
             <span className="text-xs text-muted-foreground">
-              Page {page} of {pages}
+              {total} record{total === 1 ? "" : "s"}
             </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= pages}
-              onClick={() => setPage(page + 1)}
-            >
-              Next
-            </Button>
           </div>
-        )}
-      </section>
+
+          {professionals.isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading professionals...</p>
+          ) : rows.length === 0 ? (
+            <EmptyState
+              title={applied ? "No professionals yet" : "Professional workspace needs setup"}
+              why={
+                applied
+                  ? "Add a person you lawfully observed, record the public source, then link them to a business. Keeping the source visible prevents guesses from becoming facts."
+                  : "Apply the additive global intelligence migration to create the professionals, links and suppression tables."
+              }
+              action={
+                applied ? (
+                  <Button size="sm" onClick={openNew}>
+                    <Plus className="mr-1 h-4 w-4" /> Add the first person
+                  </Button>
+                ) : undefined
+              }
+            />
+          ) : (
+            <div className="space-y-2">
+              {rows.map((p) => {
+                const completeness = professionalCompleteness(p);
+                const personLinks = linksByProfessional.get(p.id!) ?? [];
+                const evidenceCount = (p.evidence ?? []).length;
+                return (
+                  <article key={p.id} className="rounded-lg border bg-card p-4">
+                    <div className="flex flex-wrap items-start gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-semibold">{p.fullName}</h3>
+                          <Badge variant="secondary">
+                            {professionalTypeLabel(p.professionalType ?? "other")}
+                          </Badge>
+                          {p.verificationStatus && p.verificationStatus !== "unverified" && (
+                            <Badge variant="outline">
+                              {p.verificationStatus.replace(/_/g, " ")}
+                            </Badge>
+                          )}
+                          {p.availabilityStatus === "open" && <Badge>open to work</Badge>}
+                          {p.doNotContact && <Badge variant="destructive">do not contact</Badge>}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {[p.headline, p.city, p.country].filter(Boolean).join(" - ") ||
+                            "No role or location recorded"}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                          {p.publicEmail && <span>{p.publicEmail}</span>}
+                          {p.publicPhone && <span>{p.publicPhone}</span>}
+                          <span>
+                            {professionalStageLabel(p.relationshipStage ?? "researching")}
+                          </span>
+                          <span>confidence {Math.round((p.confidence ?? 0) * 100)}%</span>
+                          <span>
+                            profile {completeness.score}% complete
+                            {completeness.missing.length > 0
+                              ? ` (missing ${completeness.missing.slice(0, 3).join(", ")})`
+                              : ""}
+                          </span>
+                          <span>
+                            {evidenceCount} evidence item{evidenceCount === 1 ? "" : "s"}
+                          </span>
+                        </div>
+                        {personLinks.length > 0 && (
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Linked to: {personLinks.map((l) => l.businessName).join(", ")}
+                          </p>
+                        )}
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => openEdit(p)}>
+                        Edit
+                      </Button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+
+          {total > PAGE_SIZE && (
+            <div className="flex items-center justify-between pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage(page - 1)}
+              >
+                Previous
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Page {page} of {pages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= pages}
+                onClick={() => setPage(page + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        </section>
+      </MobilePane>
     </div>
   );
 }

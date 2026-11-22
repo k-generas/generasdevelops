@@ -33,6 +33,7 @@ const TIER_VARIANT: Record<IntentTier, "destructive" | "secondary" | "outline"> 
 function IntentPage() {
   const load = useServerFn(getIntentBoard);
   const [tierFilter, setTierFilter] = useState<"all" | IntentTier>("all");
+  const [showAll, setShowAll] = useState(false);
   const board = useQuery({ queryKey: ["intent-board"], queryFn: () => load() });
 
   const rows = useMemo(() => {
@@ -95,18 +96,32 @@ function IntentPage() {
         />
       ) : (
         <div className="space-y-2">
-          {rows.map((r) => (
-            <IntentRow key={r.businessId} row={r} />
+          {rows.map((r, i) => (
+            <IntentRow key={r.businessId} row={r} hidden={i >= 20 && !showAll} />
           ))}
         </div>
+      )}
+      {rows.length > 20 && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="xl:hidden"
+          onClick={() => setShowAll(!showAll)}
+        >
+          {showAll ? "Show less" : "Show more"}
+        </Button>
       )}
     </div>
   );
 }
 
-function IntentRow({ row }: { row: IntentBoardRow }) {
+function IntentRow({ row, hidden }: { row: IntentBoardRow; hidden: boolean }) {
   return (
-    <article className="space-y-2 rounded-lg border bg-card p-4 text-sm">
+    <article
+      className={`space-y-2 rounded-lg border bg-card p-4 text-sm ${
+        hidden ? "hidden xl:block" : ""
+      }`}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant={TIER_VARIANT[row.tier]}>{row.tier}</Badge>
         <Link

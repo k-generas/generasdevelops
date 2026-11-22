@@ -25,6 +25,7 @@ import { removeInvoicePayments } from "@/lib/money.actions";
 import { RecordPaymentDialog, type PaymentInvoiceOption } from "@/components/RecordPaymentDialog";
 import { downloadCsv, rowsToCsv } from "@/lib/csv";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 import { describeError } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/invoices")({
@@ -36,6 +37,13 @@ export const Route = createFileRoute("/_authenticated/invoices")({
   }),
   component: Invoices,
 });
+
+const TABS = [
+  { key: "invoices", label: "Invoices" },
+  { key: "create", label: "Create" },
+  { key: "totals", label: "Totals" },
+  { key: "alerts", label: "Alerts" },
+];
 
 function escapeHtml(s: string): string {
   return s.replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c]!);
@@ -56,6 +64,7 @@ function TotalsList({ rows }: { rows: { currency: string; amount: number }[] }) 
 
 function Invoices() {
   const qc = useQueryClient();
+  const [tab, setTab] = useState("invoices");
   const invoices = useInvoices();
   const paymentsQ = usePayments();
   const list = useMemo(() => invoices.data?.invoices ?? [], [invoices.data?.invoices]);
@@ -297,6 +306,9 @@ function Invoices() {
         </div>
       </div>
 
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
+
+      <MobilePane name="alerts" value={tab}>
       {(invoices.isError || proposals.isError) && (
         <ErrorBanner
           error={(invoices.error ?? proposals.error) as Error}
@@ -333,7 +345,9 @@ function Invoices() {
           </div>
         </div>
       )}
+      </MobilePane>
 
+      <MobilePane name="create" value={tab}>
       <div className="space-y-3 rounded-lg border bg-card p-4">
         <h2 className="font-semibold">New invoice from a proposal</h2>
         <label className="block text-sm">
@@ -391,7 +405,9 @@ function Invoices() {
           {msg && <span className="text-sm text-muted-foreground">{msg}</span>}
         </div>
       </div>
+      </MobilePane>
 
+      <MobilePane name="totals" value={tab}>
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border bg-card p-4">
           <p className="text-xs text-muted-foreground">Outstanding</p>
@@ -406,7 +422,9 @@ function Invoices() {
           <p className="text-xl font-semibold">{totals.count}</p>
         </div>
       </div>
+      </MobilePane>
 
+      <MobilePane name="invoices" value={tab}>
       <div className="flex flex-wrap gap-2">
         {["ALL", ...INVOICE_STATUSES].map((s) => (
           <Button
@@ -536,6 +554,7 @@ function Invoices() {
           })
         )}
       </div>
+      </MobilePane>
 
       <RecordPaymentDialog
         open={paymentOpen}

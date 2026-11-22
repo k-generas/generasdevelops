@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -16,6 +17,7 @@ import { summarizeOutcomes } from "@/lib/outcomes";
 import { useAccessInfo } from "@/lib/access";
 import { Button } from "@/components/ui/button";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -30,6 +32,12 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
+const TABS = [
+  { key: "overview", label: "Overview" },
+  { key: "leads", label: "Leads" },
+  { key: "pipeline", label: "Pipeline" },
+];
+
 function greeting() {
   const h = new Date().getHours();
   if (h < 12) return "Good morning";
@@ -38,6 +46,7 @@ function greeting() {
 }
 
 function Dashboard() {
+  const [tab, setTab] = useState("overview");
   const access = useAccessInfo();
   const isAdmin = access.data?.isAdmin === true;
   const businesses = useQuery({
@@ -166,6 +175,8 @@ function Dashboard() {
         </Button>
       </header>
 
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
+
       {(businesses.isError || proposals.isError || tasks.isError || failedRuns.isError) && (
         <ErrorBanner
           error={(businesses.error ?? proposals.error ?? tasks.error ?? failedRuns.error) as Error}
@@ -179,6 +190,7 @@ function Dashboard() {
         />
       )}
 
+      <MobilePane name="overview" value={tab}>
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi label="Businesses" value={total} icon={Globe} />
         <Kpi label="No website" value={noSite} icon={TrendingUp} hint="Verified no site" />
@@ -219,7 +231,9 @@ function Dashboard() {
           )}
         </section>
       )}
+      </MobilePane>
 
+      <MobilePane name="leads" value={tab}>
       <section className="grid gap-4 lg:grid-cols-3">
         <div className="rounded-xl border bg-card lg:col-span-2">
           <div className="flex items-center justify-between border-b px-4 py-3">
@@ -342,7 +356,9 @@ function Dashboard() {
           </div>
         </div>
       </section>
+      </MobilePane>
 
+      <MobilePane name="pipeline" value={tab}>
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-xl border bg-card">
           <div className="flex items-center justify-between border-b px-4 py-3">
@@ -415,6 +431,7 @@ function Dashboard() {
           )}
         </div>
       </section>
+      </MobilePane>
     </div>
   );
 }

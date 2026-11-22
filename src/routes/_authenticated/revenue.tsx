@@ -29,6 +29,7 @@ import {
 } from "@/lib/recurring";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 import { describeError } from "@/lib/errors";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 
 export const Route = createFileRoute("/_authenticated/revenue")({
   head: () => ({
@@ -42,6 +43,13 @@ export const Route = createFileRoute("/_authenticated/revenue")({
   }),
   component: RevenuePage,
 });
+
+const TABS = [
+  { key: "overview", label: "Overview" },
+  { key: "renewals", label: "Renewals" },
+  { key: "offers", label: "Offers" },
+  { key: "subs", label: "Subs" },
+];
 
 type Draft = {
   id?: string | undefined;
@@ -83,6 +91,7 @@ function draftFrom(s: Subscription): Draft {
 }
 
 function RevenuePage() {
+  const [tab, setTab] = useState("overview");
   const qc = useQueryClient();
   const loadSubs = useServerFn(getSubscriptions);
   const loadLeaks = useServerFn(getRevenueLeaks);
@@ -153,6 +162,8 @@ function RevenuePage() {
         <p className="text-sm text-muted-foreground">{RECURRING_RULE}</p>
       </header>
 
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
+
       {message && (
         <p className="rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
           {message}
@@ -170,6 +181,7 @@ function RevenuePage() {
         />
       )}
 
+      <MobilePane name="overview" value={tab}>
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="MRR (active)" value={`${snapshot.mrr.toFixed(0)} ${snapshot.currency}`} />
         <Stat label="ARR" value={`${snapshot.arr.toFixed(0)} ${snapshot.currency}`} />
@@ -188,7 +200,9 @@ function RevenuePage() {
             " Active subscriptions use more than one currency — the sum is approximate."}
         </p>
       )}
+      </MobilePane>
 
+      <MobilePane name="renewals" value={tab}>
       <section className="space-y-3">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold">Renewals</h2>
@@ -212,7 +226,9 @@ function RevenuePage() {
           </p>
         )}
       </section>
+      </MobilePane>
 
+      <MobilePane name="offers" value={tab}>
       <section className="space-y-3">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold">Recurring opportunities</h2>
@@ -264,7 +280,9 @@ function RevenuePage() {
           </div>
         )}
       </section>
+      </MobilePane>
 
+      <MobilePane name="subs" value={tab}>
       <section className="space-y-3">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold">Subscriptions</h2>
@@ -333,6 +351,7 @@ function RevenuePage() {
           </div>
         )}
       </section>
+      </MobilePane>
     </div>
   );
 }

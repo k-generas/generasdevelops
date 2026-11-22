@@ -59,6 +59,7 @@ function NumbersPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [stageFilter, setStageFilter] = useState<OutreachStage | "ANY">("ANY");
+  const [showAll, setShowAll] = useState(false);
 
   const businesses = useQuery({
     queryKey: ["numbers-businesses"],
@@ -288,10 +289,12 @@ function NumbersPage() {
                   : "No matches. Try a different number or name."}
               </div>
             ) : (
-              rows.map((r) => (
+              rows.map((r, i) => (
                 <div
                   key={r.key}
-                  className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between"
+                  className={`flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between ${
+                    i >= 20 && !showAll ? "hidden xl:flex" : ""
+                  }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 rounded-full bg-muted p-2">
@@ -345,6 +348,16 @@ function NumbersPage() {
           </div>
         </CardContent>
       </Card>
+      {rows.length > 20 && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="xl:hidden"
+          onClick={() => setShowAll(!showAll)}
+        >
+          {showAll ? "Show less" : "Show more"}
+        </Button>
+      )}
     </div>
   );
 }

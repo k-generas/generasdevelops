@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { nextInvoiceNumber } from "@/lib/invoices";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 import { describeError } from "@/lib/errors";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 
 const STATUSES = [
   "DRAFT",
@@ -28,6 +29,13 @@ const STATUSES = [
   "REJECTED",
   "EXPIRED",
   "CANCELLED",
+];
+
+const TABS = [
+  { key: "draft", label: "Draft" },
+  { key: "evidence", label: "Evidence" },
+  { key: "outreach", label: "Outreach" },
+  { key: "versions", label: "Versions" },
 ];
 
 export const Route = createFileRoute("/_authenticated/proposals/$id")({
@@ -100,6 +108,7 @@ function Editor() {
           .order("created_at", { ascending: false })
       ).data ?? [],
   });
+  const [tab, setTab] = useState("draft");
   const [body, setBody] = useState<string | null>(null);
   const [saved, setSaved] = useState("saved");
   const [channel, setChannel] = useState<string>("Email");
@@ -351,198 +360,216 @@ function Editor() {
         </Button>
       </div>
 
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
+
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="space-y-2 lg:col-span-2">
-          <Textarea
-            className="min-h-[220px] font-mono text-sm sm:min-h-[420px]"
-            value={body ?? ""}
-            onChange={(e) => onEdit(e.target.value)}
-          />
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-auto font-mono text-xs text-muted-foreground">{saved}</span>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => navigator.clipboard.writeText(body ?? "")}
-            >
-              Copy
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={async () => {
-                const v = p.current_version + 1;
-                await supabase
-                  .from("proposal_versions")
-                  .insert({ proposal_id: id, version: v, body: body ?? "", note: "Manual save" });
-                await supabase.from("proposals").update({ current_version: v }).eq("id", id);
-                await log(`Proposal edited · version ${v} saved`, "proposal_edited");
-                qc.invalidateQueries({ queryKey: ["proposal", id] });
-                qc.invalidateQueries({ queryKey: ["pversions", id] });
-              }}
-            >
-              Save as new version
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                const w = window.open("", "_blank");
-                if (w) {
-                  w.document.write(
-                    `<pre style="font-family:Georgia,serif;white-space:pre-wrap;max-width:720px;margin:40px auto;font-size:15px">${(body ?? "").replace(/</g, "&lt;")}</pre>`,
-                  );
-                  w.print();
-                }
-              }}
-            >
-              Print / PDF
-            </Button>
-          </div>
-        </div>
-        <aside className="space-y-4">
-          <div className="rounded-lg border bg-card p-4 text-sm">
-            <p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-primary">
-              Why this message?
-            </p>
-            {why.length === 0 ? (
-              <p className="text-muted-foreground">No research statements recorded.</p>
-            ) : (
-              why.map((w, i) => (
-                <div key={i} className="mb-3">
-                  <span className="font-mono text-xs uppercase text-accent">
-                    {String(w.kind ?? "").replace(/_/g, " ")}
-                  </span>
-                  <p>{w.statement}</p>
-                  <p className="text-xs text-muted-foreground">Evidence: {w.evidence}</p>
-                </div>
-              ))
-            )}
-          </div>
-          <div className="rounded-lg border bg-card p-4 text-sm">
-            <p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-primary">
-              Outreach
-            </p>
-            <div className="space-y-2">
-              <select
-                className="w-full rounded border bg-background px-2 py-1 text-sm"
-                value={channel}
-                onChange={(e) => {
-                  channelTouched.current = true;
-                  setChannel(e.target.value);
-                  setComplianceCheck(null);
-                  setComplianceMessage(null);
+        <div className={`space-y-2 lg:col-span-2 ${tab !== "draft" ? "hidden xl:block" : ""}`}>
+          <MobilePane name="draft" value={tab}>
+            <Textarea
+              className="min-h-[220px] font-mono text-sm sm:min-h-[420px]"
+              value={body ?? ""}
+              onChange={(e) => onEdit(e.target.value)}
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mr-auto font-mono text-xs text-muted-foreground">{saved}</span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigator.clipboard.writeText(body ?? "")}
+              >
+                Copy
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  const v = p.current_version + 1;
+                  await supabase
+                    .from("proposal_versions")
+                    .insert({ proposal_id: id, version: v, body: body ?? "", note: "Manual save" });
+                  await supabase.from("proposals").update({ current_version: v }).eq("id", id);
+                  await log(`Proposal edited · version ${v} saved`, "proposal_edited");
+                  qc.invalidateQueries({ queryKey: ["proposal", id] });
+                  qc.invalidateQueries({ queryKey: ["pversions", id] });
                 }}
               >
-                {OUTREACH_CHANNELS.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-              <Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
-              <Textarea
-                placeholder="Optional: what did they say? (objection, interest, next step)"
-                value={response}
-                onChange={(e) => setResponse(e.target.value)}
-              />
-              <label className="flex items-start gap-2 text-xs text-muted-foreground">
-                <input
-                  type="checkbox"
-                  className="mt-0.5"
-                  checked={ownerConfirmed}
-                  onChange={(e) => setOwnerConfirmed(e.target.checked)}
-                />
-                <span>
-                  I reviewed the lawful basis, destination-country rules, channel terms and the
-                  suppression result for this specific outreach.
-                </span>
-              </label>
-              {complianceMessage && (
-                <p
-                  className={`rounded border px-2 py-1 text-xs ${
-                    complianceMessage.startsWith("Outreach recorded")
-                      ? "bg-muted text-muted-foreground"
-                      : "border-destructive/40 text-destructive"
-                  }`}
-                >
-                  {complianceMessage}
-                </p>
-              )}
-              {complianceCheck && complianceCheck.reasons.length > 0 && (
-                <ul className="list-disc space-y-1 pl-4 text-xs text-muted-foreground">
-                  {complianceCheck.reasons.slice(0, 4).map((r, i) => (
-                    <li key={i}>{r}</li>
-                  ))}
-                </ul>
-              )}
-              <Button size="sm" onClick={recordOutreach} disabled={outreachBusy || !ownerConfirmed}>
-                {outreachBusy ? "Recording…" : "Record outreach"}
+                Save as new version
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const w = window.open("", "_blank");
+                  if (w) {
+                    w.document.write(
+                      `<pre style="font-family:Georgia,serif;white-space:pre-wrap;max-width:720px;margin:40px auto;font-size:15px">${(body ?? "").replace(/</g, "&lt;")}</pre>`,
+                    );
+                    w.print();
+                  }
+                }}
+              >
+                Print / PDF
               </Button>
             </div>
-            <div className="mt-3 space-y-2">
-              {outreach.data?.map((e) => {
-                const od = readOutreachDetails(e.details);
-                return (
-                  <div key={e.id} className="border-l-2 border-primary pl-2">
+          </MobilePane>
+        </div>
+        <aside className={`space-y-4 ${tab === "draft" ? "hidden xl:block" : ""}`}>
+          <MobilePane name="evidence" value={tab}>
+            <div className="rounded-lg border bg-card p-4 text-sm">
+              <p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-primary">
+                Why this message?
+              </p>
+              {why.length === 0 ? (
+                <p className="text-muted-foreground">No research statements recorded.</p>
+              ) : (
+                why.map((w, i) => (
+                  <div key={i} className="mb-3">
                     <span className="font-mono text-xs uppercase text-accent">
-                      {od.channel ?? e.event_type}
+                      {String(w.kind ?? "").replace(/_/g, " ")}
                     </span>
-                    <p>{e.summary}</p>
-                    <p className="font-mono text-xs text-muted-foreground">
-                      {new Date(e.created_at).toLocaleString()}
-                    </p>
+                    <p>{w.statement}</p>
+                    <p className="text-xs text-muted-foreground">Evidence: {w.evidence}</p>
                   </div>
-                );
-              })}
-              {outreach.data?.length === 0 && (
-                <p className="text-muted-foreground">No outreach recorded yet.</p>
+                ))
               )}
             </div>
-          </div>
-          <div className="rounded-lg border bg-card p-4 text-sm">
-            <p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-primary">
-              Outcome
-            </p>
-            <p className="mb-2 text-xs text-muted-foreground">
-              Set the status above to ACCEPTED or REJECTED, then note why. This feeds your win rate
-              on the dashboard.
-            </p>
-            <Textarea
-              placeholder="Why? (price, timing, no response, went with someone else…)"
-              value={outcomeReason}
-              onChange={(e) => setOutcomeReason(e.target.value)}
-            />
-            <Button
-              className="mt-2"
-              size="sm"
-              variant="outline"
-              onClick={saveOutcome}
-              disabled={outcomeBusy}
-            >
-              {outcomeBusy ? "Saving…" : "Save outcome reason"}
-            </Button>
-          </div>
-          <div className="rounded-lg border bg-card p-4 text-sm">
-            <p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-primary">
-              Versions
-            </p>
-            {versions.data?.map((v) => (
-              <div key={v.id} className="flex items-start justify-between gap-2 py-1">
-                <span className="min-w-0 break-words font-mono text-xs">
-                  v{v.version} - {new Date(v.created_at).toLocaleString()} - {v.note}
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="shrink-0"
-                  onClick={() => {
-                    if (confirm(`Restore v${v.version} into the editor?`)) onEdit(v.body);
+          </MobilePane>
+          <MobilePane name="outreach" value={tab}>
+            <div className="rounded-lg border bg-card p-4 text-sm">
+              <p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-primary">
+                Outreach
+              </p>
+              <div className="space-y-2">
+                <select
+                  className="w-full rounded border bg-background px-2 py-1 text-sm"
+                  value={channel}
+                  onChange={(e) => {
+                    channelTouched.current = true;
+                    setChannel(e.target.value);
+                    setComplianceCheck(null);
+                    setComplianceMessage(null);
                   }}
                 >
-                  Restore
+                  {OUTREACH_CHANNELS.map((c) => (
+                    <option key={c}>{c}</option>
+                  ))}
+                </select>
+                <Input
+                  type="datetime-local"
+                  value={when}
+                  onChange={(e) => setWhen(e.target.value)}
+                />
+                <Textarea
+                  placeholder="Optional: what did they say? (objection, interest, next step)"
+                  value={response}
+                  onChange={(e) => setResponse(e.target.value)}
+                />
+                <label className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={ownerConfirmed}
+                    onChange={(e) => setOwnerConfirmed(e.target.checked)}
+                  />
+                  <span>
+                    I reviewed the lawful basis, destination-country rules, channel terms and the
+                    suppression result for this specific outreach.
+                  </span>
+                </label>
+                {complianceMessage && (
+                  <p
+                    className={`rounded border px-2 py-1 text-xs ${
+                      complianceMessage.startsWith("Outreach recorded")
+                        ? "bg-muted text-muted-foreground"
+                        : "border-destructive/40 text-destructive"
+                    }`}
+                  >
+                    {complianceMessage}
+                  </p>
+                )}
+                {complianceCheck && complianceCheck.reasons.length > 0 && (
+                  <ul className="list-disc space-y-1 pl-4 text-xs text-muted-foreground">
+                    {complianceCheck.reasons.slice(0, 4).map((r, i) => (
+                      <li key={i}>{r}</li>
+                    ))}
+                  </ul>
+                )}
+                <Button
+                  size="sm"
+                  onClick={recordOutreach}
+                  disabled={outreachBusy || !ownerConfirmed}
+                >
+                  {outreachBusy ? "Recording…" : "Record outreach"}
                 </Button>
               </div>
-            ))}
-          </div>
+              <div className="mt-3 space-y-2">
+                {outreach.data?.map((e) => {
+                  const od = readOutreachDetails(e.details);
+                  return (
+                    <div key={e.id} className="border-l-2 border-primary pl-2">
+                      <span className="font-mono text-xs uppercase text-accent">
+                        {od.channel ?? e.event_type}
+                      </span>
+                      <p>{e.summary}</p>
+                      <p className="font-mono text-xs text-muted-foreground">
+                        {new Date(e.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  );
+                })}
+                {outreach.data?.length === 0 && (
+                  <p className="text-muted-foreground">No outreach recorded yet.</p>
+                )}
+              </div>
+            </div>
+            <div className="rounded-lg border bg-card p-4 text-sm">
+              <p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-primary">
+                Outcome
+              </p>
+              <p className="mb-2 text-xs text-muted-foreground">
+                Set the status above to ACCEPTED or REJECTED, then note why. This feeds your win
+                rate on the dashboard.
+              </p>
+              <Textarea
+                placeholder="Why? (price, timing, no response, went with someone else…)"
+                value={outcomeReason}
+                onChange={(e) => setOutcomeReason(e.target.value)}
+              />
+              <Button
+                className="mt-2"
+                size="sm"
+                variant="outline"
+                onClick={saveOutcome}
+                disabled={outcomeBusy}
+              >
+                {outcomeBusy ? "Saving…" : "Save outcome reason"}
+              </Button>
+            </div>
+          </MobilePane>
+          <MobilePane name="versions" value={tab}>
+            <div className="rounded-lg border bg-card p-4 text-sm">
+              <p className="mb-2 font-mono text-xs uppercase tracking-[0.3em] text-primary">
+                Versions
+              </p>
+              {versions.data?.map((v) => (
+                <div key={v.id} className="flex items-start justify-between gap-2 py-1">
+                  <span className="min-w-0 break-words font-mono text-xs">
+                    v{v.version} - {new Date(v.created_at).toLocaleString()} - {v.note}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="shrink-0"
+                    onClick={() => {
+                      if (confirm(`Restore v${v.version} into the editor?`)) onEdit(v.body);
+                    }}
+                  >
+                    Restore
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </MobilePane>
         </aside>
       </div>
 

@@ -53,6 +53,7 @@ import {
   type OutreachStage,
 } from "@/lib/outreach-tracker";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 
 export const Route = createFileRoute("/_authenticated/businesses/")({
   head: () => ({
@@ -69,6 +70,12 @@ export const Route = createFileRoute("/_authenticated/businesses/")({
 
 const WEBSITE_OPTIONS = ["no_site", "unverified", "has_site", "all"] as const;
 type WebsiteFilter = (typeof WEBSITE_OPTIONS)[number];
+
+const TABS = [
+  { key: "leads", label: "Leads" },
+  { key: "filters", label: "Filters" },
+  { key: "insights", label: "Insights" },
+];
 
 type LeadRow = {
   id: string;
@@ -110,6 +117,8 @@ function Businesses() {
   const [modalBiz, setModalBiz] = useState<LeadRow | null>(null);
   const [localStages, setLocalStages] = useState<Record<string, OutreachStage>>({});
   const [mergeOpen, setMergeOpen] = useState(false);
+  const [tab, setTab] = useState("leads");
+  const [leadLimit, setLeadLimit] = useState(20);
 
   // Stage changes are stored as events in business_activity_events, which the
   // hosted database already has. Newest event per business wins.
@@ -338,6 +347,7 @@ function Businesses() {
   }
 
   const noSite = rows.filter((b) => !b.website && b.website_checked_at).length;
+  const visibleLeads = rows.slice(0, leadLimit);
   const duplicateGroups = useMemo(
     () => findDuplicateGroups(businesses.data ?? []),
     [businesses.data],
@@ -352,22 +362,30 @@ function Businesses() {
             {rows.length} shown of {businesses.data?.length ?? "…"} saved · {noSite} verified with
             no website
           </p>
-          <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
-            <CountChip label="Scanned" value={counts.total} />
-            <CountChip
-              label="Messaged"
-              value={counts.messaged}
-              className={stageClass("messaged")}
-            />
-            <CountChip label="Replied" value={counts.replied} className={stageClass("replied")} />
-            <CountChip
-              label="Negotiating"
-              value={counts.negotiating}
-              className={stageClass("negotiating")}
-            />
-            <CountChip label="Won" value={counts.won} className={stageClass("won")} />
-          </div>
         </div>
+      </div>
+
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
+
+      <MobilePane name="insights" value={tab}>
+        <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+          <CountChip label="Scanned" value={counts.total} />
+          <CountChip
+            label="Messaged"
+            value={counts.messaged}
+            className={stageClass("messaged")}
+          />
+          <CountChip label="Replied" value={counts.replied} className={stageClass("replied")} />
+          <CountChip
+            label="Negotiating"
+            value={counts.negotiating}
+            className={stageClass("negotiating")}
+          />
+          <CountChip label="Won" value={counts.won} className={stageClass("won")} />
+        </div>
+      </MobilePane>
+
+      <MobilePane name="filters" value={tab}>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
@@ -480,189 +498,205 @@ function Businesses() {
             <option value="all">Any website</option>
           </select>
         </div>
-      </div>
+      </MobilePane>
 
-      {businesses.isError && (
-        <ErrorBanner
-          error={businesses.error}
-          context="Loading leads"
-          onRetry={() => void businesses.refetch()}
-        />
-      )}
+      <MobilePane name="leads" value={tab}>
+        <div className="space-y-4">
+          {businesses.isError && (
+            <ErrorBanner
+              error={businesses.error}
+              context="Loading leads"
+              onRetry={() => void businesses.refetch()}
+            />
+          )}
 
-      {note && (
-        <p
-          className={`rounded border p-3 text-sm ${
-            note.ok
-              ? "border-emerald-500/50 text-emerald-700 dark:text-emerald-400"
-              : "border-destructive text-destructive"
-          }`}
-        >
-          {note.text}
-        </p>
-      )}
+          {note && (
+            <p
+              className={`rounded border p-3 text-sm ${
+                note.ok
+                  ? "border-emerald-500/50 text-emerald-700 dark:text-emerald-400"
+                  : "border-destructive text-destructive"
+              }`}
+            >
+              {note.text}
+            </p>
+          )}
 
-      {businesses.isError ? (
-        <p className="text-sm text-muted-foreground">
-          The lead list could not be loaded — see the error above for the cause and how to fix it.
-        </p>
-      ) : businesses.isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      ) : rows.length === 0 ? (
-        <EmptyState
-          title={
-            businesses.data?.length ? "No businesses match these filters" : "No businesses yet"
-          }
-          why={
-            businesses.data?.length
-              ? "You have saved leads, but the current website/province/industry/search filters exclude all of them. Reset the filters above to see your list."
-              : "Nothing has been discovered yet. Run a discovery search on the Discover page — only real Google Maps results are stored."
-          }
-          action={
-            businesses.data?.length ? (
-              <div className="flex justify-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setWebsite("all");
-                    setProvince("ALL");
-                    setDistrict("ALL");
-                    setIndustry("ALL");
-                    setCategoryPreset("ALL");
-                    setStageFilter("ANY");
-                    setQ("");
-                  }}
-                >
-                  Reset filters
-                </Button>
-              </div>
-            ) : (
-              <div className="flex justify-center">
-                <Button asChild size="sm" variant="outline">
-                  <Link to="/discover">Go to Discover</Link>
-                </Button>
-              </div>
-            )
-          }
-        />
-      ) : (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
-          {rows.map((b) => {
-            const loc = locationOf(b);
-            const ind =
-              (b.industry as IndustryKey | null) ??
-              classifyIndustry(`${b.category ?? ""} ${b.name ?? ""}`);
-            const investigatedFlag = investigated.data?.has(b.id) ?? false;
-            const closedFlag = b.business_status === "CLOSED_PERMANENTLY";
-            const hasBadges = !b.website || investigatedFlag || closedFlag;
-            const { phone, email, extraEmails } = contactChannels(b);
-            const stage = stageOf(b);
-            return (
-              <div
-                key={b.id}
-                className="flex flex-col gap-2 rounded-lg border bg-card p-3 transition-colors hover:bg-muted/40"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <Link
-                    to="/businesses/$id"
-                    params={{ id: b.id }}
-                    className="min-w-0 flex-1 truncate font-medium"
-                  >
-                    {b.name}
-                  </Link>
-                  <span className="shrink-0 text-sm font-semibold text-primary">
-                    {b.score ?? "—"}
-                  </span>
-                </div>
-                <p className="truncate text-xs text-muted-foreground">
-                  {[ind ? industryLabel(ind) : b.category, loc.district ?? loc.province, b.address]
-                    .filter(Boolean)
-                    .join(" · ") || "—"}
-                </p>
-                {(phone || email) && (
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    {phone && <span className="truncate">📞 {phone}</span>}
-                    {email && (
-                      <a
-                        href={`mailto:${email}`}
-                        className="truncate text-primary hover:underline"
-                        title={email}
-                      >
-                        ✉ {email}
-                        {extraEmails.length > 0 ? ` +${extraEmails.length}` : ""}
-                      </a>
-                    )}
+          {businesses.isError ? (
+            <p className="text-sm text-muted-foreground">
+              The lead list could not be loaded — see the error above for the cause and how to fix
+              it.
+            </p>
+          ) : businesses.isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : rows.length === 0 ? (
+            <EmptyState
+              title={
+                businesses.data?.length ? "No businesses match these filters" : "No businesses yet"
+              }
+              why={
+                businesses.data?.length
+                  ? "You have saved leads, but the current website/province/industry/search filters exclude all of them. Reset the filters above to see your list."
+                  : "Nothing has been discovered yet. Run a discovery search on the Discover page — only real Google Maps results are stored."
+              }
+              action={
+                businesses.data?.length ? (
+                  <div className="flex justify-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setWebsite("all");
+                        setProvince("ALL");
+                        setDistrict("ALL");
+                        setIndustry("ALL");
+                        setCategoryPreset("ALL");
+                        setStageFilter("ANY");
+                        setQ("");
+                      }}
+                    >
+                      Reset filters
+                    </Button>
                   </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <Select
-                    value={stage}
-                    disabled={stageBusyId === b.id}
-                    onValueChange={(v) => setStage(b, v as OutreachStage)}
-                  >
-                    <SelectTrigger className={`h-7 w-36 text-xs ${stageClass(stage)}`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {OUTREACH_STAGES.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {stageLabel(s)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {(dbStages[b.id]?.at || b.last_contacted_at) && stage !== "not_contacted" && (
-                    <span className="truncate text-xs text-muted-foreground">
-                      {new Date(dbStages[b.id]?.at || b.last_contacted_at!).toLocaleDateString()}
-                    </span>
-                  )}
-                </div>
-                {hasBadges && (
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {!b.website && b.website_checked_at && (
-                      <Badge variant="outline" className="border-accent/40 text-accent">
-                        no site
-                      </Badge>
-                    )}
-                    {!b.website && !b.website_checked_at && (
-                      <Badge variant="outline" className="text-muted-foreground">
-                        unchecked
-                      </Badge>
-                    )}
-                    {investigatedFlag && (
-                      <Badge variant="outline" className="text-muted-foreground">
-                        investigated
-                      </Badge>
-                    )}
-                    {closedFlag && <Badge variant="destructive">closed</Badge>}
+                ) : (
+                  <div className="flex justify-center">
+                    <Button asChild size="sm" variant="outline">
+                      <Link to="/discover">Go to Discover</Link>
+                    </Button>
                   </div>
-                )}
-                <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setModalBiz(b);
-                      setNote(null);
-                    }}
-                  >
-                    View
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={busyId === b.id}
-                    onClick={() => runInvestigation(b)}
-                  >
-                    {busyId === b.id ? "Investigating…" : "Run investigation"}
-                  </Button>
-                </div>
+                )
+              }
+            />
+          ) : (
+            <>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {visibleLeads.map((b) => {
+                  const loc = locationOf(b);
+                  const ind =
+                    (b.industry as IndustryKey | null) ??
+                    classifyIndustry(`${b.category ?? ""} ${b.name ?? ""}`);
+                  const investigatedFlag = investigated.data?.has(b.id) ?? false;
+                  const closedFlag = b.business_status === "CLOSED_PERMANENTLY";
+                  const hasBadges = !b.website || investigatedFlag || closedFlag;
+                  const { phone, email, extraEmails } = contactChannels(b);
+                  const stage = stageOf(b);
+                  return (
+                    <div
+                      key={b.id}
+                      className="flex flex-col gap-2 rounded-lg border bg-card p-3 transition-colors hover:bg-muted/40"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <Link
+                          to="/businesses/$id"
+                          params={{ id: b.id }}
+                          className="min-w-0 flex-1 truncate font-medium"
+                        >
+                          {b.name}
+                        </Link>
+                        <span className="shrink-0 text-sm font-semibold text-primary">
+                          {b.score ?? "—"}
+                        </span>
+                      </div>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {[
+                          ind ? industryLabel(ind) : b.category,
+                          loc.district ?? loc.province,
+                          b.address,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ") || "—"}
+                      </p>
+                      {(phone || email) && (
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          {phone && <span className="truncate">📞 {phone}</span>}
+                          {email && (
+                            <a
+                              href={`mailto:${email}`}
+                              className="truncate text-primary hover:underline"
+                              title={email}
+                            >
+                              ✉ {email}
+                              {extraEmails.length > 0 ? ` +${extraEmails.length}` : ""}
+                            </a>
+                          )}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={stage}
+                          disabled={stageBusyId === b.id}
+                          onValueChange={(v) => setStage(b, v as OutreachStage)}
+                        >
+                          <SelectTrigger className={`h-7 w-36 text-xs ${stageClass(stage)}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {OUTREACH_STAGES.map((s) => (
+                              <SelectItem key={s} value={s}>
+                                {stageLabel(s)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {(dbStages[b.id]?.at || b.last_contacted_at) && stage !== "not_contacted" && (
+                          <span className="truncate text-xs text-muted-foreground">
+                            {new Date(dbStages[b.id]?.at || b.last_contacted_at!).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                      {hasBadges && (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {!b.website && b.website_checked_at && (
+                            <Badge variant="outline" className="border-accent/40 text-accent">
+                              no site
+                            </Badge>
+                          )}
+                          {!b.website && !b.website_checked_at && (
+                            <Badge variant="outline" className="text-muted-foreground">
+                              unchecked
+                            </Badge>
+                          )}
+                          {investigatedFlag && (
+                            <Badge variant="outline" className="text-muted-foreground">
+                              investigated
+                            </Badge>
+                          )}
+                          {closedFlag && <Badge variant="destructive">closed</Badge>}
+                        </div>
+                      )}
+                      <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setModalBiz(b);
+                            setNote(null);
+                          }}
+                        >
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busyId === b.id}
+                          onClick={() => runInvestigation(b)}
+                        >
+                          {busyId === b.id ? "Investigating…" : "Run investigation"}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+              {visibleLeads.length < rows.length && (
+                <Button size="sm" variant="outline" onClick={() => setLeadLimit((n) => n + 20)}>
+                  Show more leads
+                </Button>
+              )}
+            </>
+          )}
         </div>
-      )}
+      </MobilePane>
 
       <MergeDuplicatesDialog
         open={mergeOpen}

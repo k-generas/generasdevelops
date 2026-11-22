@@ -28,6 +28,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmptyState, ErrorBanner } from "@/components/ErrorBanner";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 import { SocialBusinessMatchPanel } from "@/components/SocialBusinessMatchPanel";
 import { downloadCsv, rowsToCsv } from "@/lib/csv";
 import type { Database } from "@/integrations/supabase/types";
@@ -69,6 +70,12 @@ export const Route = createFileRoute("/_authenticated/social-leads")({
 type LeadRow = Database["public"]["Tables"]["social_leads"]["Row"];
 
 const DEFAULT_HASHTAGS = "kigali, rwanda, kigalibusiness, madeinrwanda";
+
+const TABS = [
+  { key: "leads", label: "Leads" },
+  { key: "filters", label: "Filters" },
+  { key: "stats", label: "Stats" },
+];
 
 function formatNumber(value: number | null): string {
   if (value === null || value === undefined) return "—";
@@ -167,6 +174,7 @@ function SocialLeadsPage() {
   const [limit, setLimit] = useState("20");
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
+  const [tab, setTab] = useState("leads");
 
   const leadsQuery = useQuery({
     queryKey: ["social-leads"],
@@ -421,243 +429,255 @@ function SocialLeadsPage() {
         />
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {[
-          ["Leads", stats.total, "Public profiles saved"],
-          ["High demand", stats.high, "Score 60+"],
-          ["No store signal", stats.noStore, "Best DUKALINKA fit"],
-          ["Active 30d", stats.active, "Posted recently"],
-        ].map(([label, value, hint]) => (
-          <div key={String(label)} className="rounded-lg border bg-card p-4">
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <p className="mt-1 text-2xl font-semibold">{value}</p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p>
-          </div>
-        ))}
-      </div>
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
 
-      <section className="rounded-lg border bg-card p-3">
-        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-6">
-          <label className="relative xl:col-span-2">
-            <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search handle, name, bio, category"
-              className="pl-8"
-              aria-label="Search social leads"
-            />
-          </label>
-          <select
-            value={minScore}
-            onChange={(event) => setMinScore(event.target.value)}
-            className="h-10 rounded-md border bg-background px-3 text-sm"
-            aria-label="Minimum score"
-          >
-            <option value="0">Any score</option>
-            <option value="40">Score 40+</option>
-            <option value="60">Score 60+</option>
-            <option value="75">Score 75+</option>
-          </select>
-          <select
-            value={websiteFilter}
-            onChange={(event) => setWebsiteFilter(event.target.value)}
-            className="h-10 rounded-md border bg-background px-3 text-sm"
-            aria-label="Website status"
-          >
-            <option value="all">Any website</option>
-            <option value="none">No website</option>
-            <option value="dead">Website down</option>
-            <option value="link_hub">Link hub only</option>
-            <option value="whatsapp">WhatsApp link</option>
-            <option value="live">Website live</option>
-          </select>
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-            className="h-10 rounded-md border bg-background px-3 text-sm"
-            aria-label="Lead status"
-          >
-            <option value="all">Any status</option>
-            <option value="new">New</option>
-            <option value="reviewing">Reviewing</option>
-            <option value="qualified">Qualified</option>
-            <option value="promoted">Promoted</option>
-            <option value="dismissed">Dismissed</option>
-          </select>
-          <div className="grid grid-cols-2 gap-2">
-            <select
-              value={districtFilter}
-              onChange={(event) => setDistrictFilter(event.target.value)}
-              className="h-10 min-w-0 rounded-md border bg-background px-2 text-sm"
-              aria-label="District"
-            >
-              <option value="all">Any district</option>
-              {districts.map((district) => (
-                <option key={district} value={district}>
-                  {district}
-                </option>
-              ))}
-            </select>
-            <select
-              value={sort}
-              onChange={(event) => setSort(event.target.value)}
-              className="h-10 min-w-0 rounded-md border bg-background px-2 text-sm"
-              aria-label="Sort"
-            >
-              <option value="score">Best score</option>
-              <option value="recent">Recent post</option>
-              <option value="followers">Most followers</option>
-            </select>
-          </div>
-        </div>
-      </section>
-
-      {leadsQuery.isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading social leads…</p>
-      ) : filtered.length === 0 ? (
-        <EmptyState
-          title={rows.length === 0 ? "No social leads yet" : "No leads match these filters"}
-          why={
-            rows.length === 0
-              ? connection?.configured
-                ? "Run Discover Instagram with local hashtags, or import profile URLs you already have."
-                : "Import profile URLs now, then connect the Meta API for live followers, posts and website checks."
-              : "Raise the score range or clear a filter to see more profiles."
-          }
-          action={
-            <div className="flex justify-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
-                <Upload /> Import
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => setDiscoverOpen(true)}
-                disabled={!connection?.configured}
-              >
-                <Sparkles /> Discover
-              </Button>
+      <MobilePane name="stats" value={tab}>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[
+            ["Leads", stats.total, "Public profiles saved"],
+            ["High demand", stats.high, "Score 60+"],
+            ["No store signal", stats.noStore, "Best DUKALINKA fit"],
+            ["Active 30d", stats.active, "Posted recently"],
+          ].map(([label, value, hint]) => (
+            <div key={String(label)} className="rounded-lg border bg-card p-4">
+              <p className="text-xs text-muted-foreground">{label}</p>
+              <p className="mt-1 text-2xl font-semibold">{value}</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p>
             </div>
-          }
-        />
-      ) : (
-        <section className="overflow-hidden rounded-lg border bg-card">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left text-sm">
-              <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2 font-medium">Profile</th>
-                  <th className="px-3 py-2 font-medium">Score</th>
-                  <th className="px-3 py-2 font-medium">Audience</th>
-                  <th className="px-3 py-2 font-medium">Activity</th>
-                  <th className="px-3 py-2 font-medium">Store gap</th>
-                  <th className="px-3 py-2 font-medium">Status</th>
-                  <th className="px-3 py-2 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((row) => {
-                  const days = daysSince(row.last_post_at);
-                  return (
-                    <tr
-                      key={row.id}
-                      className="cursor-pointer border-b align-top last:border-0 hover:bg-muted/40"
-                      onClick={() => setDetail(row)}
-                    >
-                      <td className="px-3 py-3">
-                        <div className="flex items-start gap-2">
-                          <span className="mt-0.5 text-muted-foreground">
-                            <PlatformIcon platform={row.platform} />
-                          </span>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 font-medium">
-                              <span className="truncate">{row.display_name || row.handle}</span>
-                              {row.category ? (
-                                <span className="hidden text-xs font-normal text-muted-foreground lg:inline">
-                                  · {row.category}
-                                </span>
-                              ) : null}
-                            </div>
-                            <a
-                              href={row.profile_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(event) => event.stopPropagation()}
-                              className="inline-flex items-center gap-1 font-mono text-xs text-primary underline"
-                            >
-                              @{row.handle}
-                              <ArrowUpRight className="h-3 w-3" />
-                            </a>
-                            <p className="mt-0.5 text-xs text-muted-foreground">
-                              {row.district ?? "Location unknown"}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-3">
-                        <span
-                          className={`inline-flex min-w-10 items-center justify-center rounded-md border px-2 py-1 text-xs font-semibold ${scoreClass(row.lead_score)}`}
-                        >
-                          {row.lead_score}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3 text-xs">
-                        <p>{formatNumber(row.followers_count)} followers</p>
-                        <p className="text-muted-foreground">
-                          {formatNumber(row.media_count)} posts
-                        </p>
-                        {row.engagement_rate !== null ? (
-                          <p className="text-muted-foreground">{row.engagement_rate}% eng.</p>
-                        ) : null}
-                      </td>
-                      <td className="px-3 py-3 text-xs">
-                        <p>{formatDate(row.last_post_at)}</p>
-                        <p
-                          className={
-                            days !== null && days <= 14
-                              ? "text-emerald-600 dark:text-emerald-400"
-                              : "text-muted-foreground"
-                          }
-                        >
-                          {days === null ? "Not checked" : days <= 0 ? "Today" : `${days}d ago`}
-                        </p>
-                      </td>
-                      <td className="px-3 py-3 text-xs">
-                        <p>
-                          {WEBSITE_STATUS_LABELS[row.website_status as SocialLeadWebsiteStatus]}
-                        </p>
-                        <p className="text-muted-foreground">
-                          {STORE_STATUS_LABELS[row.store_status as SocialLeadStoreStatus]}
-                        </p>
-                      </td>
-                      <td className="px-3 py-3">
-                        <Badge
-                          variant={SOCIAL_LEAD_STATUS_VARIANTS[row.status as SocialLeadStatus]}
-                        >
-                          {SOCIAL_LEAD_STATUS_LABELS[row.status as SocialLeadStatus] ?? row.status}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-3 text-right">
-                        <Button size="sm" variant="ghost">
-                          View
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          ))}
+        </div>
+      </MobilePane>
+
+      <MobilePane name="filters" value={tab}>
+        <section className="rounded-lg border bg-card p-3">
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-6">
+            <label className="relative xl:col-span-2">
+              <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search handle, name, bio, category"
+                className="pl-8"
+                aria-label="Search social leads"
+              />
+            </label>
+            <select
+              value={minScore}
+              onChange={(event) => setMinScore(event.target.value)}
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+              aria-label="Minimum score"
+            >
+              <option value="0">Any score</option>
+              <option value="40">Score 40+</option>
+              <option value="60">Score 60+</option>
+              <option value="75">Score 75+</option>
+            </select>
+            <select
+              value={websiteFilter}
+              onChange={(event) => setWebsiteFilter(event.target.value)}
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+              aria-label="Website status"
+            >
+              <option value="all">Any website</option>
+              <option value="none">No website</option>
+              <option value="dead">Website down</option>
+              <option value="link_hub">Link hub only</option>
+              <option value="whatsapp">WhatsApp link</option>
+              <option value="live">Website live</option>
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+              aria-label="Lead status"
+            >
+              <option value="all">Any status</option>
+              <option value="new">New</option>
+              <option value="reviewing">Reviewing</option>
+              <option value="qualified">Qualified</option>
+              <option value="promoted">Promoted</option>
+              <option value="dismissed">Dismissed</option>
+            </select>
+            <div className="grid grid-cols-2 gap-2">
+              <select
+                value={districtFilter}
+                onChange={(event) => setDistrictFilter(event.target.value)}
+                className="h-10 min-w-0 rounded-md border bg-background px-2 text-sm"
+                aria-label="District"
+              >
+                <option value="all">Any district</option>
+                {districts.map((district) => (
+                  <option key={district} value={district}>
+                    {district}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={sort}
+                onChange={(event) => setSort(event.target.value)}
+                className="h-10 min-w-0 rounded-md border bg-background px-2 text-sm"
+                aria-label="Sort"
+              >
+                <option value="score">Best score</option>
+                <option value="recent">Recent post</option>
+                <option value="followers">Most followers</option>
+              </select>
+            </div>
           </div>
         </section>
-      )}
+      </MobilePane>
 
-      {leadsQuery.data?.lastRun ? (
-        <p className="text-xs text-muted-foreground">
-          Last discovery: {leadsQuery.data.lastRun.query} · {leadsQuery.data.lastRun.status} ·{" "}
-          {leadsQuery.data.lastRun.results_count} saved ·{" "}
-          {formatDate(leadsQuery.data.lastRun.created_at)}
-        </p>
-      ) : null}
+      <MobilePane name="leads" value={tab}>
+        <div className="space-y-5">
+          {leadsQuery.isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading social leads…</p>
+          ) : filtered.length === 0 ? (
+            <EmptyState
+              title={rows.length === 0 ? "No social leads yet" : "No leads match these filters"}
+              why={
+                rows.length === 0
+                  ? connection?.configured
+                    ? "Run Discover Instagram with local hashtags, or import profile URLs you already have."
+                    : "Import profile URLs now, then connect the Meta API for live followers, posts and website checks."
+                  : "Raise the score range or clear a filter to see more profiles."
+              }
+              action={
+                <div className="flex justify-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+                    <Upload /> Import
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setDiscoverOpen(true)}
+                    disabled={!connection?.configured}
+                  >
+                    <Sparkles /> Discover
+                  </Button>
+                </div>
+              }
+            />
+          ) : (
+            <section className="overflow-hidden rounded-lg border bg-card">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[900px] text-left text-sm">
+                  <thead className="border-b bg-muted/40 text-xs text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2 font-medium">Profile</th>
+                      <th className="px-3 py-2 font-medium">Score</th>
+                      <th className="px-3 py-2 font-medium">Audience</th>
+                      <th className="px-3 py-2 font-medium">Activity</th>
+                      <th className="px-3 py-2 font-medium">Store gap</th>
+                      <th className="px-3 py-2 font-medium">Status</th>
+                      <th className="px-3 py-2 font-medium"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((row) => {
+                      const days = daysSince(row.last_post_at);
+                      return (
+                        <tr
+                          key={row.id}
+                          className="cursor-pointer border-b align-top last:border-0 hover:bg-muted/40"
+                          onClick={() => setDetail(row)}
+                        >
+                          <td className="px-3 py-3">
+                            <div className="flex items-start gap-2">
+                              <span className="mt-0.5 text-muted-foreground">
+                                <PlatformIcon platform={row.platform} />
+                              </span>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 font-medium">
+                                  <span className="truncate">
+                                    {row.display_name || row.handle}
+                                  </span>
+                                  {row.category ? (
+                                    <span className="hidden text-xs font-normal text-muted-foreground lg:inline">
+                                      · {row.category}
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <a
+                                  href={row.profile_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={(event) => event.stopPropagation()}
+                                  className="inline-flex items-center gap-1 font-mono text-xs text-primary underline"
+                                >
+                                  @{row.handle}
+                                  <ArrowUpRight className="h-3 w-3" />
+                                </a>
+                                <p className="mt-0.5 text-xs text-muted-foreground">
+                                  {row.district ?? "Location unknown"}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-3 py-3">
+                            <span
+                              className={`inline-flex min-w-10 items-center justify-center rounded-md border px-2 py-1 text-xs font-semibold ${scoreClass(row.lead_score)}`}
+                            >
+                              {row.lead_score}
+                            </span>
+                          </td>
+                          <td className="px-3 py-3 text-xs">
+                            <p>{formatNumber(row.followers_count)} followers</p>
+                            <p className="text-muted-foreground">
+                              {formatNumber(row.media_count)} posts
+                            </p>
+                            {row.engagement_rate !== null ? (
+                              <p className="text-muted-foreground">{row.engagement_rate}% eng.</p>
+                            ) : null}
+                          </td>
+                          <td className="px-3 py-3 text-xs">
+                            <p>{formatDate(row.last_post_at)}</p>
+                            <p
+                              className={
+                                days !== null && days <= 14
+                                  ? "text-emerald-600 dark:text-emerald-400"
+                                  : "text-muted-foreground"
+                              }
+                            >
+                              {days === null ? "Not checked" : days <= 0 ? "Today" : `${days}d ago`}
+                            </p>
+                          </td>
+                          <td className="px-3 py-3 text-xs">
+                            <p>
+                              {WEBSITE_STATUS_LABELS[row.website_status as SocialLeadWebsiteStatus]}
+                            </p>
+                            <p className="text-muted-foreground">
+                              {STORE_STATUS_LABELS[row.store_status as SocialLeadStoreStatus]}
+                            </p>
+                          </td>
+                          <td className="px-3 py-3">
+                            <Badge
+                              variant={SOCIAL_LEAD_STATUS_VARIANTS[row.status as SocialLeadStatus]}
+                            >
+                              {SOCIAL_LEAD_STATUS_LABELS[row.status as SocialLeadStatus] ?? row.status}
+                            </Badge>
+                          </td>
+                          <td className="px-3 py-3 text-right">
+                            <Button size="sm" variant="ghost">
+                              View
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
+          {leadsQuery.data?.lastRun ? (
+            <p className="text-xs text-muted-foreground">
+              Last discovery: {leadsQuery.data.lastRun.query} · {leadsQuery.data.lastRun.status} ·{" "}
+              {leadsQuery.data.lastRun.results_count} saved ·{" "}
+              {formatDate(leadsQuery.data.lastRun.created_at)}
+            </p>
+          ) : null}
+        </div>
+      </MobilePane>
 
       <Dialog open={Boolean(detail)} onOpenChange={(open) => !open && setDetail(null)}>
         <DialogContent className="max-h-[90dvh] max-w-3xl overflow-y-auto">

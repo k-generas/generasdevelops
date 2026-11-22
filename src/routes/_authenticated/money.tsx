@@ -37,6 +37,7 @@ import { RecordPaymentDialog, type PaymentInvoiceOption } from "@/components/Rec
 import { downloadCsv, rowsToCsv } from "@/lib/csv";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 import { describeError } from "@/lib/errors";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 
 export const Route = createFileRoute("/_authenticated/money")({
   head: () => ({
@@ -50,6 +51,12 @@ export const Route = createFileRoute("/_authenticated/money")({
   }),
   component: MoneyPage,
 });
+
+const TABS = [
+  { key: "summary", label: "Summary" },
+  { key: "ledger", label: "Ledger" },
+  { key: "costs", label: "Costs" },
+];
 
 type LedgerRow = {
   kind: "payment" | "expense";
@@ -79,6 +86,7 @@ function Kpi({ label, value, hint }: { label: string; value: string | number; hi
 }
 
 function MoneyPage() {
+  const [tab, setTab] = useState("summary");
   const qc = useQueryClient();
   const paymentsQ = usePayments();
   const expensesQ = useExpenses();
@@ -314,6 +322,8 @@ function MoneyPage() {
         </div>
       </header>
 
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
+
       {msg && (
         <p className="rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">{msg}</p>
       )}
@@ -340,6 +350,7 @@ function MoneyPage() {
         </div>
       )}
 
+      <MobilePane name="summary" value={tab}>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi
           label={`Collected - ${activeCurrency} this month`}
@@ -362,7 +373,9 @@ function MoneyPage() {
           hint={`${monthCash.paymentCount} payment${monthCash.paymentCount === 1 ? "" : "s"} this month`}
         />
       </div>
+      </MobilePane>
 
+      <MobilePane name="ledger" value={tab}>
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader className="flex-row items-center justify-between gap-2 pb-2">
@@ -602,7 +615,9 @@ function MoneyPage() {
           <option key={code} value={code} />
         ))}
       </datalist>
+      </MobilePane>
 
+      <MobilePane name="costs" value={tab}>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
@@ -686,6 +701,7 @@ function MoneyPage() {
           </CardContent>
         </Card>
       </div>
+      </MobilePane>
 
       <RecordPaymentDialog
         open={paymentOpen}

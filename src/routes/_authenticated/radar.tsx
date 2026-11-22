@@ -20,6 +20,7 @@ import { useOffers } from "@/lib/offers.hooks";
 import { ALL_DISTRICTS, provinceOfDistrict, type IndustryKey } from "@/lib/rwanda";
 import { coverageReport } from "@/lib/source-registry";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 import type { IntelFindings } from "@/lib/business-intel";
 import {
   RADAR_CATEGORIES,
@@ -60,6 +61,12 @@ export const Route = createFileRoute("/_authenticated/radar")({
   component: RadarPage,
 });
 
+const TABS = [
+  { key: "leads", label: "Leads" },
+  { key: "scan", label: "Scan" },
+  { key: "view", label: "View" },
+];
+
 const SETTINGS_KEY = "gare.radar.settings";
 
 function loadSettings(): RadarSettings {
@@ -92,6 +99,7 @@ function RadarPage() {
   const [autoNote, setAutoNote] = useState<string | null>(null);
   const [view, setView] = useState<"clusters" | "map">("clusters");
   const [gapFilter, setGapFilter] = useState<string | null>(null);
+  const [tab, setTab] = useState("leads");
 
   useEffect(() => {
     try {
@@ -419,136 +427,140 @@ function RadarPage() {
         </p>
       </header>
 
-      <section className="space-y-4 rounded-lg border bg-card p-4">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Search area</span>
-            <select
-              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
-              value={settings.district ?? ""}
-              onChange={(e) =>
-                setSettings((s) => ({
-                  ...s,
-                  district: e.target.value || null,
-                  centerLat: null,
-                  centerLng: null,
-                }))
-              }
-            >
-              <option value="">All districts</option>
-              {ALL_DISTRICTS.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </label>
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
 
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Industry focus</span>
-            <select
-              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
-              value={settings.category}
-              onChange={(e) =>
-                setSettings((s) => ({ ...s, category: e.target.value as RadarCategoryKey }))
-              }
-            >
-              {RADAR_CATEGORIES.map((c) => (
-                <option key={c.key} value={c.key}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </label>
+      <MobilePane name="scan" value={tab}>
+        <section className="space-y-4 rounded-lg border bg-card p-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <label className="space-y-1 text-sm">
+              <span className="font-medium">Search area</span>
+              <select
+                className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                value={settings.district ?? ""}
+                onChange={(e) =>
+                  setSettings((s) => ({
+                    ...s,
+                    district: e.target.value || null,
+                    centerLat: null,
+                    centerLng: null,
+                  }))
+                }
+              >
+                <option value="">All districts</option>
+                {ALL_DISTRICTS.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Service fit</span>
-            <select
-              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
-              value={settings.service}
-              onChange={(e) =>
-                setSettings((s) => ({ ...s, service: e.target.value as RadarServiceKey }))
-              }
-            >
-              {RADAR_SERVICES.map((s) => (
-                <option key={s.key} value={s.key}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </label>
+            <label className="space-y-1 text-sm">
+              <span className="font-medium">Industry focus</span>
+              <select
+                className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                value={settings.category}
+                onChange={(e) =>
+                  setSettings((s) => ({ ...s, category: e.target.value as RadarCategoryKey }))
+                }
+              >
+                {RADAR_CATEGORIES.map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <label className="space-y-1 text-sm">
-            <span className="font-medium">Monitoring</span>
-            <select
-              className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
-              value={settings.monitoring}
-              disabled={autoBusy}
-              onChange={(e) => void changeMonitoring(e.target.value as RadarMonitoringKey)}
-            >
-              {RADAR_MONITORING.map((m) => (
-                <option key={m.key} value={m.key}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          </label>
+            <label className="space-y-1 text-sm">
+              <span className="font-medium">Service fit</span>
+              <select
+                className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                value={settings.service}
+                onChange={(e) =>
+                  setSettings((s) => ({ ...s, service: e.target.value as RadarServiceKey }))
+                }
+              >
+                {RADAR_SERVICES.map((s) => (
+                  <option key={s.key} value={s.key}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <div className="space-y-1 text-sm">
-            <span className="font-medium">Radius</span>
-            <div className="flex flex-wrap gap-1">
-              {RADAR_RADIUS_KM.map((r) => (
-                <Button
-                  key={r}
-                  type="button"
-                  size="sm"
-                  variant={settings.radiusKm === r ? "default" : "outline"}
-                  onClick={() => setSettings((s) => ({ ...s, radiusKm: r }))}
-                >
-                  {r} km
-                </Button>
-              ))}
+            <label className="space-y-1 text-sm">
+              <span className="font-medium">Monitoring</span>
+              <select
+                className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
+                value={settings.monitoring}
+                disabled={autoBusy}
+                onChange={(e) => void changeMonitoring(e.target.value as RadarMonitoringKey)}
+              >
+                {RADAR_MONITORING.map((m) => (
+                  <option key={m.key} value={m.key}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="space-y-1 text-sm">
+              <span className="font-medium">Radius</span>
+              <div className="flex flex-wrap gap-1">
+                {RADAR_RADIUS_KM.map((r) => (
+                  <Button
+                    key={r}
+                    type="button"
+                    size="sm"
+                    variant={settings.radiusKm === r ? "default" : "outline"}
+                    onClick={() => setSettings((s) => ({ ...s, radiusKm: r }))}
+                  >
+                    {r} km
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="space-y-2 rounded-md border bg-background/40 p-3">
-          <p className="text-sm font-medium">Automatic daily scan</p>
-          <p className="text-xs text-muted-foreground">
-            Set <span className="font-medium">Monitoring</span> to “Daily scan” above to save this
-            target (area + industry focus). Once the daily job is scheduled, it is scanned every day
-            and what it found appears in Updates. You can also run it right now.
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={autoBusy || !settings.district}
-              onClick={runDailyScanNow}
-            >
-              {autoBusy ? "Working…" : "Run daily scan now"}
-            </Button>
-            <Button type="button" size="sm" variant="ghost" asChild>
-              <Link to="/updates">View updates</Link>
-            </Button>
+          <div className="space-y-2 rounded-md border bg-background/40 p-3">
+            <p className="text-sm font-medium">Automatic daily scan</p>
+            <p className="text-xs text-muted-foreground">
+              Set <span className="font-medium">Monitoring</span> to “Daily scan” above to save this
+              target (area + industry focus). Once the daily job is scheduled, it is scanned every
+              day and what it found appears in Updates. You can also run it right now.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={autoBusy || !settings.district}
+                onClick={runDailyScanNow}
+              >
+                {autoBusy ? "Working…" : "Run daily scan now"}
+              </Button>
+              <Button type="button" size="sm" variant="ghost" asChild>
+                <Link to="/updates">View updates</Link>
+              </Button>
+            </div>
+            {autoNote && <p className="text-xs text-muted-foreground">{autoNote}</p>}
           </div>
-          {autoNote && <p className="text-xs text-muted-foreground">{autoNote}</p>}
-        </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" disabled={scanBusy} onClick={runScan}>
-            {scanBusy ? "Scanning…" : "Run radar scan"}
-          </Button>
-          <span className="text-xs text-muted-foreground">
-            {settings.district
-              ? `One district · ${categoryLabel(settings.category)} · up to 10 paid Google queries`
-              : "Pick a district to enable a bounded scan."}
-          </span>
-        </div>
-        {scanResult && <p className="text-xs text-muted-foreground">{scanResult}</p>}
-        <p className="text-xs text-muted-foreground">{monitoring.note}</p>
-      </section>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="button" disabled={scanBusy} onClick={runScan}>
+              {scanBusy ? "Scanning…" : "Run radar scan"}
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {settings.district
+                ? `One district · ${categoryLabel(settings.category)} · up to 10 paid Google queries`
+                : "Pick a district to enable a bounded scan."}
+            </span>
+          </div>
+          {scanResult && <p className="text-xs text-muted-foreground">{scanResult}</p>}
+          <p className="text-xs text-muted-foreground">{monitoring.note}</p>
+        </section>
+      </MobilePane>
 
       {(businesses.isError || investigations.isError || pipeline.isError) && (
         <ErrorBanner
@@ -632,51 +644,55 @@ function RadarPage() {
         )}
       </div>
 
-      {view === "clusters" ? (
-        <OpportunityClusters clusters={clusters} onSelect={(k) => setGapFilter(k)} />
-      ) : (
-        <OpportunityMap points={mapPoints} center={center} radiusKm={settings.radiusKm} />
-      )}
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">
-          Opportunities <span className="text-muted-foreground">({shown.length})</span>
-        </h2>
-
-        <p className="text-xs text-muted-foreground">
-          Service filter: {serviceLabel(settings.service)} · {monitoring.label} — {monitoring.note}
-        </p>
-
-        {businesses.isError ? (
-          <ErrorBanner
-            error={businesses.error}
-            context="Opportunities"
-            onRetry={() => void businesses.refetch()}
-          />
-        ) : businesses.isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading businesses…</p>
-        ) : shown.length === 0 ? (
-          <EmptyState
-            title="No opportunities match these filters"
-            why="A lead only appears when there is an observable gap in the evidence we hold — never just because it is nearby. Try a wider radius, a different industry focus, or run a radar scan for this district to gather evidence first."
-            action={
-              <Button size="sm" variant="outline" disabled={scanBusy} onClick={runScan}>
-                {scanBusy ? "Scanning…" : "Run radar scan now"}
-              </Button>
-            }
-          />
+      <MobilePane name="view" value={tab}>
+        {view === "clusters" ? (
+          <OpportunityClusters clusters={clusters} onSelect={(k) => setGapFilter(k)} />
         ) : (
-          shown.map((o) => (
-            <OpportunityCard
-              key={o.id}
-              o={o}
-              busy={busyId === o.id}
-              onInvestigate={runInvestigation}
-              onDraft={draftProposal}
-            />
-          ))
+          <OpportunityMap points={mapPoints} center={center} radiusKm={settings.radiusKm} />
         )}
-      </section>
+      </MobilePane>
+
+      <MobilePane name="leads" value={tab}>
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">
+            Opportunities <span className="text-muted-foreground">({shown.length})</span>
+          </h2>
+
+          <p className="text-xs text-muted-foreground">
+            Service filter: {serviceLabel(settings.service)} · {monitoring.label} — {monitoring.note}
+          </p>
+
+          {businesses.isError ? (
+            <ErrorBanner
+              error={businesses.error}
+              context="Opportunities"
+              onRetry={() => void businesses.refetch()}
+            />
+          ) : businesses.isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading businesses…</p>
+          ) : shown.length === 0 ? (
+            <EmptyState
+              title="No opportunities match these filters"
+              why="A lead only appears when there is an observable gap in the evidence we hold — never just because it is nearby. Try a wider radius, a different industry focus, or run a radar scan for this district to gather evidence first."
+              action={
+                <Button size="sm" variant="outline" disabled={scanBusy} onClick={runScan}>
+                  {scanBusy ? "Scanning…" : "Run radar scan now"}
+                </Button>
+              }
+            />
+          ) : (
+            shown.map((o) => (
+              <OpportunityCard
+                key={o.id}
+                o={o}
+                busy={busyId === o.id}
+                onInvestigate={runInvestigation}
+                onDraft={draftProposal}
+              />
+            ))
+          )}
+        </section>
+      </MobilePane>
     </div>
   );
 }

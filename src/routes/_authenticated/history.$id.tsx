@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 
 export const Route = createFileRoute("/_authenticated/history/$id")({
@@ -25,6 +27,7 @@ type ResultRow = {
 
 function RunPage() {
   const { id } = Route.useParams();
+  const [showAll, setShowAll] = useState(false);
   const run = useQuery({
     queryKey: ["run", id],
     queryFn: async () => {
@@ -103,12 +106,14 @@ function RunPage() {
             />
           </div>
         )}
-        {rows.data?.map((b) => (
+        {rows.data?.map((b, i) => (
           <Link
             key={b.id}
             to="/businesses/$id"
             params={{ id: b.id }}
-            className="flex items-center gap-3 px-4 py-3 hover:bg-muted"
+            className={`flex items-center gap-3 px-4 py-3 hover:bg-muted ${
+              i >= 20 && !showAll ? "hidden xl:flex" : ""
+            }`}
           >
             <span className="min-w-0 flex-1">{b.name}</span>
             {b.was_new && <span className="font-mono text-xs text-accent">new</span>}
@@ -123,6 +128,16 @@ function RunPage() {
           />
         )}
       </div>
+      {rows.data && rows.data.length > 20 && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="xl:hidden"
+          onClick={() => setShowAll(!showAll)}
+        >
+          {showAll ? "Show less" : "Show more"}
+        </Button>
+      )}
     </div>
   );
 }

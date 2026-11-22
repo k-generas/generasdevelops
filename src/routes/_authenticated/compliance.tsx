@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { EmptyState, ErrorBanner } from "@/components/ErrorBanner";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 import { describeError } from "@/lib/errors";
 import {
   COMPLIANCE_POLICIES,
@@ -49,6 +50,13 @@ export const Route = createFileRoute("/_authenticated/compliance")({
 
 const PAGE_SIZE = 25;
 
+const TABS = [
+  { key: "check", label: "Check" },
+  { key: "ledger", label: "Ledger" },
+  { key: "rules", label: "Rules" },
+  { key: "stats", label: "Stats" },
+];
+
 type SuppressionDraft = {
   id?: string;
   scope: SuppressionScope;
@@ -74,6 +82,7 @@ function emptySuppression(): SuppressionDraft {
 
 function CompliancePage() {
   const qc = useQueryClient();
+  const [tab, setTab] = useState("check");
   const listFn = useServerFn(getSuppressionEntries);
   const summaryFn = useServerFn(getComplianceSummary);
   const saveFn = useServerFn(saveSuppressionEntry);
@@ -249,6 +258,8 @@ function CompliancePage() {
         </p>
       </header>
 
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
+
       {message && (
         <p
           className={`rounded-md border px-3 py-2 text-sm ${
@@ -278,13 +289,16 @@ function CompliancePage() {
         />
       )}
 
+      <MobilePane name="stats" value={tab}>
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Suppression entries" value={summary.data?.total ?? 0} />
         <Stat label="Active" value={summary.data?.active ?? 0} />
         <Stat label="Expired" value={summary.data?.expired ?? 0} />
         <Stat label="Ledger status" value={summary.data?.applied === false ? "Setup" : "Ready"} />
       </section>
+      </MobilePane>
 
+      <MobilePane name="check" value={tab}>
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-3 rounded-lg border bg-card p-4">
           <div className="flex items-center justify-between">
@@ -473,7 +487,9 @@ function CompliancePage() {
           </Button>
         </div>
       </section>
+      </MobilePane>
 
+      <MobilePane name="ledger" value={tab}>
       <section className="rounded-lg border bg-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -595,7 +611,9 @@ function CompliancePage() {
           </div>
         )}
       </section>
+      </MobilePane>
 
+      <MobilePane name="rules" value={tab}>
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="space-y-3 rounded-lg border bg-card p-4">
           <h2 className="text-lg font-semibold">Business do-not-contact</h2>
@@ -675,6 +693,7 @@ function CompliancePage() {
           </div>
         </div>
       </section>
+      </MobilePane>
     </div>
   );
 }

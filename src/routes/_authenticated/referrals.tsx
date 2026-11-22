@@ -26,6 +26,7 @@ import {
 } from "@/lib/referrals";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 import { describeError } from "@/lib/errors";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 
 export const Route = createFileRoute("/_authenticated/referrals")({
   head: () => ({
@@ -39,6 +40,12 @@ export const Route = createFileRoute("/_authenticated/referrals")({
   }),
   component: ReferralsPage,
 });
+
+const TABS = [
+  { key: "stats", label: "Stats" },
+  { key: "partners", label: "Partners" },
+  { key: "referrals", label: "Referrals" },
+];
 
 type Draft = {
   id?: string | undefined;
@@ -86,6 +93,7 @@ function draftFrom(r: Referral): Draft {
 }
 
 function ReferralsPage() {
+  const [tab, setTab] = useState("stats");
   const qc = useQueryClient();
   const loadRefs = useServerFn(getReferrals);
   const loadCandidates = useServerFn(getPartnershipCandidates);
@@ -141,6 +149,8 @@ function ReferralsPage() {
         <p className="text-sm text-muted-foreground">{REFERRAL_DISCLAIMER}</p>
       </header>
 
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
+
       {message && (
         <p className="rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
           {message}
@@ -158,6 +168,7 @@ function ReferralsPage() {
         />
       )}
 
+      <MobilePane name="stats" value={tab}>
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Referrals recorded" value={String(summary.total)} />
         <Stat label="Accepted" value={String(summary.byStatus.accepted)} />
@@ -167,7 +178,9 @@ function ReferralsPage() {
           value={`${summary.rewardsOwed.toFixed(0)} ${summary.currency}`}
         />
       </section>
+      </MobilePane>
 
+      <MobilePane name="partners" value={tab}>
       <section className="space-y-3">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold">Partnership candidates</h2>
@@ -225,7 +238,9 @@ function ReferralsPage() {
           </div>
         )}
       </section>
+      </MobilePane>
 
+      <MobilePane name="referrals" value={tab}>
       <section className="space-y-3">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold">Referral ledger</h2>
@@ -312,6 +327,7 @@ function ReferralsPage() {
           </div>
         )}
       </section>
+      </MobilePane>
     </div>
   );
 }

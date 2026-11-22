@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 import { describeError } from "@/lib/errors";
 import {
   CAMPAIGN_AUDIENCE_KINDS,
@@ -73,6 +74,14 @@ export const Route = createFileRoute("/_authenticated/campaigns")({
 });
 
 const PAGE_SIZE = 25;
+
+const TABS = [
+  { key: "list", label: "List" },
+  { key: "setup", label: "Setup" },
+  { key: "steps", label: "Steps" },
+  { key: "queue", label: "Queue" },
+  { key: "guide", label: "Guide" },
+];
 
 type CampaignDraft = {
   id?: string;
@@ -179,6 +188,7 @@ function statusVariant(
 
 function CampaignsPage() {
   const qc = useQueryClient();
+  const [tab, setTab] = useState("list");
   const listFn = useServerFn(getCampaigns);
   const detailFn = useServerFn(getCampaignDetail);
   const queueFn = useServerFn(getCampaignQueue);
@@ -392,6 +402,7 @@ function CampaignsPage() {
   });
 
   const startNew = () => {
+    setTab("setup");
     setShowNew(true);
     setSelectedId(null);
     setDraft(emptyCampaign());
@@ -400,6 +411,7 @@ function CampaignsPage() {
   };
 
   const selectCampaign = (id: string) => {
+    setTab("setup");
     setShowNew(false);
     setSelectedId(id);
     setMessage(null);
@@ -453,6 +465,8 @@ function CampaignsPage() {
         </Button>
       </header>
 
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
+
       {message && (
         <p
           className={
@@ -483,7 +497,8 @@ function CampaignsPage() {
         />
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
+      <div className="grid gap-4 xl:grid-cols-[280px_1fr]">
+        <MobilePane name="list" value={tab}>
         <aside className="space-y-2">
           {campaigns.isLoading ? (
             <p className="text-sm text-muted-foreground">Loading campaigns...</p>
@@ -516,8 +531,10 @@ function CampaignsPage() {
             ))
           )}
         </aside>
+        </MobilePane>
 
         <section className="space-y-6">
+        <MobilePane name="setup" value={tab}>
           <div className="space-y-4 rounded-lg border bg-card p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -614,7 +631,9 @@ function CampaignsPage() {
               </div>
             </div>
           </div>
+        </MobilePane>
 
+        <MobilePane name="steps" value={tab}>
           <div className="space-y-4 rounded-lg border bg-card p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -780,7 +799,9 @@ function CampaignsPage() {
               </span>
             </div>
           </div>
+        </MobilePane>
 
+        <MobilePane name="queue" value={tab}>
           {draft.id && (
             <div className="space-y-4 rounded-lg border bg-card p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1034,7 +1055,9 @@ function CampaignsPage() {
               )}
             </div>
           )}
+        </MobilePane>
 
+        <MobilePane name="guide" value={tab}>
           <div className="rounded-lg border bg-card p-4 text-sm">
             <h2 className="flex items-center gap-2 font-semibold">
               <ShieldAlert className="h-4 w-4" /> Before you approve
@@ -1052,6 +1075,7 @@ function CampaignsPage() {
               </li>
             </ul>
           </div>
+        </MobilePane>
         </section>
       </div>
 

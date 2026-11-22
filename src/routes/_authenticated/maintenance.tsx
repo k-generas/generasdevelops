@@ -70,11 +70,13 @@ function RecordCard({
   busy,
   onMove,
   onSave,
+  hidden,
 }: {
   record: MaintenanceRecord;
   busy: boolean;
   onMove: (record: MaintenanceRecord, status: MaintenanceStatus, note?: string) => void;
   onSave: (record: MaintenanceRecord, cadence: string | null, nextDueAt: string | null) => void;
+  hidden: boolean;
 }) {
   const [note, setNote] = useState(record.completion_note ?? "");
   const [cadence, setCadence] = useState(record.cadence ?? "");
@@ -94,7 +96,7 @@ function RecordCard({
   }
 
   return (
-    <article className="rounded-lg border bg-card p-4">
+    <article className={`rounded-lg border bg-card p-4 ${hidden ? "hidden xl:block" : ""}`}>
       <div className="flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -202,6 +204,7 @@ function MaintenancePage() {
   const updateDetails = useServerFn(updateMaintenanceDetailsFn);
   const [filter, setFilter] = useState<Filter>("active");
   const [busy, setBusy] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const records = useQuery({
     queryKey: ["maintenance-records"],
@@ -297,16 +300,27 @@ function MaintenancePage() {
         />
       ) : (
         <div className="space-y-3">
-          {rows.map((record) => (
+          {rows.map((record, i) => (
             <RecordCard
               key={record.id}
               record={record}
               busy={busy === record.id}
               onMove={(row, status, note) => void move(row, status, note)}
               onSave={(row, cadence, nextDueAt) => void saveSchedule(row, cadence, nextDueAt)}
+              hidden={i >= 20 && !showAll}
             />
           ))}
         </div>
+      )}
+      {rows.length > 20 && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="xl:hidden"
+          onClick={() => setShowAll(!showAll)}
+        >
+          {showAll ? "Show less" : "Show more"}
+        </Button>
       )}
 
       {records.data && records.data.length > 0 && (

@@ -20,6 +20,7 @@ import {
   type OfferKit,
 } from "@/lib/offer-kit";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 import { describeError } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/offers")({
@@ -35,6 +36,12 @@ export const Route = createFileRoute("/_authenticated/offers")({
   component: OffersPage,
 });
 
+const TABS = [
+  { key: "preview", label: "Preview" },
+  { key: "edit", label: "Edit" },
+  { key: "status", label: "Status" },
+];
+
 function parseList(v: string): string[] {
   return v
     .split(/[\n,]/)
@@ -44,6 +51,7 @@ function parseList(v: string): string[] {
 
 function OffersPage() {
   const qc = useQueryClient();
+  const [tab, setTab] = useState("preview");
   const offersQ = useOffers();
   const loadKits = useServerFn(getOfferKits);
   const loadLeaks = useServerFn(getRevenueLeaks);
@@ -107,6 +115,9 @@ function OffersPage() {
         <p className="text-sm text-muted-foreground">{OFFER_KIT_DISCLAIMER}</p>
       </header>
 
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
+
+      <MobilePane name="status" value={tab}>
       {message && (
         <p className="rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
           {message}
@@ -130,6 +141,8 @@ function OffersPage() {
           No kits saved yet — each offer below shows a suggested starter derived from its category.
         </p>
       )}
+
+      </MobilePane>
 
       {offersQ.isError ? (
         <ErrorBanner
@@ -176,7 +189,10 @@ function OffersPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => setDraft(editing ? null : { ...kit })}
+                      onClick={() => {
+                        setDraft(editing ? null : { ...kit });
+                        setTab(editing ? "preview" : "edit");
+                      }}
                     >
                       {editing ? "Close" : "Edit kit"}
                     </Button>
@@ -204,8 +220,11 @@ function OffersPage() {
                   </span>
                 </div>
 
+                <MobilePane name="preview" value={tab}>
                 {!editing && <KitPreview kit={kit} />}
+                </MobilePane>
 
+                <MobilePane name="edit" value={tab}>
                 {editing && draft && (
                   <KitForm
                     draft={draft}
@@ -215,6 +234,7 @@ function OffersPage() {
                     busy={saveMutation.isPending}
                   />
                 )}
+                </MobilePane>
               </article>
             );
           })}

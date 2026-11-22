@@ -127,6 +127,7 @@ function RwandaIntel() {
   const [hiringOnly, setHiringOnly] = useState(false);
   const [q, setQ] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const companies = useQuery({
     queryKey: ["rwanda-companies"],
@@ -401,7 +402,7 @@ function RwandaIntel() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {rows.map((b) => {
+                {rows.map((b, i) => {
                   const loc = locationOf(b);
                   const ind =
                     (b.industry as IndustryKey | null) ??
@@ -416,7 +417,12 @@ function RwandaIntel() {
                           ? `${b.employees_min}+`
                           : `≤${b.employees_max}`;
                   return (
-                    <tr key={b.id} className="align-top hover:bg-muted/40">
+                    <tr
+                      key={b.id}
+                      className={`align-top hover:bg-muted/40 ${
+                        i >= 20 && !showAll ? "hidden xl:table-row" : ""
+                      }`}
+                    >
                       <td className="px-4 py-3">
                         <Link
                           to="/businesses/$id"
@@ -493,6 +499,16 @@ function RwandaIntel() {
               </tbody>
             </table>
           </div>
+        )}
+        {rows.length > 20 && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="xl:hidden"
+            onClick={() => setShowAll(!showAll)}
+          >
+            {showAll ? "Show less" : "Show more"}
+          </Button>
         )}
       </section>
     </div>

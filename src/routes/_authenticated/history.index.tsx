@@ -26,6 +26,7 @@ function History() {
   const rerun = useServerFn(runDiscovery);
   const [showArchived, setShowArchived] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
   const runs = useQuery({
     queryKey: ["runs-all", showArchived],
     queryFn: async () => {
@@ -76,8 +77,13 @@ function History() {
         />
       ) : (
         <div className="divide-y rounded-lg border bg-card">
-          {runs.data?.map((r) => (
-            <div key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+          {runs.data?.map((r, i) => (
+            <div
+              key={r.id}
+              className={`flex flex-wrap items-center gap-3 px-4 py-3 ${
+                i >= 20 && !showAll ? "hidden xl:flex" : ""
+              }`}
+            >
               <div className="min-w-0 flex-1">
                 <Link
                   to="/history/$id"
@@ -175,6 +181,16 @@ function History() {
             </div>
           ))}
         </div>
+      )}
+      {runs.data && runs.data.length > 20 && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="xl:hidden"
+          onClick={() => setShowAll(!showAll)}
+        >
+          {showAll ? "Show less" : "Show more"}
+        </Button>
       )}
     </div>
   );

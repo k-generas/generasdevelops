@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Download, FileSpreadsheet, ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 import { downloadCsvFile, downloadXlsx, rowsToSafeCsv, type ExportColumn } from "@/lib/export-safe";
 
 export const Route = createFileRoute("/_authenticated/exports")({
@@ -22,6 +24,13 @@ export const Route = createFileRoute("/_authenticated/exports")({
 
 const LIMIT = 5000;
 
+const TABS = [
+  { key: "businesses", label: "Businesses" },
+  { key: "professionals", label: "People" },
+  { key: "suppression", label: "Ledger" },
+  { key: "safety", label: "Safety" },
+];
+
 type Dataset = {
   id: string;
   title: string;
@@ -33,6 +42,7 @@ type Dataset = {
 };
 
 function ExportsPage() {
+  const [tab, setTab] = useState("businesses");
   const businesses = useQuery({
     queryKey: ["export-businesses"],
     queryFn: async () => {
@@ -217,6 +227,8 @@ function ExportsPage() {
         </p>
       </header>
 
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
+
       {anyError && (
         <ErrorBanner
           error={anyError as Error}
@@ -234,72 +246,76 @@ function ExportsPage() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-3">
           {datasets.map((d) => (
-            <article key={d.id} className="flex flex-col gap-3 rounded-lg border bg-card p-4">
-              <div className="flex items-start gap-2">
-                <FileSpreadsheet className="mt-0.5 h-5 w-5 text-muted-foreground" />
-                <div>
-                  <h2 className="font-semibold">{d.title}</h2>
-                  <p className="text-xs text-muted-foreground">{d.description}</p>
+            <MobilePane key={d.id} name={d.id} value={tab}>
+              <article className="flex h-full flex-col gap-3 rounded-lg border bg-card p-4">
+                <div className="flex items-start gap-2">
+                  <FileSpreadsheet className="mt-0.5 h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <h2 className="font-semibold">{d.title}</h2>
+                    <p className="text-xs text-muted-foreground">{d.description}</p>
+                  </div>
+                  <Badge variant="secondary" className="ml-auto">
+                    {d.rows.length}
+                  </Badge>
                 </div>
-                <Badge variant="secondary" className="ml-auto">
-                  {d.rows.length}
-                </Badge>
-              </div>
-              {!d.applied ? (
-                <p className="rounded border border-amber-500/40 bg-amber-500/5 p-2 text-xs">
-                  Table not applied yet. Apply the global intelligence migration to enable this
-                  export.
-                </p>
-              ) : (
-                <div className="mt-auto flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={d.rows.length === 0}
-                    onClick={() =>
-                      downloadCsvFile(
-                        rowsToSafeCsv(d.rows, d.columns),
-                        `${d.id}-${new Date().toISOString().slice(0, 10)}`,
-                      )
-                    }
-                  >
-                    Download CSV
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={d.rows.length === 0}
-                    onClick={() =>
-                      downloadXlsx(
-                        d.rows,
-                        d.columns,
-                        `${d.id}-${new Date().toISOString().slice(0, 10)}`,
-                        d.title,
-                      )
-                    }
-                  >
-                    Download XLSX
-                  </Button>
-                </div>
-              )}
-            </article>
+                {!d.applied ? (
+                  <p className="rounded border border-amber-500/40 bg-amber-500/5 p-2 text-xs">
+                    Table not applied yet. Apply the global intelligence migration to enable this
+                    export.
+                  </p>
+                ) : (
+                  <div className="mt-auto flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={d.rows.length === 0}
+                      onClick={() =>
+                        downloadCsvFile(
+                          rowsToSafeCsv(d.rows, d.columns),
+                          `${d.id}-${new Date().toISOString().slice(0, 10)}`,
+                        )
+                      }
+                    >
+                      Download CSV
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={d.rows.length === 0}
+                      onClick={() =>
+                        downloadXlsx(
+                          d.rows,
+                          d.columns,
+                          `${d.id}-${new Date().toISOString().slice(0, 10)}`,
+                          d.title,
+                        )
+                      }
+                    >
+                      Download XLSX
+                    </Button>
+                  </div>
+                )}
+              </article>
+            </MobilePane>
           ))}
         </div>
       )}
 
-      <section className="rounded-lg border bg-card p-4 text-sm">
-        <h2 className="flex items-center gap-2 font-semibold">
-          <ShieldAlert className="h-4 w-4" /> Handling exported personal data
-        </h2>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
-          <li>Store exports only where the owner controls access.</li>
-          <li>Do not upload personal exports to public tools or unapproved AI services.</li>
-          <li>
-            Delete exports when the purpose is complete and keep the suppression ledger current.
-          </li>
-          <li>Formula sanitisation reduces spreadsheet risk but does not make data anonymous.</li>
-        </ul>
-      </section>
+      <MobilePane name="safety" value={tab}>
+        <section className="rounded-lg border bg-card p-4 text-sm">
+          <h2 className="flex items-center gap-2 font-semibold">
+            <ShieldAlert className="h-4 w-4" /> Handling exported personal data
+          </h2>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
+            <li>Store exports only where the owner controls access.</li>
+            <li>Do not upload personal exports to public tools or unapproved AI services.</li>
+            <li>
+              Delete exports when the purpose is complete and keep the suppression ledger current.
+            </li>
+            <li>Formula sanitisation reduces spreadsheet risk but does not make data anonymous.</li>
+          </ul>
+        </section>
+      </MobilePane>
     </div>
   );
 }

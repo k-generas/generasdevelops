@@ -18,6 +18,7 @@ import {
 import { downloadCsv, rowsToCsv } from "@/lib/csv";
 import { formatMoney } from "@/lib/invoices";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 import { describeError } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/orders")({
@@ -25,7 +26,14 @@ export const Route = createFileRoute("/_authenticated/orders")({
   component: Orders,
 });
 
+const TABS = [
+  { key: "orders", label: "Orders" },
+  { key: "create", label: "Create" },
+  { key: "alerts", label: "Alerts" },
+];
+
 function Orders() {
+  const [tab, setTab] = useState("orders");
   const orders = useOrders();
   const list = orders.data?.orders ?? [];
   const persisted = orders.data?.persisted ?? true;
@@ -223,6 +231,9 @@ function Orders() {
         </div>
       </div>
 
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
+
+      <MobilePane name="alerts" value={tab}>
       {(orders.isError || proposals.isError || invoices.isError) && (
         <ErrorBanner
           error={(orders.error ?? proposals.error ?? invoices.error) as Error}
@@ -247,7 +258,9 @@ function Orders() {
           </div>
         </div>
       )}
+      </MobilePane>
 
+      <MobilePane name="create" value={tab}>
       <div className="space-y-3 rounded-lg border bg-card p-4">
         <h2 className="font-semibold">New order</h2>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -321,7 +334,9 @@ function Orders() {
           {msg && <span className="text-sm text-muted-foreground">{msg}</span>}
         </div>
       </div>
+      </MobilePane>
 
+      <MobilePane name="orders" value={tab}>
       <div className="flex flex-wrap gap-2">
         {["ALL", ...ORDER_STATUSES].map((s) => (
           <Button
@@ -432,6 +447,7 @@ function Orders() {
           })
         )}
       </div>
+      </MobilePane>
     </div>
   );
 }

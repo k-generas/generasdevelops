@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { describeError } from "@/lib/errors";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -27,6 +28,13 @@ export const Route = createFileRoute("/_authenticated/settings")({
   }),
   component: Settings,
 });
+
+const TABS = [
+  { key: "offers", label: "Offers" },
+  { key: "pricing", label: "Pricing" },
+  { key: "backup", label: "Backup" },
+  { key: "systems", label: "Systems" },
+];
 
 function Settings() {
   const status = useServerFn(getSystemStatus);
@@ -55,6 +63,7 @@ function Settings() {
   const [offerBusy, setOfferBusy] = useState(false);
   const [exportBusy, setExportBusy] = useState(false);
   const [exportMsg, setExportMsg] = useState<string | null>(null);
+  const [tab, setTab] = useState("offers");
 
   useEffect(() => {
     if (prefs.data && !ready) {
@@ -206,6 +215,8 @@ function Settings() {
         </p>
       </header>
 
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
+
       {(prefs.isError || sys.isError || offersQ.isError) && (
         <ErrorBanner
           error={(prefs.error ?? sys.error ?? offersQ.error) as Error}
@@ -218,172 +229,178 @@ function Settings() {
         />
       )}
 
-      <section className="rounded-xl border bg-card">
-        <div className="flex flex-wrap items-center gap-3 border-b px-4 py-3">
-          <div className="min-w-0 flex-1">
-            <h2 className="text-sm font-semibold">Offer catalog</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              The services you sell. Names here drive proposal drafting and the pricing floors
-              below.
-            </p>
-          </div>
-          <Button size="sm" variant="outline" onClick={addOffer} type="button">
-            <Plus className="h-4 w-4" /> Add offer
-          </Button>
-        </div>
-
-        {floorsMissing && (
-          <div className="flex items-start gap-2 border-b bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
-            <AlertTriangle className="mt-0.5 h-4 w-4 text-destructive" />
-            <span>
-              The offers table does not exist yet, so built-in defaults are shown and edits will not
-              save. Apply{" "}
-              <code className="font-mono">drizzle/migrations/0004_offers_catalog.sql</code> to the
-              shared database.
-            </span>
-          </div>
-        )}
-
-        <div className="space-y-3 p-4">
-          {catalog.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No offers yet. Add one, or save to seed the built-in list.
-            </p>
-          )}
-          {catalog.map((o, i) => (
-            <div key={o.id ?? `new-${i}`} className="rounded-lg border p-3">
-              <div className="flex items-center gap-2">
-                <Input
-                  value={o.name}
-                  placeholder="Offer name (e.g. Website Redesign)"
-                  onChange={(e) => patchOffer(i, { name: e.target.value })}
-                />
-                <label className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    checked={o.active}
-                    onChange={(e) => patchOffer(i, { active: e.target.checked })}
-                  />
-                  Active
-                </label>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  type="button"
-                  aria-label="Remove offer"
-                  onClick={() => removeOffer(i)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                <Input
-                  type="number"
-                  min={0}
-                  inputMode="decimal"
-                  placeholder="Default price"
-                  value={o.default_price ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    const n = v === "" ? null : Number(v);
-                    patchOffer(i, {
-                      default_price: n !== null && Number.isFinite(n) && n >= 0 ? n : null,
-                    });
-                  }}
-                />
-                <Input
-                  value={o.currency}
-                  placeholder={DEFAULT_CURRENCY}
-                  onChange={(e) => patchOffer(i, { currency: e.target.value })}
-                />
-                <Input
-                  value={o.deliverables ?? ""}
-                  placeholder="Deliverables (what's included)"
-                  onChange={(e) => patchOffer(i, { deliverables: e.target.value || null })}
-                />
-              </div>
-              <Input
-                className="mt-2"
-                value={o.notes ?? ""}
-                placeholder="Internal notes (not shown to the client)"
-                onChange={(e) => patchOffer(i, { notes: e.target.value || null })}
-              />
+      <MobilePane name="offers" value={tab}>
+        <section className="rounded-xl border bg-card">
+          <div className="flex flex-wrap items-center gap-3 border-b px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-semibold">Offer catalog</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                The services you sell. Names here drive proposal drafting and the pricing floors
+                below.
+              </p>
             </div>
-          ))}
-        </div>
+            <Button size="sm" variant="outline" onClick={addOffer} type="button">
+              <Plus className="h-4 w-4" /> Add offer
+            </Button>
+          </div>
 
-        <div className="flex items-center gap-3 border-t px-4 py-3">
-          <Button onClick={saveCatalog} disabled={offerBusy || floorsMissing} type="button">
-            {offerBusy ? "Saving…" : "Save catalog"}
-          </Button>
-          {offerMsg && <span className="text-sm text-muted-foreground">{offerMsg}</span>}
-        </div>
-      </section>
+          {floorsMissing && (
+            <div className="flex items-start gap-2 border-b bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+              <AlertTriangle className="mt-0.5 h-4 w-4 text-destructive" />
+              <span>
+                The offers table does not exist yet, so built-in defaults are shown and edits will
+                not save. Apply{" "}
+                <code className="font-mono">drizzle/migrations/0004_offers_catalog.sql</code> to the
+                shared database.
+              </span>
+            </div>
+          )}
 
-      <section className="rounded-xl border bg-card">
-        <div className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Minimum prices (pricing floors)</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            The engine refuses to draft a proposal priced below these amounts. Leave blank for no
-            floor.
-          </p>
-        </div>
-        <div className="divide-y">
-          {offerNamesForFloors(catalog.length ? catalog : (offersQ.data?.offers ?? [])).map(
-            (offer) => (
-              <div key={offer} className="flex items-center gap-3 px-4 py-3">
-                <span className="min-w-0 flex-1 text-sm">{offer}</span>
-                <span className="text-xs text-muted-foreground">{DEFAULT_CURRENCY}</span>
+          <div className="space-y-3 p-4">
+            {catalog.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No offers yet. Add one, or save to seed the built-in list.
+              </p>
+            )}
+            {catalog.map((o, i) => (
+              <div key={o.id ?? `new-${i}`} className="rounded-lg border p-3">
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={o.name}
+                    placeholder="Offer name (e.g. Website Redesign)"
+                    onChange={(e) => patchOffer(i, { name: e.target.value })}
+                  />
+                  <label className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={o.active}
+                      onChange={(e) => patchOffer(i, { active: e.target.checked })}
+                    />
+                    Active
+                  </label>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    type="button"
+                    aria-label="Remove offer"
+                    onClick={() => removeOffer(i)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                  <Input
+                    type="number"
+                    min={0}
+                    inputMode="decimal"
+                    placeholder="Default price"
+                    value={o.default_price ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      const n = v === "" ? null : Number(v);
+                      patchOffer(i, {
+                        default_price: n !== null && Number.isFinite(n) && n >= 0 ? n : null,
+                      });
+                    }}
+                  />
+                  <Input
+                    value={o.currency}
+                    placeholder={DEFAULT_CURRENCY}
+                    onChange={(e) => patchOffer(i, { currency: e.target.value })}
+                  />
+                  <Input
+                    value={o.deliverables ?? ""}
+                    placeholder="Deliverables (what's included)"
+                    onChange={(e) => patchOffer(i, { deliverables: e.target.value || null })}
+                  />
+                </div>
                 <Input
-                  type="number"
-                  min={0}
-                  inputMode="numeric"
-                  placeholder="no floor"
-                  className="w-32 text-right"
-                  value={prices[offer] ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setPrices((p) => {
-                      const next = { ...p };
-                      if (v === "") delete next[offer];
-                      else {
-                        const n = Number(v);
-                        if (Number.isFinite(n) && n >= 0) next[offer] = n;
-                      }
-                      return next;
-                    });
-                  }}
+                  className="mt-2"
+                  value={o.notes ?? ""}
+                  placeholder="Internal notes (not shown to the client)"
+                  onChange={(e) => patchOffer(i, { notes: e.target.value || null })}
                 />
               </div>
-            ),
-          )}
-        </div>
-        <div className="flex items-center gap-3 border-t px-4 py-3">
-          <Button onClick={save} disabled={busy}>
-            {busy ? "Saving…" : "Save pricing floors"}
-          </Button>
-          {saved && <span className="text-sm text-muted-foreground">{saved}</span>}
-        </div>
-      </section>
+            ))}
+          </div>
 
-      <section className="rounded-xl border bg-card">
-        <div className="border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">Data &amp; backup</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Download every owner-scoped table as one JSON file. Keep a copy before big changes.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 px-4 py-3">
-          <Button variant="outline" onClick={() => void downloadBackup()} disabled={exportBusy}>
-            <Download className="h-4 w-4" />
-            {exportBusy ? "Preparing…" : "Download all data (JSON)"}
-          </Button>
-          {exportMsg && <span className="text-sm text-muted-foreground">{exportMsg}</span>}
-        </div>
-      </section>
+          <div className="flex items-center gap-3 border-t px-4 py-3">
+            <Button onClick={saveCatalog} disabled={offerBusy || floorsMissing} type="button">
+              {offerBusy ? "Saving…" : "Save catalog"}
+            </Button>
+            {offerMsg && <span className="text-sm text-muted-foreground">{offerMsg}</span>}
+          </div>
+        </section>
+      </MobilePane>
+
+      <MobilePane name="pricing" value={tab}>
+        <section className="rounded-xl border bg-card">
+          <div className="border-b px-4 py-3">
+            <h2 className="text-sm font-semibold">Minimum prices (pricing floors)</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              The engine refuses to draft a proposal priced below these amounts. Leave blank for no
+              floor.
+            </p>
+          </div>
+          <div className="divide-y">
+            {offerNamesForFloors(catalog.length ? catalog : (offersQ.data?.offers ?? [])).map(
+              (offer) => (
+                <div key={offer} className="flex items-center gap-3 px-4 py-3">
+                  <span className="min-w-0 flex-1 text-sm">{offer}</span>
+                  <span className="text-xs text-muted-foreground">{DEFAULT_CURRENCY}</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    inputMode="numeric"
+                    placeholder="no floor"
+                    className="w-32 text-right"
+                    value={prices[offer] ?? ""}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setPrices((p) => {
+                        const next = { ...p };
+                        if (v === "") delete next[offer];
+                        else {
+                          const n = Number(v);
+                          if (Number.isFinite(n) && n >= 0) next[offer] = n;
+                        }
+                        return next;
+                      });
+                    }}
+                  />
+                </div>
+              ),
+            )}
+          </div>
+          <div className="flex items-center gap-3 border-t px-4 py-3">
+            <Button onClick={save} disabled={busy}>
+              {busy ? "Saving…" : "Save pricing floors"}
+            </Button>
+            {saved && <span className="text-sm text-muted-foreground">{saved}</span>}
+          </div>
+        </section>
+      </MobilePane>
+
+      <MobilePane name="backup" value={tab}>
+        <section className="rounded-xl border bg-card">
+          <div className="border-b px-4 py-3">
+            <h2 className="text-sm font-semibold">Data &amp; backup</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Download every owner-scoped table as one JSON file. Keep a copy before big changes.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 px-4 py-3">
+            <Button variant="outline" onClick={() => void downloadBackup()} disabled={exportBusy}>
+              <Download className="h-4 w-4" />
+              {exportBusy ? "Preparing…" : "Download all data (JSON)"}
+            </Button>
+            {exportMsg && <span className="text-sm text-muted-foreground">{exportMsg}</span>}
+          </div>
+        </section>
+      </MobilePane>
 
       {isAdmin && (
-        <>
+        <MobilePane name="systems" value={tab}>
           <section className="rounded-xl border bg-card">
             <div className="border-b px-4 py-3">
               <h2 className="text-sm font-semibold">Integrations</h2>
@@ -442,7 +459,7 @@ function Settings() {
               <li>Email / WhatsApp sending (you record sends manually)</li>
             </ul>
           </section>
-        </>
+        </MobilePane>
       )}
     </div>
   );

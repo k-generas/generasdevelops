@@ -1,8 +1,10 @@
 ﻿import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 
 export const Route = createFileRoute("/_authenticated/audit/$auditId")({
   head: () => ({ meta: [{ title: "Audit Report | GARE" }] }),
@@ -33,8 +35,15 @@ type AuditSummary = {
   high_count?: number;
 };
 
+const TABS = [
+  { key: "score", label: "Score" },
+  { key: "evidence", label: "Evidence" },
+  { key: "advice", label: "Advice" },
+];
+
 function AuditDetail() {
   const { auditId: id } = Route.useParams();
+  const [tab, setTab] = useState("score");
   const audit = useQuery({
     queryKey: ["business_audit", id],
     queryFn: async () => {
@@ -80,69 +89,82 @@ function AuditDetail() {
         </div>
       </header>
 
-      <section className="rounded-lg border bg-card p-5">
-        <div className="flex items-baseline justify-between">
-          <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">Overall Score</p>
-          <span className="font-mono text-3xl font-semibold sm:text-4xl">
-            {summary.overall_score ?? a.score_0_100 ?? "—"}/100
-          </span>
-        </div>
-        <div className="mt-2 flex gap-2 text-xs">
-          <Badge variant="destructive">Critical: {summary.critical_count ?? 0}</Badge>
-          <Badge variant="secondary">High: {summary.high_count ?? 0}</Badge>
-        </div>
-      </section>
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
 
-      <section className="rounded-lg border bg-card p-5 space-y-3">
-        <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">Evidence Log</p>
-        {evidence.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No evidence recorded.</p>
-        ) : (
-          <div className="divide-y">
-            {evidence.map((e, i) => (
-              <div key={i} className="py-2 flex items-start gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm">
-                    {e.check?.replace(/_/g, " ")}{" "}
-                    <span className="text-muted-foreground">({e.category})</span>
-                  </p>
-                  <p className="text-xs text-muted-foreground">{e.evidence}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Source: {e.source} • {e.status} • conf {Math.round((e.confidence || 0) * 100)}%
-                  </p>
-                </div>
-                <Badge
-                  variant={
-                    e.severity === "CRITICAL"
-                      ? "destructive"
-                      : e.severity === "HIGH"
-                        ? "secondary"
-                        : "outline"
-                  }
-                >
-                  {e.severity}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="rounded-lg border bg-card p-5 space-y-2">
-        <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">Recommendations</p>
-        {(findings.recommendations || []).map((r, i) => (
-          <div key={i} className="rounded border p-3">
-            <div className="flex items-center justify-between">
-              <p className="font-medium capitalize">{r.title}</p>
-              <Badge variant="outline">{r.priority}</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">{r.rationale}</p>
-            <p className="text-sm mt-1">
-              {r.action} • Effort: {r.effort}
+      <MobilePane name="score" value={tab}>
+        <section className="rounded-lg border bg-card p-5">
+          <div className="flex items-baseline justify-between">
+            <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
+              Overall Score
             </p>
+            <span className="font-mono text-3xl font-semibold sm:text-4xl">
+              {summary.overall_score ?? a.score_0_100 ?? "—"}/100
+            </span>
           </div>
-        ))}
-      </section>
+          <div className="mt-2 flex gap-2 text-xs">
+            <Badge variant="destructive">Critical: {summary.critical_count ?? 0}</Badge>
+            <Badge variant="secondary">High: {summary.high_count ?? 0}</Badge>
+          </div>
+        </section>
+      </MobilePane>
+
+      <MobilePane name="evidence" value={tab}>
+        <section className="rounded-lg border bg-card p-5 space-y-3">
+          <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">Evidence Log</p>
+          {evidence.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No evidence recorded.</p>
+          ) : (
+            <div className="divide-y">
+              {evidence.map((e, i) => (
+                <div key={i} className="py-2 flex items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm">
+                      {e.check?.replace(/_/g, " ")}{" "}
+                      <span className="text-muted-foreground">({e.category})</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">{e.evidence}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Source: {e.source} • {e.status} • conf {Math.round((e.confidence || 0) * 100)}
+                      %
+                    </p>
+                  </div>
+                  <Badge
+                    variant={
+                      e.severity === "CRITICAL"
+                        ? "destructive"
+                        : e.severity === "HIGH"
+                          ? "secondary"
+                          : "outline"
+                    }
+                  >
+                    {e.severity}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </MobilePane>
+
+      <MobilePane name="advice" value={tab}>
+        <section className="rounded-lg border bg-card p-5 space-y-2">
+          <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
+            Recommendations
+          </p>
+          {(findings.recommendations || []).map((r, i) => (
+            <div key={i} className="rounded border p-3">
+              <div className="flex items-center justify-between">
+                <p className="font-medium capitalize">{r.title}</p>
+                <Badge variant="outline">{r.priority}</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">{r.rationale}</p>
+              <p className="text-sm mt-1">
+                {r.action} • Effort: {r.effort}
+              </p>
+            </div>
+          ))}
+        </section>
+      </MobilePane>
     </div>
   );
 }

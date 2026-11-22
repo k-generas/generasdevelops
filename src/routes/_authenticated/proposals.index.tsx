@@ -27,6 +27,7 @@ export const Route = createFileRoute("/_authenticated/proposals/")({
 
 function Proposals() {
   const [status, setStatus] = useState<string>("ALL");
+  const [showAll, setShowAll] = useState(false);
   const list = useQuery({
     queryKey: ["proposals", status],
     queryFn: async () => {
@@ -98,12 +99,14 @@ function Proposals() {
             />
           </div>
         )}
-        {list.data?.map((p) => (
+        {list.data?.map((p, i) => (
           <Link
             key={p.id}
             to="/proposals/$id"
             params={{ id: p.id }}
-            className="flex flex-wrap items-center gap-3 px-4 py-3 hover:bg-muted"
+            className={`flex flex-wrap items-center gap-3 px-4 py-3 hover:bg-muted ${
+              i >= 20 && !showAll ? "hidden xl:flex" : ""
+            }`}
           >
             <div className="min-w-0 flex-1">
               <p className="font-medium">{p.title ?? p.mode}</p>
@@ -146,6 +149,16 @@ function Proposals() {
           />
         ) : null}
       </div>
+      {list.data && list.data.length > 20 && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="xl:hidden"
+          onClick={() => setShowAll(!showAll)}
+        >
+          {showAll ? "Show less" : "Show more"}
+        </Button>
+      )}
     </div>
   );
 }

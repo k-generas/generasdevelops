@@ -32,6 +32,7 @@ import {
 } from "@/lib/partners";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
 import { describeError } from "@/lib/errors";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 
 export const Route = createFileRoute("/_authenticated/partners")({
   head: () => ({
@@ -51,6 +52,12 @@ const REASON_LABEL: Record<string, string> = {
   skills: "skills not yet demonstrated",
   manual: "offloaded manually",
 };
+
+const TABS = [
+  { key: "overflow", label: "Overflow" },
+  { key: "directory", label: "Directory" },
+  { key: "handoffs", label: "Handoffs" },
+];
 
 type PartnerDraft = {
   id?: string | undefined;
@@ -114,6 +121,7 @@ function splitList(v: string): string[] {
 }
 
 function PartnersPage() {
+  const [tab, setTab] = useState("overflow");
   const qc = useQueryClient();
   const loadPartners = useServerFn(getPartners);
   const loadOverflow = useServerFn(getOverflowCandidates);
@@ -197,6 +205,8 @@ function PartnersPage() {
         </p>
       </header>
 
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
+
       {message && (
         <p className="rounded-md border bg-muted px-3 py-2 text-sm text-muted-foreground">
           {message}
@@ -215,6 +225,7 @@ function PartnersPage() {
         />
       )}
 
+      <MobilePane name="overflow" value={tab}>
       <section className="space-y-3">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold">Overflow work</h2>
@@ -265,7 +276,9 @@ function PartnersPage() {
           ))
         )}
       </section>
+      </MobilePane>
 
+      <MobilePane name="directory" value={tab}>
       <section className="space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-lg font-semibold">Partner directory</h2>
@@ -329,7 +342,9 @@ function PartnersPage() {
           </div>
         )}
       </section>
+      </MobilePane>
 
+      <MobilePane name="handoffs" value={tab}>
       <section className="space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-lg font-semibold">Handoffs</h2>
@@ -371,6 +386,7 @@ function PartnersPage() {
           </div>
         )}
       </section>
+      </MobilePane>
     </div>
   );
 }

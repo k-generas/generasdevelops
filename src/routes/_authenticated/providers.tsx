@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 import {
   providerCategoryLabel,
   providerStatuses,
@@ -50,6 +51,12 @@ const STATUS_LABEL: Record<ProviderRuntimeStatus, string> = {
   review_required: "review required",
 };
 
+const TABS = [
+  { key: "summary", label: "Summary" },
+  { key: "catalog", label: "Catalog" },
+  { key: "rules", label: "Rules" },
+];
+
 function statusVariant(
   status: ProviderRuntimeStatus,
 ): "default" | "secondary" | "destructive" | "outline" {
@@ -64,6 +71,7 @@ function ProvidersPage() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<ProviderCategory | "">("");
   const [status, setStatus] = useState<ProviderRuntimeStatus | "">("");
+  const [tab, setTab] = useState("summary");
 
   const system = useQuery({
     queryKey: ["system-status"],
@@ -107,6 +115,8 @@ function ProvidersPage() {
         </p>
       </header>
 
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
+
       {system.isError && (
         <ErrorBanner
           error={system.error as Error}
@@ -115,83 +125,91 @@ function ProvidersPage() {
         />
       )}
 
-      <section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <Stat label="Providers" value={summary.total} />
-        <Stat label="Available" value={summary.available} tone="ok" />
-        <Stat label="Configured" value={summary.configuredUnverified} />
-        <Stat label="Unavailable" value={summary.unavailable} />
-        <Stat label="Review" value={summary.reviewRequired} tone="warn" />
-        <Stat label="Blocked" value={summary.blocked} tone="danger" />
-      </section>
+      <MobilePane name="summary" value={tab}>
+        <section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <Stat label="Providers" value={summary.total} />
+          <Stat label="Available" value={summary.available} tone="ok" />
+          <Stat label="Configured" value={summary.configuredUnverified} />
+          <Stat label="Unavailable" value={summary.unavailable} />
+          <Stat label="Review" value={summary.reviewRequired} tone="warn" />
+          <Stat label="Blocked" value={summary.blocked} tone="danger" />
+        </section>
+      </MobilePane>
 
-      <section className="flex flex-wrap gap-2 rounded-lg border bg-card p-3">
-        <Input
-          className="w-full sm:w-64"
-          placeholder="Search provider or capability..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <select
-          className="rounded border bg-background px-2 py-2 text-sm"
-          value={category}
-          onChange={(e) => setCategory(e.target.value as ProviderCategory | "")}
-        >
-          <option value="">All categories</option>
-          {CATEGORY_ORDER.map((c) => (
-            <option key={c} value={c}>
-              {providerCategoryLabel(c)}
-            </option>
-          ))}
-        </select>
-        <select
-          className="rounded border bg-background px-2 py-2 text-sm"
-          value={status}
-          onChange={(e) => setStatus(e.target.value as ProviderRuntimeStatus | "")}
-        >
-          <option value="">All statuses</option>
-          {Object.entries(STATUS_LABEL).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <span className="ml-auto self-center text-xs text-muted-foreground">
-          {filtered.length} shown
-        </span>
-      </section>
+      <MobilePane name="catalog" value={tab}>
+        <section className="flex flex-wrap gap-2 rounded-lg border bg-card p-3">
+          <Input
+            className="w-full sm:w-64"
+            placeholder="Search provider or capability..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <select
+            className="rounded border bg-background px-2 py-2 text-sm"
+            value={category}
+            onChange={(e) => setCategory(e.target.value as ProviderCategory | "")}
+          >
+            <option value="">All categories</option>
+            {CATEGORY_ORDER.map((c) => (
+              <option key={c} value={c}>
+                {providerCategoryLabel(c)}
+              </option>
+            ))}
+          </select>
+          <select
+            className="rounded border bg-background px-2 py-2 text-sm"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as ProviderRuntimeStatus | "")}
+          >
+            <option value="">All statuses</option>
+            {Object.entries(STATUS_LABEL).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <span className="ml-auto self-center text-xs text-muted-foreground">
+            {filtered.length} shown
+          </span>
+        </section>
 
-      {system.isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading runtime status...</p>
-      ) : grouped.length === 0 ? (
-        <p className="rounded-lg border bg-card p-6 text-center text-sm text-muted-foreground">
-          No providers match these filters.
-        </p>
-      ) : (
-        grouped.map((group) => (
-          <section key={group.category} className="space-y-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              {providerCategoryLabel(group.category)}
-            </h2>
-            <div className="grid gap-3 lg:grid-cols-2">
-              {group.rows.map((s) => (
-                <ProviderCard key={s.provider.id} status={s} />
-              ))}
-            </div>
-          </section>
-        ))
-      )}
+        {system.isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading runtime status...</p>
+        ) : grouped.length === 0 ? (
+          <p className="rounded-lg border bg-card p-6 text-center text-sm text-muted-foreground">
+            No providers match these filters.
+          </p>
+        ) : (
+          grouped.map((group) => (
+            <section key={group.category} className="space-y-2">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                {providerCategoryLabel(group.category)}
+              </h2>
+              <div className="grid gap-3 lg:grid-cols-2">
+                {group.rows.map((s) => (
+                  <ProviderCard key={s.provider.id} status={s} />
+                ))}
+              </div>
+            </section>
+          ))
+        )}
+      </MobilePane>
 
-      <section className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
-        <h2 className="flex items-center gap-2 font-semibold">
-          <ShieldAlert className="h-4 w-4" /> Safety rules
-        </h2>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
-          <li>LinkedIn automation is blocked. Use the platform manually.</li>
-          <li>No scraping behind logins, CAPTCHAs or paywalls.</li>
-          <li>Paid providers stay off until the owner activates billing and limits.</li>
-          <li>Practising outreach requires a lawful basis, channel terms and suppression check.</li>
-        </ul>
-      </section>
+      <MobilePane name="rules" value={tab}>
+        <section className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
+          <h2 className="flex items-center gap-2 font-semibold">
+            <ShieldAlert className="h-4 w-4" /> Safety rules
+          </h2>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
+            <li>LinkedIn automation is blocked. Use the platform manually.</li>
+            <li>No scraping behind logins, CAPTCHAs or paywalls.</li>
+            <li>Paid providers stay off until the owner activates billing and limits.</li>
+            <li>
+              Practising outreach requires a lawful basis, channel terms and suppression check.
+            </li>
+          </ul>
+        </section>
+      </MobilePane>
     </div>
   );
 }

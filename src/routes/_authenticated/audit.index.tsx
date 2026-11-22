@@ -1,5 +1,6 @@
 ﻿import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,7 @@ export const Route = createFileRoute("/_authenticated/audit/")({
 });
 
 function AuditIndex() {
+  const [showAll, setShowAll] = useState(false);
   const audits = useQuery({
     queryKey: ["business_audits"],
     queryFn: async () => {
@@ -42,8 +44,13 @@ function AuditIndex() {
             No audits yet. Open a business and run a Business Audit.
           </p>
         ) : (
-          audits.data?.map((a) => (
-            <div key={a.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+          audits.data?.map((a, i) => (
+            <div
+              key={a.id}
+              className={`flex flex-wrap items-center gap-3 px-4 py-3 ${
+                i >= 20 && !showAll ? "hidden xl:flex" : ""
+              }`}
+            >
               <div className="min-w-0 flex-1">
                 <p className="text-sm">{a.businesses?.name ?? a.business_id}</p>
                 <p className="text-xs text-muted-foreground">
@@ -60,6 +67,16 @@ function AuditIndex() {
           ))
         )}
       </div>
+      {audits.data && audits.data.length > 20 && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="xl:hidden"
+          onClick={() => setShowAll(!showAll)}
+        >
+          {showAll ? "Show less" : "Show more"}
+        </Button>
+      )}
     </div>
   );
 }

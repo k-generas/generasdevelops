@@ -40,6 +40,7 @@ function RecoveryPage() {
   const addTask = useServerFn(createRecoveryTask);
 
   const [message, setMessage] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const candidates = useQuery({ queryKey: ["recovery"], queryFn: () => load() });
 
@@ -119,8 +120,13 @@ function RecoveryPage() {
         />
       ) : (
         <div className="space-y-2">
-          {(candidates.data ?? []).map((c) => (
-            <article key={c.proposalId} className="space-y-2 rounded-lg border bg-card p-4 text-sm">
+          {(candidates.data ?? []).map((c, i) => (
+            <article
+              key={c.proposalId}
+              className={`space-y-2 rounded-lg border bg-card p-4 text-sm ${
+                i >= 20 && !showAll ? "hidden xl:block" : ""
+              }`}
+            >
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant={PRIORITY_VARIANT[c.priority]}>{c.priority}</Badge>
                 <Badge variant="outline">{REASON_LABEL[c.reason]}</Badge>
@@ -153,6 +159,16 @@ function RecoveryPage() {
             </article>
           ))}
         </div>
+      )}
+      {(candidates.data?.length ?? 0) > 20 && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="xl:hidden"
+          onClick={() => setShowAll(!showAll)}
+        >
+          {showAll ? "Show less" : "Show more"}
+        </Button>
       )}
     </div>
   );

@@ -29,6 +29,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { ErrorBanner, EmptyState } from "@/components/ErrorBanner";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 
 export const Route = createFileRoute("/_authenticated/analytics")({
   head: () => ({
@@ -44,6 +45,12 @@ export const Route = createFileRoute("/_authenticated/analytics")({
 });
 
 const RANGES = [4, 12, 26, 52] as const;
+
+const TABS = [
+  { key: "overview", label: "Overview" },
+  { key: "cash", label: "Cash" },
+  { key: "table", label: "Table" },
+];
 
 const ACTIVITY_CONFIG = {
   leads: { label: "Leads", color: "var(--chart-1)" },
@@ -154,6 +161,7 @@ function Kpi({ label, value, hint }: { label: string; value: ReactNode; hint?: s
 }
 
 function AnalyticsPage() {
+  const [tab, setTab] = useState("overview");
   const [weeks, setWeeks] = useState<number>(12);
   const dataQ = useQuery({
     queryKey: ["analytics-data"],
@@ -230,6 +238,8 @@ function AnalyticsPage() {
         </div>
       </header>
 
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
+
       {dataQ.isError && (
         <ErrorBanner
           error={dataQ.error}
@@ -252,6 +262,7 @@ function AnalyticsPage() {
         />
       ) : snap ? (
         <>
+          <MobilePane name="overview" value={tab}>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <Kpi
               label={`Leads · ${weeks}w`}
@@ -359,7 +370,9 @@ function AnalyticsPage() {
               </CardContent>
             </Card>
           </div>
+          </MobilePane>
 
+          <MobilePane name="cash" value={tab}>
           <div className="grid gap-3 lg:grid-cols-3">
             <Card className="lg:col-span-2">
               <CardHeader className="pb-2">
@@ -398,7 +411,9 @@ function AnalyticsPage() {
               </CardContent>
             </Card>
           </div>
+          </MobilePane>
 
+          <MobilePane name="table" value={tab}>
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Week by week</CardTitle>
@@ -432,6 +447,7 @@ function AnalyticsPage() {
               </table>
             </CardContent>
           </Card>
+          </MobilePane>
         </>
       ) : null}
     </div>

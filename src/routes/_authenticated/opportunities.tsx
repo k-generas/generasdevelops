@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmptyState, ErrorBanner } from "@/components/ErrorBanner";
+import { MobileTabBar, MobilePane } from "@/components/MobileSections";
 import {
   createOpportunityProposal,
   generateSocialOpportunities,
@@ -51,6 +52,12 @@ export const Route = createFileRoute("/_authenticated/opportunities")({
   }),
   component: OpportunitiesPage,
 });
+
+const TABS = [
+  { key: "results", label: "Results" },
+  { key: "filters", label: "Filters" },
+  { key: "summary", label: "Summary" },
+];
 
 const STAGE_LABELS: Record<string, string> = {
   DISCOVERED: "Discovered",
@@ -197,6 +204,7 @@ function OpportunitiesPage() {
   const [outreachNote, setOutreachNote] = useState("");
   const [proposalMode, setProposalMode] = useState(PROPOSAL_MODES[0]!);
   const [proposalChannel, setProposalChannel] = useState<"Email" | "WhatsApp" | "SMS">("Email");
+  const [tab, setTab] = useState("results");
 
   const opportunities = useQuery({ queryKey: ["opportunities"], queryFn: () => load() });
   const rows = useMemo(() => opportunities.data?.rows ?? [], [opportunities.data?.rows]);
@@ -347,115 +355,125 @@ function OpportunitiesPage() {
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <span>{summary?.total ?? 0} total</span>
-        <span>· {summary?.needs_validation ?? 0} need validation</span>
-        <span>· {summary?.qualified ?? 0} qualified</span>
-        <span>· {summary?.ready_to_propose ?? 0} ready to propose</span>
-        <span>· {summary?.high_priority ?? 0} high priority</span>
-        <span className="ml-auto">
-          <Button
-            size="sm"
-            onClick={() => generateMutation.mutate()}
-            disabled={generateMutation.isPending}
-            className="gap-1"
-          >
-            {generateMutation.isPending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Sparkles className="h-3.5 w-3.5" />
-            )}
-            Generate from matches
-          </Button>
-        </span>
-      </div>
+      <MobileTabBar tabs={TABS} value={tab} onChange={setTab} />
 
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-3">
-        <div className="space-y-1">
-          <Label htmlFor="stage-filter" className="text-xs">
-            Stage
-          </Label>
-          <select
-            id="stage-filter"
-            value={stage}
-            onChange={(event) => setStage(event.target.value as typeof stage)}
-            className="h-9 rounded-md border bg-background px-3 text-sm"
-          >
-            <option value="all">All stages</option>
-            {Object.entries(STAGE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+      <MobilePane name="summary" value={tab}>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span>{summary?.total ?? 0} total</span>
+          <span>· {summary?.needs_validation ?? 0} need validation</span>
+          <span>· {summary?.qualified ?? 0} qualified</span>
+          <span>· {summary?.ready_to_propose ?? 0} ready to propose</span>
+          <span>· {summary?.high_priority ?? 0} high priority</span>
+          <span className="ml-auto">
+            <Button
+              size="sm"
+              onClick={() => generateMutation.mutate()}
+              disabled={generateMutation.isPending}
+              className="gap-1"
+            >
+              {generateMutation.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              Generate from matches
+            </Button>
+          </span>
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="priority-filter" className="text-xs">
-            Priority
-          </Label>
-          <select
-            id="priority-filter"
-            value={priority}
-            onChange={(event) => setPriority(event.target.value as typeof priority)}
-            className="h-9 rounded-md border bg-background px-3 text-sm"
-          >
-            <option value="all">All priorities</option>
-            <option value="critical">Critical</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="source-filter" className="text-xs">
-            Source
-          </Label>
-          <select
-            id="source-filter"
-            value={source}
-            onChange={(event) => setSource(event.target.value as typeof source)}
-            className="h-9 rounded-md border bg-background px-3 text-sm"
-          >
-            <option value="all">All sources</option>
-            <option value="social_match">Social match</option>
-            <option value="business_audit">Business audit</option>
-            <option value="manual">Manual</option>
-            <option value="signal">Signal</option>
-          </select>
-        </div>
-        <label className="flex items-center gap-2 pb-2 text-sm">
-          <input
-            type="checkbox"
-            checked={needsValidation}
-            onChange={(event) => setNeedsValidation(event.target.checked)}
-          />
-          Needs validation
-        </label>
-      </div>
+      </MobilePane>
 
-      {opportunities.isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading opportunities…</p>
-      ) : visible.length === 0 ? (
-        <EmptyState
-          title="No opportunities yet"
-          why="Run social matching first, then generate opportunities from confirmed or high-confidence matches."
-        />
-      ) : (
-        <div className="space-y-3">
-          {visible.map((row) => (
-            <OpportunityCard
-              key={row.id}
-              row={row}
-              onOpen={() => {
-                setSelectedId(row.id);
-                setNote(row.owner_notes ?? "");
-              }}
-              onRefresh={() => refreshMutation.mutate(row.id)}
-              refreshing={refreshMutation.isPending && refreshMutation.variables === row.id}
+      <MobilePane name="filters" value={tab}>
+        <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-3">
+          <div className="space-y-1">
+            <Label htmlFor="stage-filter" className="text-xs">
+              Stage
+            </Label>
+            <select
+              id="stage-filter"
+              value={stage}
+              onChange={(event) => setStage(event.target.value as typeof stage)}
+              className="h-9 rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="all">All stages</option>
+              {Object.entries(STAGE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="priority-filter" className="text-xs">
+              Priority
+            </Label>
+            <select
+              id="priority-filter"
+              value={priority}
+              onChange={(event) => setPriority(event.target.value as typeof priority)}
+              className="h-9 rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="all">All priorities</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="source-filter" className="text-xs">
+              Source
+            </Label>
+            <select
+              id="source-filter"
+              value={source}
+              onChange={(event) => setSource(event.target.value as typeof source)}
+              className="h-9 rounded-md border bg-background px-3 text-sm"
+            >
+              <option value="all">All sources</option>
+              <option value="social_match">Social match</option>
+              <option value="business_audit">Business audit</option>
+              <option value="manual">Manual</option>
+              <option value="signal">Signal</option>
+            </select>
+          </div>
+          <label className="flex items-center gap-2 pb-2 text-sm">
+            <input
+              type="checkbox"
+              checked={needsValidation}
+              onChange={(event) => setNeedsValidation(event.target.checked)}
             />
-          ))}
+            Needs validation
+          </label>
         </div>
-      )}
+      </MobilePane>
+
+      <MobilePane name="results" value={tab}>
+        <div className="space-y-4">
+          {opportunities.isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading opportunities…</p>
+          ) : visible.length === 0 ? (
+            <EmptyState
+              title="No opportunities yet"
+              why="Run social matching first, then generate opportunities from confirmed or high-confidence matches."
+            />
+          ) : (
+            <div className="space-y-3">
+              {visible.map((row) => (
+                <OpportunityCard
+                  key={row.id}
+                  row={row}
+                  onOpen={() => {
+                    setSelectedId(row.id);
+                    setNote(row.owner_notes ?? "");
+                  }}
+                  onRefresh={() => refreshMutation.mutate(row.id)}
+                  refreshing={refreshMutation.isPending && refreshMutation.variables === row.id}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </MobilePane>
 
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelectedId(null)}>
         <DialogContent className="max-h-[90dvh] max-w-3xl overflow-y-auto">

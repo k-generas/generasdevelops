@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ export const Route = createFileRoute("/_authenticated/updates")({
 
 function UpdatesPage() {
   const qc = useQueryClient();
+  const [showAll, setShowAll] = useState(false);
   const digests = useQuery({
     queryKey: ["daily-digests"],
     queryFn: async (): Promise<DailyDigestRow[]> => {
@@ -89,20 +90,40 @@ function UpdatesPage() {
         />
       ) : (
         <div className="space-y-3">
-          {digests.data?.map((d) => (
-            <DigestCard key={d.id} d={d} unread={!d.read_at} />
+          {digests.data?.map((d, i) => (
+            <DigestCard key={d.id} d={d} unread={!d.read_at} hidden={i >= 20 && !showAll} />
           ))}
         </div>
+      )}
+      {digests.data && digests.data.length > 20 && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="xl:hidden"
+          onClick={() => setShowAll(!showAll)}
+        >
+          {showAll ? "Show less" : "Show more"}
+        </Button>
       )}
     </div>
   );
 }
 
-function DigestCard({ d, unread }: { d: DailyDigestRow; unread: boolean }) {
+function DigestCard({
+  d,
+  unread,
+  hidden,
+}: {
+  d: DailyDigestRow;
+  unread: boolean;
+  hidden: boolean;
+}) {
   const businesses = parseDigestBusinesses(d.new_businesses);
   const failed = d.status === "failed";
   return (
-    <article className="space-y-2 rounded-lg border bg-card p-4">
+    <article
+      className={`space-y-2 rounded-lg border bg-card p-4 ${hidden ? "hidden xl:block" : ""}`}
+    >
       <div className="flex flex-wrap items-center gap-2">
         {unread && <span className="size-2 rounded-full bg-primary" aria-label="unread" />}
         <h2 className="font-semibold">
