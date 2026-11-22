@@ -32,6 +32,7 @@ import { useAccessInfo } from "@/lib/access";
 import { describeError } from "@/lib/errors";
 import {
   confirmUserEmail,
+  getAccountActivity,
   getAdminOverview,
   issueAccessCode,
   listAccessCodes,
@@ -43,6 +44,8 @@ import {
   setUserAccessStatus,
   setUserDiscoveryQuota,
   type AccessCodeRow,
+  type AccountActivityRow,
+  type AccountActivitySnapshot,
   type AdminOverview,
   type AdminUserRow,
   type ApiRequestRow,
@@ -96,8 +99,17 @@ function StatCard({ label, value }: { label: string; value: number }) {
 }
 
 function when(value: string | null): string {
-  if (!value) return "—";
+  if (!value) return "-";
   return new Date(value).toLocaleString();
+}
+
+async function copyToClipboard(value: string, label: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(value);
+    toast.success(`${label} copied`);
+  } catch {
+    toast.error(`Could not copy ${label.toLowerCase()} - select it and copy manually`);
+  }
 }
 
 function Overview() {
@@ -330,12 +342,7 @@ function AccessCodesTab() {
 
   async function copyCode() {
     if (!issued) return;
-    try {
-      await navigator.clipboard.writeText(issued);
-      toast.success("Access code copied");
-    } catch {
-      toast.error("Could not copy — select the code and copy manually");
-    }
+    await copyToClipboard(issued, "Access code");
   }
 
   return (
@@ -349,8 +356,9 @@ function AccessCodesTab() {
       >
         <p className="text-sm font-medium">Issue an access code</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Codes are stored hashed. Leave the email blank for a general code, or bind it to one
-          recipient.
+          New codes stay available below so you can copy them again. Leave the email blank for a
+          general code, or bind it to one recipient. Codes issued before this update only show a
+          prefix and cannot be recovered.
         </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
           <div className="space-y-1">
@@ -436,7 +444,24 @@ function AccessCodesTab() {
             <TableBody>
               {(q.data ?? []).map((c) => (
                 <TableRow key={c.id}>
-                  <TableCell className="font-mono text-xs">{c.code_prefix}…</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    <div className="flex items-center gap-1">
+                      <span className="max-w-[18rem] truncate" title={c.code ?? undefined}>
+                        {c.code ?? `${c.code_prefix ?? "unknown"}…`}
+                      </span>
+                      {c.code && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2"
+                          title="Copy access code"
+                          onClick={() => void copyToClipboard(c.code as string, "Access code")}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {c.target_email ?? "Any"}
                   </TableCell>
@@ -465,6 +490,199 @@ function AccessCodesTab() {
             </TableBody>
           </Table>
         </div>
+      )}
+    </div>
+  );
+}
+
+const ACTIVITY_ENTITY_LABELS: Record<string, string> = {
+  business_audits: "a business audit",
+  business_facts: "a business fact",
+  business_notes: "a business note",
+  business_sources: "a business source",
+  businesses: "a business",
+  discovery_runs: "a discovery run",
+  expenses: "an expense",
+  investigations: "an investigation",
+  invoices: "an invoice",
+  maintenance_records: "a maintenance record",
+  offer_kits: "an offer kit",
+  offers: "an offer",
+  opportunities: "an opportunity",
+  orders: "an order",
+  outreach_campaigns: "an outreach campaign",
+  partner_handoffs: "a partner handoff",
+  partners: "a partner",
+  payments: "a payment",
+  professional_business_links: "a professional link",
+  professionals: "a professional",
+  proposals: "a proposal",
+  prospect_lists: "a prospect list",
+  referrals: "a referral",
+  revenue_leaks: "a revenue leak",
+  social_business_matches: "a social match",
+  social_leads: "a social lead",
+  solution_prompts: "a solution prompt",
+  solution_recommendations: "a solution recommendation",
+  subscriptions: "a subscription",
+  tasks: "a task",
+};
+
+function activityDescription(row: AccountActivityRow): string {
+  if (row.table_name === "login_history") {
+    return row.action === "sign_in" ? "Signed in" : row.action.replace(/_/g, " ");
+  }
+  const verb =
+    row.action === "insert"
+      ? "Created"
+      : row.action === "update"
+        ? "Updated"
+        : row.action === "delete"
+          ? "Deleted"
+          : row.action;
+  const entity = ACTIVITY_ENTITY_LABELS[row.table_name] ?? row.table_name.replace(/_/g, " ");
+  return `${verb} ${entity}`;
+}
+
+function activityDetail(row: AccountActivityRow): string {
+  const details = (row.details ?? {}) as Record<string, unknown>;
+  if (row.table_name === "login_history") {
+    if (details["success"] === false) {
+      return typeof details["failure_reason"] === "string" ? details["failure_reason"] : "Failed";
+    }
+    return typeof details["user_agent"] === "string"
+      ? details["user_agent"].slice(0, 80)
+      : "Sign-in recorded";
+  }
+  const changed = details["changed_columns"];
+  if (Array.isArray(changed) && changed.length > 0) {
+    return `Changed: ${changed.slice(0, 6).map(String).join(", ")}`;
+  }
+  if (row.action === "insert") return "New record";
+  if (row.action === "delete") return "Removed record";
+  return "-";
+}
+
+function AccountActivityTab() {
+  const load = useServerFn(getAccountActivity);
+  const q = useQuery<AccountActivitySnapshot>({
+    queryKey: ["admin-account-activity"],
+    queryFn: () => load(),
+  });
+  const [ownerId, setOwnerId] = useState<string>("all");
+
+  if (q.isLoading) return <p className="py-6 text-sm text-muted-foreground">Loading...</p>;
+  if (q.isError)
+    return (
+      <ErrorBanner error={q.error} context="Account activity" onRetry={() => void q.refetch()} />
+    );
+
+  const rows = q.data?.rows ?? [];
+  const summary = q.data?.summary ?? [];
+  const filtered = ownerId === "all" ? rows : rows.filter((row) => row.owner_id === ownerId);
+  const selected = summary.find((row) => row.owner_id === ownerId);
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border bg-card p-4 text-sm">
+        <p className="font-medium">Per-account activity</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Sign-ins and record changes are recorded from now on. Select an account to see only its
+          timeline. System jobs that change data appear with no user actor.
+        </p>
+      </div>
+
+      {summary.length === 0 ? (
+        <EmptyState
+          title="No account activity yet"
+          why="Activity appears after an account signs in or creates, updates, or deletes a record."
+        />
+      ) : (
+        <>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">
+              {selected ? `Showing ${selected.email ?? selected.owner_id}` : "All accounts"}
+            </p>
+            {ownerId !== "all" && (
+              <Button size="sm" variant="outline" onClick={() => setOwnerId("all")}>
+                Show all accounts
+              </Button>
+            )}
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Account</TableHead>
+                  <TableHead className="text-right">Events</TableHead>
+                  <TableHead className="text-right">Last 24h</TableHead>
+                  <TableHead>Last activity</TableHead>
+                  <TableHead className="text-right">Timeline</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {summary.map((row) => (
+                  <TableRow key={row.owner_id}>
+                    <TableCell className="font-medium">{row.email ?? row.owner_id}</TableCell>
+                    <TableCell className="text-right tabular-nums">{row.events}</TableCell>
+                    <TableCell className="text-right tabular-nums">{row.events_24h}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {when(row.last_activity_at)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant={ownerId === row.owner_id ? "secondary" : "ghost"}
+                        onClick={() => setOwnerId(ownerId === row.owner_id ? "all" : row.owner_id)}
+                      >
+                        {ownerId === row.owner_id ? "Selected" : "View"}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {filtered.length === 0 ? (
+            <EmptyState
+              title="No events for this account"
+              why="The next sign-in or record change will appear here."
+            />
+          ) : (
+            <div className="overflow-x-auto rounded-xl border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>When</TableHead>
+                    <TableHead>Account</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Detail</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {when(row.created_at)}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {row.actor_email ?? row.owner_email ?? "System"}
+                      </TableCell>
+                      <TableCell className="text-xs font-medium">
+                        {activityDescription(row)}
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate text-xs text-muted-foreground">
+                        {activityDetail(row)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -862,6 +1080,7 @@ function AdminPage() {
           <TabsTrigger value="quotas">Discovery quotas</TabsTrigger>
           <TabsTrigger value="api">API usage</TabsTrigger>
           <TabsTrigger value="codes">Access codes</TabsTrigger>
+          <TabsTrigger value="activity">Account activity</TabsTrigger>
           <TabsTrigger value="logins">Logins</TabsTrigger>
           <TabsTrigger value="audit">Audit</TabsTrigger>
         </TabsList>
@@ -879,6 +1098,9 @@ function AdminPage() {
         </TabsContent>
         <TabsContent value="codes">
           <AccessCodesTab />
+        </TabsContent>
+        <TabsContent value="activity">
+          <AccountActivityTab />
         </TabsContent>
         <TabsContent value="logins">
           <LoginActivityTab />

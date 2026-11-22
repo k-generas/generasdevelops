@@ -80,6 +80,7 @@ export type AuditRow = {
 
 export type AccessCodeRow = {
   id: string;
+  code: string | null;
   code_prefix: string | null;
   target_email: string | null;
   status: Database["public"]["Enums"]["access_code_status"];
@@ -88,6 +89,34 @@ export type AccessCodeRow = {
   expires_at: string;
   created_at: string;
   redeemed_at: string | null;
+};
+
+export type AccountActivityRow = {
+  id: string;
+  owner_id: string;
+  owner_email: string | null;
+  actor_id: string | null;
+  actor_email: string | null;
+  table_name: string;
+  record_id: string | null;
+  action: string;
+  details: Json | null;
+  created_at: string;
+};
+
+export type AccountActivitySummary = {
+  owner_id: string;
+  email: string | null;
+  events: number;
+  events_24h: number;
+  last_activity_at: string | null;
+};
+
+export type AccountActivitySnapshot = {
+  ok: boolean;
+  error?: string;
+  rows: AccountActivityRow[];
+  summary: AccountActivitySummary[];
 };
 
 export type MutationResult = { ok: boolean; error?: string };
@@ -343,7 +372,7 @@ export const listAccessCodes = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("access_codes")
       .select(
-        "id, code_prefix, target_email, status, max_uses, used_count, expires_at, created_at, redeemed_at",
+        "id, code, code_prefix, target_email, status, max_uses, used_count, expires_at, created_at, redeemed_at",
       )
       .order("created_at", { ascending: false })
       .limit(200);
@@ -353,6 +382,23 @@ export const listAccessCodes = createServerFn({ method: "GET" })
       throw new Error(error.message);
     }
     return (data ?? []) as AccessCodeRow[];
+  });
+
+export const getAccountActivity = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<AccountActivitySnapshot> => {
+    await assertAdmin(context.supabase);
+    const { data, error } = await context.supabase.rpc("admin_account_activity", {
+      p_limit: 500,
+    });
+    if (error) {
+      if (isMissingSchemaMessage(error.message)) {
+        return { ok: true, rows: [], summary: [] };
+      }
+      throw new Error(error.message);
+    }
+    if (!data) return { ok: true, rows: [], summary: [] };
+    return data as unknown as AccountActivitySnapshot;
   });
 
 export const listApiRequestLogs = createServerFn({ method: "GET" })

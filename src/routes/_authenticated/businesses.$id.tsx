@@ -53,6 +53,17 @@ type Report = {
   next_action: string;
 };
 
+type Tab = "verify" | "social" | "report" | "activity" | "outreach" | "plan";
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: "verify", label: "Verify" },
+  { key: "social", label: "Social" },
+  { key: "report", label: "Report" },
+  { key: "activity", label: "Activity" },
+  { key: "outreach", label: "Outreach" },
+  { key: "plan", label: "Plan" },
+];
+
 function BusinessPage() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
@@ -67,6 +78,7 @@ function BusinessPage() {
   const [packToken, setPackToken] = useState(0);
   // Full-report modal, opened right after a run and re-openable any time.
   const [modalOpen, setModalOpen] = useState(false);
+  const [tab, setTab] = useState<Tab>("verify");
 
   const biz = useQuery({
     queryKey: ["business", id],
@@ -201,8 +213,13 @@ function BusinessPage() {
       </Link>
       <div className="flex flex-wrap items-start gap-4">
         <div className="min-w-0 flex-1">
-          <h1 className="break-words text-2xl font-bold sm:text-3xl">{b.name}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h1 className="line-clamp-2 text-xl font-bold sm:text-3xl" title={b.name}>
+            {b.name}
+          </h1>
+          <p
+            className="mt-1 line-clamp-2 text-sm text-muted-foreground"
+            title={[b.category, b.address].filter(Boolean).join(" · ")}
+          >
             {[b.category, b.address].filter(Boolean).join(" · ")}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -325,7 +342,7 @@ function BusinessPage() {
           <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
             Opportunity score
           </p>
-          <p className="font-mono text-4xl font-semibold text-accent sm:text-5xl">
+          <p className="font-mono text-3xl font-semibold text-accent sm:text-5xl">
             {b.score ?? "—"}
           </p>
         </div>
@@ -376,201 +393,239 @@ function BusinessPage() {
         </p>
       )}
 
-      <ProspectVerificationPanel
-        business={b}
-        findings={(inv.data?.findings ?? null) as VerificationFindings | null}
-        observedAt={inv.data?.created_at ?? null}
-        socialSearch={socialSearch}
-      />
+      <div className="-mx-4 sticky top-14 z-20 flex gap-2 overflow-x-auto border-b bg-background/95 px-4 py-2 backdrop-blur xl:hidden">
+        {TABS.map(({ key, label }) => (
+          <Button
+            key={key}
+            size="sm"
+            className="shrink-0"
+            variant={tab === key ? "default" : "outline"}
+            onClick={() => {
+              setTab(key);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          >
+            {label}
+          </Button>
+        ))}
+      </div>
 
-      <SocialProfilesPanel businessId={id} />
+      <div className={tab === "verify" ? "" : "hidden xl:block"}>
+        <ProspectVerificationPanel
+          business={b}
+          findings={(inv.data?.findings ?? null) as VerificationFindings | null}
+          observedAt={inv.data?.created_at ?? null}
+          socialSearch={socialSearch}
+        />
+      </div>
 
-      <SocialBusinessMatchPanel businessId={id} />
+      <div className={tab === "social" ? "" : "hidden xl:block"}>
+        <SocialProfilesPanel businessId={id} />
+        <div className="mt-6">
+          <SocialBusinessMatchPanel businessId={id} />
+        </div>
+      </div>
 
-      {(b.activity_checked_at || recent.length > 0 || hours.weekday_descriptions) && (
-        <section className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2 rounded-lg border bg-card p-5 text-sm">
-            <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
-              Activity & hours
-            </p>
-            <Row
-              k="Google status"
-              v={b.business_status ? b.business_status.replace(/_/g, " ").toLowerCase() : null}
-            />
-            <Row k="Open now" v={b.open_now == null ? null : b.open_now ? "yes" : "no"} />
-            <Row
-              k="Last activity (review)"
-              v={
-                b.last_activity_at
-                  ? `${relativeTime(b.last_activity_at)} · ${new Date(b.last_activity_at).toLocaleDateString()}`
-                  : null
-              }
-            />
-            <Row
-              k="Reviews in last 90 days"
-              v={b.reviews_last_90d == null ? null : String(b.reviews_last_90d)}
-            />
-            <Row
-              k="Activity checked"
-              v={b.activity_checked_at ? new Date(b.activity_checked_at).toLocaleString() : null}
-            />
-            <Row k="Phone" v={b.phone} />
-            <Row k="Public email" v={b.emails && b.emails.length ? b.emails.join(", ") : null} />
-            {hours.weekday_descriptions && hours.weekday_descriptions.length > 0 && (
-              <div className="pt-2">
-                <p className="text-muted-foreground">Hours</p>
-                {hours.weekday_descriptions.map((h) => (
-                  <p key={h} className="text-xs text-muted-foreground">
-                    {h}
-                  </p>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="space-y-2 rounded-lg border bg-card p-5 text-sm">
-            <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
-              Recent Google reviews
-            </p>
-            {recent.length === 0 ? (
-              <p className="text-muted-foreground">No reviews returned by Google.</p>
-            ) : (
-              recent.map((r, i) => (
-                <div key={i} className="border-b pb-2 last:border-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium">{r.author ?? "Anonymous"}</span>
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {r.rating != null ? `★ ${r.rating}` : ""}
-                      {r.publish_time ? ` · ${relativeTime(r.publish_time)}` : ""}
-                    </span>
-                  </div>
-                  {r.text && <p className="mt-1 text-xs text-muted-foreground">{r.text}</p>}
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-      )}
-
-      {inv.data && (
-        <div className="grid gap-6 lg:grid-cols-3">
-          <section className="rounded-lg border bg-card p-5 lg:col-span-2 space-y-5">
-            <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">Report</p>
-            {report && (
-              <>
-                <p>{report.overview}</p>
-                <div>
-                  <h3 className="mb-2 font-semibold">Problems found</h3>
-                  {report.problems.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">None supported by evidence.</p>
-                  ) : (
-                    <ul className="space-y-3">
-                      {report.problems.map((p, i) => (
-                        <li key={i} className="rounded border p-3">
-                          <div className="flex items-center gap-2">
-                            <Badge variant={p.severity === "high" ? "destructive" : "secondary"}>
-                              {p.severity}
-                            </Badge>
-                            <span className="font-medium">{p.problem}</span>
-                          </div>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            Evidence: {p.evidence}
-                          </p>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <div className="rounded border border-primary/50 p-4">
-                  <p className="font-mono text-xs uppercase tracking-widest text-primary">
-                    Recommended offer
-                  </p>
-                  <p className="mt-1 text-lg font-semibold">{report.recommended_offer}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{report.offer_reasoning}</p>
-                </div>
-                <div>
-                  <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                    Next action
-                  </p>
-                  <p className="mt-1">{report.next_action}</p>
-                </div>
-              </>
-            )}
-          </section>
-          <aside className="space-y-4">
-            {vis && (
-              <div className="rounded-lg border bg-card p-5 space-y-2 text-sm">
-                <div className="flex items-baseline justify-between">
-                  <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
-                    Visibility
-                  </p>
-                  <span className="font-mono text-2xl font-semibold text-accent">
-                    {vis.score}
-                    <span className="text-xs text-muted-foreground">/100</span>
-                  </span>
-                </div>
-                {vis.breakdown.map((x) => (
-                  <div key={x.label} className="flex justify-between gap-2">
-                    <span className="text-muted-foreground">{x.label}</span>
-                    <span className="font-mono">
-                      {x.points}/{x.max}
-                    </span>
-                  </div>
-                ))}
-                <p className="pt-2 text-xs text-muted-foreground">
-                  Low visibility + good reviews = strongest opportunity.
-                </p>
-              </div>
-            )}
-            <div className="rounded-lg border bg-card p-5 space-y-2 text-sm">
-              <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">Estimates</p>
-              <Row k="Confidence" v={report?.confidence} />
+      <div className={tab === "activity" ? "" : "hidden xl:block"}>
+        {(b.activity_checked_at || recent.length > 0 || hours.weekday_descriptions) && (
+          <section className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2 rounded-lg border bg-card p-5 text-sm">
+              <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
+                Activity & hours
+              </p>
               <Row
-                k="Deal value"
+                k="Google status"
+                v={b.business_status ? b.business_status.replace(/_/g, " ").toLowerCase() : null}
+              />
+              <Row k="Open now" v={b.open_now == null ? null : b.open_now ? "yes" : "no"} />
+              <Row
+                k="Last activity (review)"
                 v={
-                  report?.estimated_deal_value_usd != null
-                    ? `~$${report.estimated_deal_value_usd}`
-                    : "unknown"
+                  b.last_activity_at
+                    ? `${relativeTime(b.last_activity_at)} · ${new Date(b.last_activity_at).toLocaleDateString()}`
+                    : null
                 }
               />
-              <Row k="Conversion" v={report?.conversion_probability} />
-              <Row k="Delivery effort" v={report?.delivery_effort} />
-              <p className="pt-2 text-xs text-muted-foreground">
-                Estimates are AI judgement, not revenue.
-              </p>
+              <Row
+                k="Reviews in last 90 days"
+                v={b.reviews_last_90d == null ? null : String(b.reviews_last_90d)}
+              />
+              <Row
+                k="Activity checked"
+                v={b.activity_checked_at ? new Date(b.activity_checked_at).toLocaleString() : null}
+              />
+              <Row k="Phone" v={b.phone} />
+              <Row k="Public email" v={b.emails && b.emails.length ? b.emails.join(", ") : null} />
+              {hours.weekday_descriptions && hours.weekday_descriptions.length > 0 && (
+                <div className="pt-2">
+                  <p className="text-muted-foreground">Hours</p>
+                  {hours.weekday_descriptions.map((h) => (
+                    <p key={h} className="text-xs text-muted-foreground">
+                      {h}
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="rounded-lg border bg-card p-5 space-y-2 text-sm">
+            <div className="space-y-2 rounded-lg border bg-card p-5 text-sm">
               <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
-                Website evidence
+                Recent Google reviews
               </p>
-              <Row k="Reachable" v={fmt(f.reachable)} />
-              <Row k="HTTP status" v={fmt(f.status)} />
-              <Row k="HTTPS" v={fmt(f.https)} />
-              <Row k="Load time" v={f.load_ms != null ? `${f.load_ms} ms` : "—"} />
-              <Row k="Mobile viewport" v={fmt(f.has_viewport_meta)} />
-              <Row k="Contact form" v={fmt(f.has_contact_form)} />
-              <Row k="WhatsApp link" v={fmt(f.has_whatsapp_link)} />
-              <Row k="Booking / shop" v={fmt(f.has_online_booking_or_shop)} />
-              <Row k="Latest © year" v={fmt(f.copyright_year)} />
-              {typeof f.error === "string" && <p className="text-xs text-destructive">{f.error}</p>}
+              {recent.length === 0 ? (
+                <p className="text-muted-foreground">No reviews returned by Google.</p>
+              ) : (
+                recent.map((r, i) => (
+                  <div key={i} className="border-b pb-2 last:border-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium">{r.author ?? "Anonymous"}</span>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {r.rating != null ? `★ ${r.rating}` : ""}
+                        {r.publish_time ? ` · ${relativeTime(r.publish_time)}` : ""}
+                      </span>
+                    </div>
+                    {r.text && <p className="mt-1 text-xs text-muted-foreground">{r.text}</p>}
+                  </div>
+                ))
+              )}
             </div>
-          </aside>
+          </section>
+        )}
+      </div>
+
+      <div className={tab === "report" ? "" : "hidden xl:block"}>
+        {inv.data && (
+          <div className="grid gap-6 lg:grid-cols-3">
+            <section className="rounded-lg border bg-card p-5 lg:col-span-2 space-y-5">
+              <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">Report</p>
+              {report && (
+                <>
+                  <p>{report.overview}</p>
+                  <div>
+                    <h3 className="mb-2 font-semibold">Problems found</h3>
+                    {report.problems.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">None supported by evidence.</p>
+                    ) : (
+                      <ul className="space-y-3">
+                        {report.problems.map((p, i) => (
+                          <li key={i} className="rounded border p-3">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={p.severity === "high" ? "destructive" : "secondary"}>
+                                {p.severity}
+                              </Badge>
+                              <span className="font-medium">{p.problem}</span>
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Evidence: {p.evidence}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div className="rounded border border-primary/50 p-4">
+                    <p className="font-mono text-xs uppercase tracking-widest text-primary">
+                      Recommended offer
+                    </p>
+                    <p className="mt-1 text-lg font-semibold">{report.recommended_offer}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{report.offer_reasoning}</p>
+                  </div>
+                  <div>
+                    <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                      Next action
+                    </p>
+                    <p className="mt-1">{report.next_action}</p>
+                  </div>
+                </>
+              )}
+            </section>
+            <aside className="space-y-4">
+              {vis && (
+                <div className="rounded-lg border bg-card p-5 space-y-2 text-sm">
+                  <div className="flex items-baseline justify-between">
+                    <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
+                      Visibility
+                    </p>
+                    <span className="font-mono text-2xl font-semibold text-accent">
+                      {vis.score}
+                      <span className="text-xs text-muted-foreground">/100</span>
+                    </span>
+                  </div>
+                  {vis.breakdown.map((x) => (
+                    <div key={x.label} className="flex justify-between gap-2">
+                      <span className="text-muted-foreground">{x.label}</span>
+                      <span className="font-mono">
+                        {x.points}/{x.max}
+                      </span>
+                    </div>
+                  ))}
+                  <p className="pt-2 text-xs text-muted-foreground">
+                    Low visibility + good reviews = strongest opportunity.
+                  </p>
+                </div>
+              )}
+              <div className="rounded-lg border bg-card p-5 space-y-2 text-sm">
+                <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
+                  Estimates
+                </p>
+                <Row k="Confidence" v={report?.confidence} />
+                <Row
+                  k="Deal value"
+                  v={
+                    report?.estimated_deal_value_usd != null
+                      ? `~$${report.estimated_deal_value_usd}`
+                      : "unknown"
+                  }
+                />
+                <Row k="Conversion" v={report?.conversion_probability} />
+                <Row k="Delivery effort" v={report?.delivery_effort} />
+                <p className="pt-2 text-xs text-muted-foreground">
+                  Estimates are AI judgement, not revenue.
+                </p>
+              </div>
+              <div className="rounded-lg border bg-card p-5 space-y-2 text-sm">
+                <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">
+                  Website evidence
+                </p>
+                <Row k="Reachable" v={fmt(f.reachable)} />
+                <Row k="HTTP status" v={fmt(f.status)} />
+                <Row k="HTTPS" v={fmt(f.https)} />
+                <Row k="Load time" v={f.load_ms != null ? `${f.load_ms} ms` : "—"} />
+                <Row k="Mobile viewport" v={fmt(f.has_viewport_meta)} />
+                <Row k="Contact form" v={fmt(f.has_contact_form)} />
+                <Row k="WhatsApp link" v={fmt(f.has_whatsapp_link)} />
+                <Row k="Booking / shop" v={fmt(f.has_online_booking_or_shop)} />
+                <Row k="Latest © year" v={fmt(f.copyright_year)} />
+                {typeof f.error === "string" && (
+                  <p className="text-xs text-destructive">{f.error}</p>
+                )}
+              </div>
+            </aside>
+          </div>
+        )}
+      </div>
+
+      <div className={tab === "outreach" ? "" : "hidden xl:block"}>
+        <OutreachMessages
+          businessId={id}
+          provider={provider}
+          enabled={
+            !!report && !closedPermanent && !(report.recommended_offer ?? "").startsWith("No offer")
+          }
+          generateToken={packToken}
+        />
+        <div className="mt-6">
+          <BusinessWorkspace businessId={id} />
         </div>
-      )}
-      <OutreachMessages
-        businessId={id}
-        provider={provider}
-        enabled={
-          !!report && !closedPermanent && !(report.recommended_offer ?? "").startsWith("No offer")
-        }
-        generateToken={packToken}
-      />
-      <ValidationPlanner
-        businessId={id}
-        businessName={b.name}
-        storedPlan={b.validation_plan}
-        onSaved={() => qc.invalidateQueries({ queryKey: ["business", id] })}
-      />
-      <BusinessWorkspace businessId={id} />
+      </div>
+
+      <div className={tab === "plan" ? "" : "hidden xl:block"}>
+        <ValidationPlanner
+          businessId={id}
+          businessName={b.name}
+          storedPlan={b.validation_plan}
+          onSaved={() => qc.invalidateQueries({ queryKey: ["business", id] })}
+        />
+      </div>
       <BusinessIntelModal
         open={modalOpen}
         onOpenChange={setModalOpen}

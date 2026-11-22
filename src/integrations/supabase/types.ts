@@ -2951,6 +2951,42 @@ export type Database = {
         }
         Relationships: []
       }
+      account_activity: {
+        Row: {
+          id: string
+          owner_id: string
+          actor_id: string | null
+          actor_email: string | null
+          table_name: string
+          record_id: string | null
+          action: string
+          details: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          owner_id: string
+          actor_id?: string | null
+          actor_email?: string | null
+          table_name: string
+          record_id?: string | null
+          action: string
+          details?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          owner_id?: string
+          actor_id?: string | null
+          actor_email?: string | null
+          table_name?: string
+          record_id?: string | null
+          action?: string
+          details?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
       api_request_logs: {
         Row: {
           created_at: string
@@ -3011,6 +3047,7 @@ export type Database = {
         Row: {
           id: string
           code_hash: string
+          code: string | null
           code_prefix: string | null
           target_email: string | null
           target_user_id: string | null
@@ -3028,6 +3065,7 @@ export type Database = {
         Insert: {
           id?: string
           code_hash: string
+          code?: string | null
           code_prefix?: string | null
           target_email?: string | null
           target_user_id?: string | null
@@ -3045,6 +3083,7 @@ export type Database = {
         Update: {
           id?: string
           code_hash?: string
+          code?: string | null
           code_prefix?: string | null
           target_email?: string | null
           target_user_id?: string | null
@@ -3176,6 +3215,10 @@ export type Database = {
           p_status: Database["public"]["Enums"]["access_status"]
           p_note?: string | null
         }
+        Returns: Json
+      }
+      admin_account_activity: {
+        Args: { p_limit?: number }
         Returns: Json
       }
       claim_discovery_run: {

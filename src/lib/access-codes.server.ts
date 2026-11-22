@@ -28,6 +28,7 @@ export async function issueAccessCodeFallback(
     .from("access_codes")
     .insert({
       code_hash: codeHash,
+      code,
       code_prefix: code.slice(0, 9),
       target_email: targetEmail,
       issued_by: input.userId,

@@ -31,11 +31,29 @@ Applied to `lfhzponzmkdconaovolq` on 2026-11-16 through the Lovable MCP `query_d
 - Admin has quota controls per user plus recent API usage.
 - Applied to `lfhzponzmkdconaovolq` on 2026-11-16 via Lovable MCP `query_database`: `api_request_logs` exists, all three profile quota columns exist, and `claim_discovery_run` is installed.
 
+## Admin code visibility and account activity
+
+- `supabase/migrations/20261116000000_admin_activity_and_code_visibility.sql` adds
+  `access_codes.code`, so newly issued codes remain copyable from the admin console.
+  Redemption still uses `code_hash`. The code column is protected by the existing
+  admin-only RLS policy. Codes issued before this migration only show a prefix and
+  cannot be recovered.
+- `account_activity` records insert/update/delete events on 30 owner-scoped
+  tables. The trigger is best-effort and never blocks the original write.
+- `admin_account_activity` merges account activity with `login_history` and
+  returns per-account totals, 24-hour counts, last activity, and a recent
+  timeline. The admin console has an **Account activity** tab for this.
+- Applied to `lfhzponzmkdconaovolq` on 2026-11-22 via Lovable MCP
+  `query_database`. A rollback-only trigger probe logged one event, and an
+  authenticated admin probe returned `ok: true` with rows and summary data.
+- These admin UI changes were rebuilt and deployed on 2026-11-22.
+- The deployed admin bundle serves the **Account activity** tab and the copyable-code column.
+
 ## Deployment
 
 - Worker: `https://k-generas-generasdevelops.healthrootrw.workers.dev`
-- Deployed version: `e50c0f4d-7552-43f7-b2e7-27d93ed03fd8`
-- Deployed from commit `2065887` (`feat: add access-code recovery and discovery quotas`).
+- Deployed version: `0380bd10-55ed-4bc8-b024-14a834fe742d`
+- Deployed from the current working tree, including the access-code/activity work and the uncommitted lead-search/mobile-discovery UI tweaks.
 - HTTP 200, title `GARE - Generas Autonomous Revenue Engine`.
 - `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` are set as worker secrets.
 - `SUPABASE_SERVICE_ROLE_KEY` is still missing.

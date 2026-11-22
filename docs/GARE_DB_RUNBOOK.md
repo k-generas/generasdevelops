@@ -11,51 +11,52 @@ uses. Keep both in sync:
 - `drizzle/migrations/` — Lovable's Drizzle history. A migration is only applied
   by Drizzle when it has an entry in `drizzle/migrations/meta/_journal.json`.
 
-| File | Adds |
-| --- | --- |
-| `0000_discovery_engine.sql` | base tables: `discovery_runs`, `businesses`, `investigations` |
-| `0001_memory_proposals_tasks.sql` | `search_run_results`, `business_activity_events`, `proposals`, `proposal_versions`, `tasks`, `business_notes`, `user_preferences` + business columns |
-| `0002_website_verification.sql` | website verification columns on `businesses` |
-| `0003_business_activity_signals.sql` | activity/closure columns on `businesses` |
-| `0004_offers_catalog.sql` | `offers` table (owner-scoped offer catalog) |
-| `0005_invoices.sql` | `invoices` table (invoicing-lite) |
-| `0006_orders_delivery.sql` | `orders` table (orders + delivery checklist) |
-| `0007_business_validation_plan.sql` | `businesses.validation_plan` (low-cost validation planner) |
-| `0008_rwanda_intelligence.sql` | Rwanda company intelligence columns/tables |
-| `0009_rwanda_intelligence.sql` | Rwanda intelligence follow-up |
-| `0010_business_facts_align.sql` | business facts alignment |
-| `0011_monitoring_digests.sql` | `monitoring_settings`, `daily_digests` |
-| `0012_revenue_leaks.sql` | `revenue_leaks` + feasibility defaults |
-| `0013_partners.sql` | `partners`, `partner_handoffs` |
-| `0014_subscriptions.sql` | `subscriptions` |
-| `0015_offer_kits.sql` | `offer_kits` |
-| `0016_referrals.sql` | `referrals` |
-| `0017_early_access.sql` | early-access capture |
-| `0018_admin_console.sql` | admin console tables/columns |
-| `0019_grant_admin_emails.sql` | admin email grants |
-| `0020_outreach_tracker.sql` | outreach tracking columns/events |
-| `0021_payments_expenses.sql` | `payments`, `expenses` + legacy paid-invoice backfill |
-| `0022_business_audits.sql` | `business_audits` |
-| `0023_opportunity_signals.sql` | `opportunity_signals` |
-| `0024_opportunities_qualification.sql` | `opportunities` |
-| `0025_outreach_columns_repair.sql` | forward-only repair for the outreach columns |
-| `0031_fix_access_code_pgcrypto.sql` | access-code RPC `search_path` fix |
-| `0032_discovery_quotas.sql` | profile quotas, `api_request_logs`, `claim_discovery_run` |
+| File                                   | Adds                                                                                                                                                 |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0000_discovery_engine.sql`            | base tables: `discovery_runs`, `businesses`, `investigations`                                                                                        |
+| `0001_memory_proposals_tasks.sql`      | `search_run_results`, `business_activity_events`, `proposals`, `proposal_versions`, `tasks`, `business_notes`, `user_preferences` + business columns |
+| `0002_website_verification.sql`        | website verification columns on `businesses`                                                                                                         |
+| `0003_business_activity_signals.sql`   | activity/closure columns on `businesses`                                                                                                             |
+| `0004_offers_catalog.sql`              | `offers` table (owner-scoped offer catalog)                                                                                                          |
+| `0005_invoices.sql`                    | `invoices` table (invoicing-lite)                                                                                                                    |
+| `0006_orders_delivery.sql`             | `orders` table (orders + delivery checklist)                                                                                                         |
+| `0007_business_validation_plan.sql`    | `businesses.validation_plan` (low-cost validation planner)                                                                                           |
+| `0008_rwanda_intelligence.sql`         | Rwanda company intelligence columns/tables                                                                                                           |
+| `0009_rwanda_intelligence.sql`         | Rwanda intelligence follow-up                                                                                                                        |
+| `0010_business_facts_align.sql`        | business facts alignment                                                                                                                             |
+| `0011_monitoring_digests.sql`          | `monitoring_settings`, `daily_digests`                                                                                                               |
+| `0012_revenue_leaks.sql`               | `revenue_leaks` + feasibility defaults                                                                                                               |
+| `0013_partners.sql`                    | `partners`, `partner_handoffs`                                                                                                                       |
+| `0014_subscriptions.sql`               | `subscriptions`                                                                                                                                      |
+| `0015_offer_kits.sql`                  | `offer_kits`                                                                                                                                         |
+| `0016_referrals.sql`                   | `referrals`                                                                                                                                          |
+| `0017_early_access.sql`                | early-access capture                                                                                                                                 |
+| `0018_admin_console.sql`               | admin console tables/columns                                                                                                                         |
+| `0019_grant_admin_emails.sql`          | admin email grants                                                                                                                                   |
+| `0020_outreach_tracker.sql`            | outreach tracking columns/events                                                                                                                     |
+| `0021_payments_expenses.sql`           | `payments`, `expenses` + legacy paid-invoice backfill                                                                                                |
+| `0022_business_audits.sql`             | `business_audits`                                                                                                                                    |
+| `0023_opportunity_signals.sql`         | `opportunity_signals`                                                                                                                                |
+| `0024_opportunities_qualification.sql` | `opportunities`                                                                                                                                      |
+| `0025_outreach_columns_repair.sql`     | forward-only repair for the outreach columns                                                                                                         |
+| `0031_fix_access_code_pgcrypto.sql`    | access-code RPC `search_path` fix                                                                                                                    |
+| `0032_discovery_quotas.sql`            | profile quotas, `api_request_logs`, `claim_discovery_run`                                                                                            |
 
 Lovable Cloud migrations (`supabase/migrations/`, newest first):
 
-| File | Adds |
-| --- | --- |
-| `20261114000000_discovery_quotas.sql` | profile quotas, `api_request_logs`, `claim_discovery_run` |
-| `20261113000000_fix_access_code_pgcrypto.sql` | access-code RPC `search_path` fix |
-| `20261102000000_outreach_columns_repair.sql` | forward-only outreach column repair |
-| `20261031000000_opportunities_qualification.sql` | `opportunities` |
-| `20261030000000_opportunity_signals.sql` | `opportunity_signals` |
-| `20261029000000_business_audits.sql` | `business_audits` |
-| `20261026000000_payments_expenses.sql` | `payments`, `expenses` |
-| `20261022223809035_outreach_stage_force.sql` | outreach columns + constraint |
-| `20261022205533_outreach_tracker.sql` | outreach index |
-| `20261016120000_gare_growth_engine.sql` | monitoring, digests, leaks, partners, subscriptions, kits, referrals |
+| File                                                    | Adds                                                                 |
+| ------------------------------------------------------- | -------------------------------------------------------------------- |
+| `20261116000000_admin_activity_and_code_visibility.sql` | admin-copyable codes, `account_activity`, activity triggers/RPC      |
+| `20261114000000_discovery_quotas.sql`                   | profile quotas, `api_request_logs`, `claim_discovery_run`            |
+| `20261113000000_fix_access_code_pgcrypto.sql`           | access-code RPC `search_path` fix                                    |
+| `20261102000000_outreach_columns_repair.sql`            | forward-only outreach column repair                                  |
+| `20261031000000_opportunities_qualification.sql`        | `opportunities`                                                      |
+| `20261030000000_opportunity_signals.sql`                | `opportunity_signals`                                                |
+| `20261029000000_business_audits.sql`                    | `business_audits`                                                    |
+| `20261026000000_payments_expenses.sql`                  | `payments`, `expenses`                                               |
+| `20261022223809035_outreach_stage_force.sql`            | outreach columns + constraint                                        |
+| `20261022205533_outreach_tracker.sql`                   | outreach index                                                       |
+| `20261016120000_gare_growth_engine.sql`                 | monitoring, digests, leaks, partners, subscriptions, kits, referrals |
 
 ## How migrations get applied
 
@@ -92,17 +93,23 @@ The same mistake must not be repeated: every new `drizzle/migrations/*.sql` file
 needs a matching entry in `drizzle/migrations/meta/_journal.json`, and new entries
 must have a `when` timestamp greater than the newest already-applied entry.
 
-### Current hosted status (checked 2026-11-16)
+### Current hosted status (checked 2026-11-22)
 
 The previously missing items (`business_audits`, `opportunity_signals`,
 `opportunities`, and the outreach columns) were applied. The access-code
-pgcrypto fix and discovery-quota migration were also applied on 2026-11-16 via
-Lovable MCP `query_database`:
+pgcrypto fix and discovery-quota migration were applied on 2026-11-16 via
+Lovable MCP `query_database`. The admin visibility/activity migration was
+applied the same way on 2026-11-22:
 
 - `api_request_logs` exists.
 - All three `user_profiles` quota columns exist.
 - `claim_discovery_run(text, text, text, uuid)` exists.
 - `redeem_access_code` and `admin_issue_access_code` use `search_path=public, extensions`.
+- `access_codes.code` exists and `admin_issue_access_code` stores it.
+- `account_activity` exists, `admin_account_activity(integer)` exists, and 30
+  owner-scoped tables have an `account_activity_log` trigger.
+- A rollback-only trigger probe logged one event, and an authenticated admin
+  probe returned `ok: true` with rows and summary data.
 
 Paste-ready fallback: `docs/APPLY_PENDING_MIGRATIONS.sql`.
 
@@ -157,6 +164,16 @@ select to_regclass('public.api_request_logs') is not null as api_request_logs_ex
 select proname, proconfig from pg_proc p
 join pg_namespace n on n.oid = p.pronamespace
 where n.nspname = 'public' and proname in ('redeem_access_code','admin_issue_access_code');
+
+-- 20261116
+select (select count(*) from information_schema.columns
+         where table_schema = 'public' and table_name = 'access_codes'
+           and column_name = 'code') as code_column,
+       to_regclass('public.account_activity') is not null as activity_table,
+       exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+               where n.nspname = 'public' and p.proname = 'admin_account_activity') as activity_rpc,
+       (select count(*) from pg_trigger where tgname = 'account_activity_log'
+          and not tgisinternal) as trigger_count;
 ```
 
 Or simply run `npm run db:verify`.
